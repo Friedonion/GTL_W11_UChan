@@ -1,5 +1,6 @@
 #include "SkeletalMeshRenderPass.h"
 
+#include "ShadowManager.h"
 #include "UnrealClient.h"
 #include "D3D11RHI/DXDShaderManager.h"
 #include "D3D11RHI/GraphicDevice.h"
@@ -44,6 +45,7 @@ void FSkeletalMeshRenderPass::PrepareRenderPass(const std::shared_ptr<FEditorVie
         TEXT("FLitUnlitConstants"),
         TEXT("FSubMeshConstants"),
         TEXT("FTextureConstants"),
+        TEXT("FIsShadowConstants"),
     };
 
     BufferManager->BindConstantBuffers(PSBufferKeys, 0, EShaderStage::Pixel);
@@ -51,6 +53,8 @@ void FSkeletalMeshRenderPass::PrepareRenderPass(const std::shared_ptr<FEditorVie
     BufferManager->BindConstantBuffer(TEXT("FLightInfoBuffer"), 0, EShaderStage::Vertex);
     BufferManager->BindConstantBuffer(TEXT("FCPUSkinningConstants"), 1, EShaderStage::Vertex);
     BufferManager->BindConstantBuffer(TEXT("FObjectConstantBuffer"), 12, EShaderStage::Vertex);
+
+    ShadowManager->BindResourcesForSampling();
 }
 
 void FSkeletalMeshRenderPass::CleanUpRenderPass(const std::shared_ptr<FEditorViewportClient>& Viewport)
@@ -59,6 +63,31 @@ void FSkeletalMeshRenderPass::CleanUpRenderPass(const std::shared_ptr<FEditorVie
     Graphics->DeviceContext->VSSetShaderResources(1, 1, NullSRV);
     
     Graphics->DeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+    // Release ShadowManager Buffers
+    Graphics->DeviceContext->PSSetShaderResources(static_cast<int>(EShaderSRVSlot::SRV_PointLight), 1, NullSRV);
+    Graphics->DeviceContext->PSSetShaderResources(static_cast<int>(EShaderSRVSlot::SRV_DirectionalLight), 1, NullSRV);
+    Graphics->DeviceContext->PSSetShaderResources(static_cast<int>(EShaderSRVSlot::SRV_SpotLight), 1, NullSRV);
+
+    // 머티리얼 리소스 해제
+    constexpr UINT NumViews = static_cast<UINT>(EMaterialTextureSlots::MTS_MAX);
+    
+    ID3D11ShaderResourceView* NullSRVs[NumViews] = { nullptr };
+    ID3D11SamplerState* NullSamplers[NumViews] = { nullptr};
+    
+    Graphics->DeviceContext->PSSetShaderResources(0, NumViews, NullSRVs);
+    Graphics->DeviceContext->PSSetSamplers(0, NumViews, NullSamplers);
+
+    // for Gouraud shading
+    ID3D11SamplerState* NullSampler[1] = { nullptr};
+    Graphics->DeviceContext->VSSetShaderResources(0, 1, NullSRV);
+    Graphics->DeviceContext->VSSetSamplers(0, 1, NullSampler);
+
+    // 상수버퍼 해제
+    ID3D11Buffer* NullPSBuffer[9] = { nullptr };
+    Graphics->DeviceContext->PSSetConstantBuffers(0, 9, NullPSBuffer);
+    ID3D11Buffer* NullVSBuffer[2] = { nullptr };
+    Graphics->DeviceContext->VSSetConstantBuffers(0, 2, NullVSBuffer);
 }
 
 void FSkeletalMeshRenderPass::ChangeViewMode(EViewModeIndex ViewMode)

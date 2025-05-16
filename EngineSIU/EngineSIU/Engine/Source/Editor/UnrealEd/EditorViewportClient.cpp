@@ -601,6 +601,14 @@ bool FEditorViewportClient::IsPerspective() const
 
 FVector FEditorViewportClient::GetCameraLocation() const
 {
+    if (GEngine && GEngine->ActiveWorld->WorldType == EWorldType::PIE)
+    {
+        FMinimalViewInfo ViewInfo;
+        GetViewInfo(ViewInfo);
+
+        return ViewInfo.Location;
+    }
+
     if (IsPerspective())
     {
         return PerspectiveCamera.GetLocation();
@@ -610,16 +618,40 @@ FVector FEditorViewportClient::GetCameraLocation() const
 
 float FEditorViewportClient::GetCameraFOV() const
 {
+    if (GEngine && GEngine->ActiveWorld->WorldType == EWorldType::PIE)
+    {
+        FMinimalViewInfo ViewInfo;
+        GetViewInfo(ViewInfo);
+
+        return ViewInfo.FOV;
+    }
+    
     return ViewFOV;
 }
 
 float FEditorViewportClient::GetCameraNearClip() const
 {
+    if (GEngine && GEngine->ActiveWorld->WorldType == EWorldType::PIE)
+    {
+        FMinimalViewInfo ViewInfo;
+        GetViewInfo(ViewInfo);
+
+        return ViewInfo.PerspectiveNearClip;
+    }
+    
     return NearClip;
 }
 
 float FEditorViewportClient::GetCameraFarClip() const
 {
+    if (GEngine && GEngine->ActiveWorld->WorldType == EWorldType::PIE)
+    {
+        FMinimalViewInfo ViewInfo;
+        GetViewInfo(ViewInfo);
+
+        return ViewInfo.PerspectiveFarClip;
+    }
+    
     return FarClip;
 }
 

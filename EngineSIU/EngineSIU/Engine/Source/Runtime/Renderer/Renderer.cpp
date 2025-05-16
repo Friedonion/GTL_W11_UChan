@@ -70,13 +70,13 @@ void FRenderer::Initialize(FGraphicsDevice* InGraphics, FDXDBufferManager* InBuf
 
     assert(ShadowManager->Initialize(Graphics, BufferManager) && "ShadowManager Initialize Failed");
 
-
     for (IRenderPass* RenderPass : RenderPasses)
     {
         RenderPass->Initialize(BufferManager, Graphics, ShaderManager);
     }
     ShadowRenderPass->InitializeShadowManager(ShadowManager);
     StaticMeshRenderPass->InitializeShadowManager(ShadowManager);
+    SkeletalMeshRenderPass->InitializeShadowManager(ShadowManager);
 }
 
 void FRenderer::Release()
@@ -346,17 +346,12 @@ void FRenderer::RenderWorldScene(const std::shared_ptr<FEditorViewportClient>& V
 {
     const uint64 ShowFlag = Viewport->GetShowFlag();
     
-    if (ShowFlag & EEngineShowFlags::SF_Primitives)
+    if (ShowFlag & (EEngineShowFlags::SF_Primitives | EEngineShowFlags::SF_SkeletalMesh))
     {
         {
             QUICK_SCOPE_CYCLE_COUNTER(UpdateLightBufferPass_CPU)
             QUICK_GPU_SCOPE_CYCLE_COUNTER(UpdateLightBufferPass_GPU, *GPUTimingManager)
             UpdateLightBufferPass->Render(Viewport);
-        }
-        {
-            QUICK_SCOPE_CYCLE_COUNTER(StaticMeshPass_CPU)
-            QUICK_GPU_SCOPE_CYCLE_COUNTER(StaticMeshPass_GPU, *GPUTimingManager)
-            StaticMeshRenderPass->Render(Viewport);
         }
     }
 
@@ -366,6 +361,15 @@ void FRenderer::RenderWorldScene(const std::shared_ptr<FEditorViewportClient>& V
             // QUICK_SCOPE_CYCLE_COUNTER(SkeletalMeshPass_CPU)
             QUICK_GPU_SCOPE_CYCLE_COUNTER(SkinningPass_GPU, *GPUTimingManager)
             SkeletalMeshRenderPass->Render(Viewport);
+        }
+    }
+
+    if (ShowFlag & EEngineShowFlags::SF_Primitives)
+    {
+        {
+            QUICK_SCOPE_CYCLE_COUNTER(StaticMeshPass_CPU)
+            QUICK_GPU_SCOPE_CYCLE_COUNTER(StaticMeshPass_GPU, *GPUTimingManager)
+            StaticMeshRenderPass->Render(Viewport);
         }
     }
     

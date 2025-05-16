@@ -36,6 +36,11 @@ void FSkeletalMeshRenderPassBase::Initialize(FDXDBufferManager* InBufferManager,
     CreateResource();
 }
 
+void FSkeletalMeshRenderPassBase::InitializeShadowManager(class FShadowManager* InShadowManager)
+{
+    ShadowManager = InShadowManager;
+}
+
 void FSkeletalMeshRenderPassBase::PrepareRenderArr()
 {
     for (const auto Iter : TObjectRange<USkeletalMeshComponent>())
