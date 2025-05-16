@@ -29,7 +29,7 @@ USkeletalMeshComponent::USkeletalMeshComponent()
 
 USkeletalMeshComponent::~USkeletalMeshComponent()
 {
-    ClearAnimScriptInstance();
+    //ClearAnimScriptInstance();
 }
 
 void USkeletalMeshComponent::InitializeComponent()
@@ -139,7 +139,7 @@ void USkeletalMeshComponent::ClearAnimScriptInstance()
 {
     if (AnimScriptInstance)
     {
-        delete AnimScriptInstance;
+        GUObjectArray.MarkRemoveObject(AnimScriptInstance);
     }
     AnimScriptInstance = nullptr;
 }
