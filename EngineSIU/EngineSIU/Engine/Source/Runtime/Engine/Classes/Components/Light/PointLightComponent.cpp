@@ -26,10 +26,6 @@ UPointLightComponent::UPointLightComponent()
     // );
 }
 
-UPointLightComponent::~UPointLightComponent()
-{
-}
-
 //void UPointLightComponent::Initialize()
 //{
 //    ShadowMaps.Empty(); // 부모 생성자에서 호출하는 CreateShadowMap()를 방지하기 위해 초기화

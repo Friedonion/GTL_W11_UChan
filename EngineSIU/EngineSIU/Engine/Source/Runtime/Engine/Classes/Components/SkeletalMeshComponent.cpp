@@ -27,11 +27,6 @@ USkeletalMeshComponent::USkeletalMeshComponent()
     CPURenderData = std::make_unique<FSkeletalMeshRenderData>();
 }
 
-USkeletalMeshComponent::~USkeletalMeshComponent()
-{
-    ClearAnimScriptInstance();
-}
-
 void USkeletalMeshComponent::InitializeComponent()
 {
     Super::InitializeComponent();
@@ -139,7 +134,7 @@ void USkeletalMeshComponent::ClearAnimScriptInstance()
 {
     if (AnimScriptInstance)
     {
-        delete AnimScriptInstance;
+        GUObjectArray.MarkRemoveObject(AnimScriptInstance);
     }
     AnimScriptInstance = nullptr;
 }

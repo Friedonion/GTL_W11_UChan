@@ -2,6 +2,7 @@
 #include "CameraShakeBase.h"
 
 #include "Math/Quat.h"
+#include "UObject/UObjectArray.h"
 
 FCameraShakeState::FCameraShakeState()
     : ElapsedTime(0.f)
@@ -159,15 +160,6 @@ UCameraShakeBase::UCameraShakeBase()
     , CameraManager(nullptr)
     , bIsActive(true)
 {
-}
-
-UCameraShakeBase::~UCameraShakeBase()
-{
-    if (RootShakePattern)
-    {
-        delete RootShakePattern;
-        RootShakePattern = nullptr;
-    }
 }
 
 void UCameraShakeBase::UpdateAndApplyCameraShake(float DeltaTime, float Alpha, FMinimalViewInfo& InOutPOV)

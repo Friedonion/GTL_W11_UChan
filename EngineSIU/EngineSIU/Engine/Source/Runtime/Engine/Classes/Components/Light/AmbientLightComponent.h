@@ -7,7 +7,7 @@ class UAmbientLightComponent : public ULightComponentBase
 
 public:
     UAmbientLightComponent();
-    virtual ~UAmbientLightComponent() override;
+    virtual ~UAmbientLightComponent() override = default;
     
     virtual UObject* Duplicate(UObject* InOuter) override;
     

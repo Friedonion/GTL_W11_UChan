@@ -50,6 +50,11 @@ UWorld* UObject::GetWorld() const
     return nullptr;
 }
 
+void UObject::MarkAsGarbage()
+{
+    GUObjectArray.MarkRemoveObject(this);
+}
+
 bool UObject::IsA(const UClass* SomeBase) const
 {
     const UClass* ThisClass = GetClass();

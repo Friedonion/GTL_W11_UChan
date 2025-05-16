@@ -5,11 +5,6 @@
 #include "UObject/ObjectFactory.h"
 #include "World/World.h"
 
-UCameraModifier_CameraShake::~UCameraModifier_CameraShake()
-{
-    RemoveAllCameraShakes(true);
-}
-
 UCameraShakeBase* UCameraModifier_CameraShake::AddCameraShake(UClass* ShakeClass)
 {
     if (!ShakeClass || !ShakeClass->IsChildOf(UCameraShakeBase::StaticClass()))

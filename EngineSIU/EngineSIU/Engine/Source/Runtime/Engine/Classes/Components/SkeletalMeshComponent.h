@@ -25,7 +25,7 @@ class USkeletalMeshComponent : public USkinnedMeshComponent
 
 public:
     USkeletalMeshComponent();
-    virtual ~USkeletalMeshComponent() override;
+    virtual ~USkeletalMeshComponent() override = default;
 
     virtual void InitializeComponent() override;
 

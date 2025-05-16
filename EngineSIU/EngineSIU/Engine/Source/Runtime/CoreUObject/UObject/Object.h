@@ -59,7 +59,6 @@ public:
 
     UClass* GetClass() const { return ClassPrivate; }
 
-
     /** this가 SomeBase인지, SomeBase의 자식 클래스인지 확인합니다. */
     bool IsA(const UClass* SomeBase) const;
 
@@ -69,6 +68,14 @@ public:
     {
         return IsA(T::StaticClass());
     }
+
+
+    // UObjectBaseUtility
+
+    /** 이 Object를 삭제 대기열에 추가합니다. */
+    void MarkAsGarbage();
+
+    // ~UObjectBaseUtility
 
 public:
     FVector4 EncodeUUID() const

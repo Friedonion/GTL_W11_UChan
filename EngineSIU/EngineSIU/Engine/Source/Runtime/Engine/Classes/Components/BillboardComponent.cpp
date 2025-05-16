@@ -14,10 +14,6 @@ UBillboardComponent::UBillboardComponent()
     SetTexture(L"Assets/Editor/Icon/S_Actor.PNG");
 }
 
-UBillboardComponent::~UBillboardComponent()
-{
-}
-
 UObject* UBillboardComponent::Duplicate(UObject* InOuter)
 {
     // GPU 버퍼는 공유하지 않고, 상태 값만 복사하여 새로 초기화하도록 함

@@ -10,7 +10,7 @@ class UCameraModifier_CameraShake : public UCameraModifier
 
 public:
     UCameraModifier_CameraShake() = default;
-    virtual ~UCameraModifier_CameraShake() override;
+    virtual ~UCameraModifier_CameraShake() override = default;
 
     virtual UCameraShakeBase* AddCameraShake(UClass* ShakeClass);
 
@@ -25,7 +25,6 @@ public:
 protected:
     TArray<UCameraShakeBase*> ActiveShakes;
 
-    // TODO: 현재 Pool 작동 안됨.
     TMap<UClass*, TArray<UCameraShakeBase*>> ExpiredPooledShakesMap;
 
     void SaveShakeInExpiredPool(UCameraShakeBase* ShakeInst);

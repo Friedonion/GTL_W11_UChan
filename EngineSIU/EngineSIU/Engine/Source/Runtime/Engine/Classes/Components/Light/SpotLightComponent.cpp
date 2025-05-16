@@ -20,10 +20,6 @@ USpotLightComponent::USpotLightComponent()
     SpotLightInfo.Attenuation = 20.0f;
 }
 
-USpotLightComponent::~USpotLightComponent()
-{
-}
-
 UObject* USpotLightComponent::Duplicate(UObject* InOuter)
 {
     ThisClass* NewComponent = Cast<ThisClass>(Super::Duplicate(InOuter));

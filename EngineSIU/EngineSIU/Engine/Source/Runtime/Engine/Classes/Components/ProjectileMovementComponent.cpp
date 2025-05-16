@@ -11,10 +11,6 @@ UProjectileMovementComponent::UProjectileMovementComponent()
     AccumulatedTime = 0;
 }
 
-UProjectileMovementComponent::~UProjectileMovementComponent()
-{
-}
-
 UObject* UProjectileMovementComponent::Duplicate(UObject* InOuter)
 {
 

@@ -64,7 +64,7 @@ private:
 
 public:
     UAssetManager() = default;
-    virtual ~UAssetManager() override;
+    virtual ~UAssetManager() override = default;
 
     static bool IsInitialized();
 

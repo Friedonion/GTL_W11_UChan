@@ -6,7 +6,7 @@ class UProjectileMovementComponent : public USceneComponent
     DECLARE_CLASS(UProjectileMovementComponent, USceneComponent)
 public:
     UProjectileMovementComponent();
-    virtual ~UProjectileMovementComponent();
+    virtual ~UProjectileMovementComponent() override = default;
 
     virtual UObject* Duplicate(UObject* InOuter) override;
 
@@ -31,13 +31,11 @@ public:
     float GetLifetime() const { return ProjectileLifetime; }
 
     virtual void BeginPlay() override;
-
-
-    virtual void TickComponent(float DeltaTime) override;
-
     
-    void GetProperties(TMap<FString, FString>& OutProperties) const override;
-    void SetProperties(const TMap<FString, FString>& InProperties) override;
+    virtual void TickComponent(float DeltaTime) override;
+    
+    virtual void GetProperties(TMap<FString, FString>& OutProperties) const override;
+    virtual void SetProperties(const TMap<FString, FString>& InProperties) override;
 
 private:
     float ProjectileLifetime; // 생명주기

@@ -16,59 +16,6 @@
 #include "Serialization/MemoryArchive.h"
 #include "UObject/ObjectFactory.h"
 
-UAssetManager::~UAssetManager()
-{
-    for (auto& [Name, Object] : SkeletonMap)
-    {
-        if (Object)
-        {
-            delete Object;
-            Object = nullptr;
-        }
-    }
-    SkeletonMap.Empty();
-    
-    for (auto& [Name, Object] : SkeletalMeshMap)
-    {
-        if (Object)
-        {
-            delete Object;
-            Object = nullptr;
-        }
-    }
-    SkeletalMeshMap.Empty();
-
-    for (auto& [Name, Object] : StaticMeshMap)
-    {
-        if (Object)
-        {
-            delete Object;
-            Object = nullptr;
-        }
-    }
-    StaticMeshMap.Empty();
-
-    for (auto& [Name, Object] : MaterialMap)
-    {
-        if (Object)
-        {
-            delete Object;
-            Object = nullptr;
-        }
-    }
-    MaterialMap.Empty();
-
-    for (auto& [Name, Object] : AnimationMap)
-    {
-        if (Object)
-        {
-            delete Object;
-            Object = nullptr;
-        }
-    }
-    AnimationMap.Empty();
-}
-
 bool UAssetManager::IsInitialized()
 {
     return GEngine && GEngine->AssetManager;
