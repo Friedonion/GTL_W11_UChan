@@ -41,3 +41,32 @@ enum ELevelViewportType : uint8
     LVT_MAX,
     LVT_None = 255,
 };
+
+enum EPrimitiveType
+{
+    // Topology that defines a triangle N with 3 vertex extremities: 3*N+0, 3*N+1, 3*N+2.
+    PT_TriangleList,
+
+    // Topology that defines a triangle N with 3 vertex extremities: N+0, N+1, N+2.
+    PT_TriangleStrip,
+
+    // Topology that defines a line with 2 vertex extremities: 2*N+0, 2*N+1.
+    PT_LineList,
+
+    // Topology that defines a quad N with 4 vertex extremities: 4*N+0, 4*N+1, 4*N+2, 4*N+3.
+    // Supported only if GRHISupportsQuadTopology == true.
+    PT_QuadList,
+
+    // Topology that defines a point N with a single vertex N.
+    PT_PointList,
+
+    // Topology that defines a screen aligned rectangle N with only 3 vertex corners:
+    //    3*N + 0 is upper-left corner,
+    //    3*N + 1 is upper-right corner,
+    //    3*N + 2 is the lower-left corner.
+    // Supported only if GRHISupportsRectTopology == true.
+    PT_RectList,
+
+    PT_Num,
+    PT_NumBits = 3
+};
