@@ -10,7 +10,7 @@ UEngine* GEngine = nullptr;
 void UEngine::Init()
 {
     // 컴파일 타임에 확정되지 못한 타입을 런타임에 검사
-    UClass::ResolvePendingProperties();
+    UStruct::ResolvePendingProperties();
 }
 
 FWorldContext* UEngine::GetWorldContextFromWorld(const UWorld* InWorld)

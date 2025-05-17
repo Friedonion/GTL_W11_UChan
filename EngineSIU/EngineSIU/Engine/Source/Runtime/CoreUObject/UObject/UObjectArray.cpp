@@ -24,7 +24,7 @@ void FUObjectArray::ProcessPendingDestroyObjects()
     {
         const UClass* Class = Object->GetClass();
         std::string ObjectName = Object->GetName().ToAnsiString();
-        const uint32 ObjectSize = Class->GetClassSize();
+        const uint32 ObjectSize = Class->GetStructSize();
 
         std::destroy_at(Object);
         FPlatformMemory::AlignedFree<EAT_Object>(Object, ObjectSize);

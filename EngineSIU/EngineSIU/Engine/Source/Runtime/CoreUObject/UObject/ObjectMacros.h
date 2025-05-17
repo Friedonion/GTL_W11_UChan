@@ -1,16 +1,20 @@
 // ReSharper disable CppClangTidyBugproneMacroParentheses
 // ReSharper disable CppClangTidyClangDiagnosticPedantic
+// ReSharper disable CppClangTidyClangDiagnosticReservedMacroIdentifier
 #pragma once
 #include "Class.h"
+#include "ScriptStruct.h"
 #include "UObjectHash.h"
-#include "Templates/TypeUtilities.h"
+
+// MSVC에서 매크로 확장 문제를 해결하기 위한 매크로
+#define EXPAND_MACRO(x) x
 
 // name을 문자열화 해주는 매크로
 #define INLINE_STRINGIFY(name) #name
 
 
 // 공통 클래스 정의 부분
-#define __DECLARE_COMMON_CLASS_BODY__(TClass, TSuperClass) \
+#define DECLARE_COMMON_CLASS_BODY(TClass, TSuperClass) \
 private: \
     TClass(const TClass&) = delete; \
     TClass& operator=(const TClass&) = delete; \
@@ -31,7 +35,7 @@ public: \
 
 // RTTI를 위한 클래스 매크로
 #define DECLARE_CLASS(TClass, TSuperClass) \
-    __DECLARE_COMMON_CLASS_BODY__(TClass, TSuperClass) \
+    DECLARE_COMMON_CLASS_BODY(TClass, TSuperClass) \
     static UClass* StaticClass() { \
         static UClass ClassInfo{ \
             #TClass, \
@@ -49,7 +53,7 @@ public: \
 
 // RTTI를 위한 추상 클래스 매크로
 #define DECLARE_ABSTRACT_CLASS(TClass, TSuperClass) \
-    __DECLARE_COMMON_CLASS_BODY__(TClass, TSuperClass) \
+    DECLARE_COMMON_CLASS_BODY(TClass, TSuperClass) \
     static UClass* StaticClass() { \
         static UClass ClassInfo{ \
             #TClass, \
@@ -60,6 +64,52 @@ public: \
         }; \
         return &ClassInfo; \
     }
+
+
+// ---------- DECLARE_STRUCT 관련 매크로 ----------
+#define DECLARE_COMMON_STRUCT_BODY(TStruct, TSuperStruct) \
+private: \
+    inline static struct Z_##TStruct##_StructRegistrar_PRIVATE \
+    { \
+        Z_##TStruct##_StructRegistrar_PRIVATE() \
+        { \
+            UScriptStruct::GetScriptStructMap().Add(FName(INLINE_STRINGIFY(TStruct)), TStruct::StaticStruct()); \
+        } \
+    } Z_##TStruct##_StructRegistrar_Instance_PRIVATE{}; \
+public: \
+    using Super = TSuperStruct; \
+    using ThisClass = TStruct;
+
+#define DECLARE_STRUCT_WITH_SUPER(TStruct, TSuperStruct) \
+    DECLARE_COMMON_STRUCT_BODY(TStruct, TSuperStruct) \
+    static UScriptStruct* StaticStruct() \
+    { \
+        static UScriptStruct StructInfo{ \
+            INLINE_STRINGIFY(TStruct), \
+            static_cast<uint32>(sizeof(TStruct)), \
+            static_cast<uint32>(alignof(TStruct)), \
+            TSuperStruct::StaticStruct() \
+        }; \
+        return &StructInfo; \
+    }
+
+#define DECLARE_STRUCT_NO_SUPER(TStruct) \
+    DECLARE_COMMON_STRUCT_BODY(TStruct, TStruct) \
+    static UScriptStruct* StaticStruct() \
+    { \
+        static UScriptStruct StructInfo{ \
+            INLINE_STRINGIFY(TStruct), \
+            static_cast<uint32>(sizeof(TStruct)), \
+            static_cast<uint32>(alignof(TStruct)), \
+            nullptr \
+        }; \
+        return &StructInfo; \
+    }
+
+#define GET_OVERLOADED_STRUCT_MACRO(_1, _2, MACRO, ...) MACRO
+
+#define DECLARE_STRUCT(...) \
+    EXPAND_MACRO(GET_OVERLOADED_STRUCT_MACRO(__VA_ARGS__, DECLARE_STRUCT_WITH_SUPER, DECLARE_STRUCT_NO_SUPER)(__VA_ARGS__))
 
 
 // ---------- UProperty 관련 매크로 ----------
@@ -74,8 +124,9 @@ public: \
         { \
             constexpr int64 Offset = offsetof(ThisClass, InVarName); \
             constexpr EPropertyFlags Flags = InFlags; \
-            ThisClass::StaticClass()->RegisterProperty( \
-                PropertyFactory::Private::MakeProperty<InType, Flags>(ThisClass::StaticClass(), #InVarName, Offset) \
+            UStruct* StructPtr = GetStructHelper<ThisClass>(); \
+            StructPtr->AddProperty( \
+                PropertyFactory::Private::MakeProperty<InType, Flags>(StructPtr, #InVarName, Offset) \
             ); \
         } \
     } InVarName##_PropRegistrar_PRIVATE{};
@@ -83,8 +134,7 @@ public: \
 #define UPROPERTY_DEFAULT(InType, InVarName, ...) \
     UPROPERTY_WITH_FLAGS(EPropertyFlags::PropertyNone, InType, InVarName, __VA_ARGS__)
 
-#define EXPAND_PROPERTY_MACRO(x) x
-#define GET_OVERLOADED_PROPERTY_MACRO(_1, _2, _3, _4, NAME, ...) NAME
+#define GET_OVERLOADED_PROPERTY_MACRO(_1, _2, _3, _4, MACRO, ...) MACRO
 
 /**
  * UClass에 Property를 등록합니다.
@@ -101,4 +151,4 @@ public: \
  * UPROPERTY(EPropertyFlags::EditAnywhere, int, Value, = 10) // Flag를 지정하면 기본값은 필수
  */
 #define UPROPERTY(...) \
-    EXPAND_PROPERTY_MACRO(GET_OVERLOADED_PROPERTY_MACRO(__VA_ARGS__, UPROPERTY_WITH_FLAGS, UPROPERTY_DEFAULT, UPROPERTY_DEFAULT)(__VA_ARGS__))
+    EXPAND_MACRO(GET_OVERLOADED_PROPERTY_MACRO(__VA_ARGS__, UPROPERTY_WITH_FLAGS, UPROPERTY_DEFAULT, UPROPERTY_DEFAULT)(__VA_ARGS__))

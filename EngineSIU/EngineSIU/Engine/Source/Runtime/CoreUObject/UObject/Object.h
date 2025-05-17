@@ -27,6 +27,7 @@ public:
 private:
     friend class FObjectFactory;
     friend class FSceneMgr;
+    friend class UStruct;
     friend class UClass;
 
     uint32 UUID;
