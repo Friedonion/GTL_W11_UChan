@@ -3,13 +3,10 @@
 //#include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "UObject/ObjectMacros.h"
-#include "Particles/ParticleModuleRequired.h"
-#include "Particles/TypeData/ParticleModuleTypeDataBase.h"
 #include "Particles/Spawn/ParticleModuleSpawn.h"
 
 class UInterpCurveEdSetup;
 class UParticleModule;
-class UMaterialInterface;
 struct FStreamingRenderAssetPrimitiveInfo;
 
 class UParticleLODLevel : public UObject

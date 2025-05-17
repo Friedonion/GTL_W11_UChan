@@ -10,11 +10,16 @@ struct FBaseParticle;
 struct FParticleRandomSeedInstancePayload;
 class UParticleModule;
 class UWorld;
-class UMaterialInterface;
+class UMaterial;
 enum EParticleAxisLock : int;
 class UParticleSystemComponent;
 class UParticleEmitter;
 class UParticleLODLevel;
+
+struct FLODBurstFired
+{
+    TArray<bool> Fired;
+};
 
 // Hacky base class to avoid 8 bytes of padding after the vtable
 struct FParticleEmitterInstanceFixLayout
@@ -145,7 +150,7 @@ public:
     int32 MaxVertexIndex;
 
     /** The material to render this instance with.						*/
-    UMaterialInterface* CurrentMaterial;
+    UMaterial* CurrentMaterial;
 
     /** Position offset for each particle. Will be reset to zero at the end of the tick	*/
     FVector PositionOffsetThisTick;
@@ -458,7 +463,7 @@ public:
      * Sets the materials with which mesh particles should be rendered.
      * @param InMaterials - The materials.
      */
-    virtual void SetMeshMaterials(const TArray<UMaterialInterface*>& InMaterials)
+    virtual void SetMeshMaterials(const TArray<UMaterial*>& InMaterials)
     {
     }
 
@@ -538,7 +543,7 @@ protected:
     /**
      * Get the current material to render with.
      */
-    UMaterialInterface* GetCurrentMaterial();
+    UMaterial* GetCurrentMaterial();
 
 
     /**

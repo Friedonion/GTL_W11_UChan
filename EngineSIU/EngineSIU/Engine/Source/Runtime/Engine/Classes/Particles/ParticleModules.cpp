@@ -1,4 +1,5 @@
 #include "Components/ParticleSystemComponent.h"
+
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/ParticleEmitter.h"
@@ -56,8 +57,8 @@ UParticleModule::UParticleModule()
 
 UParticleModuleRequired::UParticleModuleRequired()
 {
-    bSpawnModule = true;
-    bUpdateModule = true;
+    // bSpawnModule = true;
+    // bUpdateModule = true;
     EmitterDuration = 1.0f;
     EmitterDurationLow = 0.0f;
     bEmitterDurationUseRange = false;
@@ -69,7 +70,7 @@ UParticleModuleRequired::UParticleModuleRequired()
     SubImages_Vertical = 1;
     bUseMaxDrawCount = true;
     MaxDrawCount = 500;
-    LODDuplicate = true;
+    // LODDuplicate = true;
     NormalsSphereCenter = FVector(0.0f, 0.0f, 100.0f);
     NormalsCylinderDirection = FVector(0.0f, 0.0f, 1.0f);
     bUseLegacyEmitterTime = true;

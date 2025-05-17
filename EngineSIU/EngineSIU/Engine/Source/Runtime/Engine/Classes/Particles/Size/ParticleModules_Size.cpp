@@ -7,13 +7,13 @@ void UParticleModuleSizeScaleBySpeed::Update(FParticleEmitterInstance* Owner, in
     FVector Scale(SpeedScale.X, SpeedScale.Y, 1.0f);
     FVector ScaleMax(MaxScale.X, MaxScale.Y, 1.0f);
 
-    BEGIN_UPDATE_LOOP;
+    BEGIN_UPDATE_LOOP
     FVector Size = Scale * Particle.Velocity.Size();
     Size = Size.ComponentMax(FVector(1.0f));
     Size = Size.ComponentMin(ScaleMax);
     Particle.Size = GetParticleBaseSize(Particle) * (FVector)Size;
     Particle.Size = (FVector(1.0f, 1.0f, 1.0f)) * (FVector)Size;
-    END_UPDATE_LOOP;
+    END_UPDATE_LOOP
 }
 
 /**

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Stats/Stats.h"
 #include "Engine/ParticleHelper.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
@@ -162,7 +161,7 @@ public:
     TMap<UParticleModule*, uint32> ModuleRandomSeedInstanceOffsetMap;
 
     /** Materials collected from any MeshMaterial modules */
-    TArray<class UMaterialInterface*> MeshMaterials;
+    TArray<class UMaterial*> MeshMaterials;
 
     int32 DynamicParameterDataOffset;
     int32 LightDataOffset;

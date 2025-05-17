@@ -23,7 +23,7 @@ public:
 
     //~ Begin UParticleModule Interface
     virtual void Update(FParticleEmitterInstance* Owner, int32 Offset, float DeltaTime) override;
-    virtual void CompileModule(struct FParticleEmitterBuildInfo& EmitterInfo) override;
+    virtual void CompileModule(struct FParticleEmitterBuildInfo& EmitterInfo);
     // End UParticleModule Interface
 };
 

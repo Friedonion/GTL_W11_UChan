@@ -9,7 +9,6 @@
 //#include "RHIDefinitions.h"
 
 class UInterpCurveEdSetup;
-class UMaterialInterface;
 class UParticleSystemComponent;
 class UParticleEmitter;
 
@@ -88,7 +87,7 @@ struct FNamedEmitterMaterial
     FName Name;
 
     //UPROPERTY(EditAnywhere, Category = NamedMaterial)
-    UMaterialInterface* Material;
+    UMaterial* Material;
 };
 
 /**

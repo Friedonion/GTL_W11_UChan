@@ -3,7 +3,6 @@
 #include "Core/Math/Vector.h"
 #include "Core/Math/Color.h"
 #include "Core/Math/RandomStream.h"
-#include "Particles/ParticleModuleRequired.h"
 
 /*-----------------------------------------------------------------------------
     Helper macros.
@@ -366,8 +365,8 @@ struct FDynamicEmitterDataBase
 struct FDynamicSpriteEmitterReplayDataBase
     : public FDynamicEmitterReplayDataBase
 {
-    UMaterialInterface* MaterialInterface;
-    struct FParticleRequiredModule* RequiredModule;
+    // UMaterial* Material;
+    struct FParticleRequiredModule *RequiredModule;
     FVector							NormalsSphereCenter;
     FVector							NormalsCylinderDirection;
     float							InvDeltaSeconds;

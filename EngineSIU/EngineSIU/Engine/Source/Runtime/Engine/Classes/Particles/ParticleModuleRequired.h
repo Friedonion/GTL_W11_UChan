@@ -118,7 +118,7 @@ public:
     
     /** The material to utilize for the emitter at this LOD level.						*/
     //// UPROPERTY(EditAnywhere, Category = Emitter)
-    UMaterialInterface* Material;
+    UMaterial* Material;
 
     /** The distance at which PSA_FacingCameraDistanceBlend	is fully PSA_Square */
     //// UPROPERTY(EditAnywhere, Category = Emitter, meta = (UIMin = "0", DisplayAfter = "ScreenAlignment"))
@@ -407,7 +407,6 @@ public:
     FVector NormalsCylinderDirection;
 
     /**
-    *	Named material overrides for this emitter.
     *	Overrides this emitter's material(s) with those in the correspondingly named slot(s) of the owning system.
     */
     // UPROPERTY(EditAnywhere, Category = Materials)

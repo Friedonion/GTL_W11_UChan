@@ -3,7 +3,13 @@
 #include "Particles/ParticleSystem.h"
 #include "Particles/Spawn/ParticleModuleSpawnBase.h"
 #include "Components/ParticleSystemComponent.h"
+#include "Particles/ParticleModuleRequired.h"
 #include "Userinterface/Console.h"
+
+bool FParticleEmitterInstance::Resize(int32 NewMaxActiveParticles, bool bSetMaxActiveCount)
+{
+    return true;
+}
 
 // [Particle Sequece] 03 - ParticleEmitterInstance 업데이트, 파티클 Pool관리 및 ParticleModule update
 void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
@@ -64,6 +70,10 @@ void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
 
     // Reset particles position offset
     PositionOffsetThisTick = FVector::ZeroVector;
+}
+
+void FParticleEmitterInstance::ApplyWorldOffset(FVector InOffset, bool bWorldShift)
+{
 }
 
 void FParticleEmitterInstance::Tick_MaterialOverrides(int32 EmitterIndex)
@@ -162,6 +172,37 @@ void FParticleEmitterInstance::KillParticles()
     }
 }
 
+void FParticleEmitterInstance::KillParticle(int32 Index)
+{
+}
+
+void FParticleEmitterInstance::KillParticlesForced(bool bFireEvents)
+{
+}
+
+FBaseParticle* FParticleEmitterInstance::GetParticle(int32 Index)
+{
+    return nullptr;
+}
+
+FBaseParticle* FParticleEmitterInstance::GetParticleDirect(int32 InDirectIndex)
+{
+    return nullptr;
+}
+
+void FParticleEmitterInstance::SetupEmitterDuration()
+{
+}
+
+bool FParticleEmitterInstance::IsDynamicDataRequired(UParticleLODLevel* CurrentLODLevel)
+{
+    return true;
+}
+
+void FParticleEmitterInstance::ProcessParticleEvents(float DeltaTime, bool bSuppressSpawning)
+{
+}
+
 void FParticleEmitterInstance::ResetParticleParameters(float DeltaTime)
 {
     UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
@@ -194,6 +235,21 @@ void FParticleEmitterInstance::ResetParticleParameters(float DeltaTime)
     }
 }
 
+void FParticleEmitterInstance::ParticlePrefetch()
+{
+}
+
+void FParticleEmitterInstance::InitParameters(UParticleEmitter* InTemplate, UParticleSystemComponent* InComponent)
+{
+    SpriteTemplate = InTemplate;
+    Component = InComponent;
+    SetupEmitterDuration();
+}
+
+void FParticleEmitterInstance::Init()
+{
+}
+
 void FParticleEmitterInstance::Tick_ModuleUpdate(float DeltaTime, UParticleLODLevel* InCurrentLODLevel)
 {
     UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
@@ -209,6 +265,10 @@ void FParticleEmitterInstance::Tick_ModuleUpdate(float DeltaTime, UParticleLODLe
             CurrentModule->Update(this, GetModuleDataOffset(HighestLODLevel->UpdateModules[ModuleIndex]), DeltaTime);
         }
     }
+}
+
+void FParticleEmitterInstance::Tick_ModulePostUpdate(float DeltaTime, UParticleLODLevel* CurrentLODLevel)
+{
 }
 
 float FParticleEmitterInstance::Tick_SpawnParticles(float DeltaTime, UParticleLODLevel* InCurrentLODLevel, bool bSuppressSpawning, bool bFirstTime)
@@ -255,6 +315,27 @@ void FParticleEmitterInstance::Tick_ModuleFinalUpdate(float DeltaTime, UParticle
     }*/
 }
 
+void FParticleEmitterInstance::SetCurrentLODIndex(int32 InLODIndex, bool bInFullyProcess)
+{
+}
+
+void FParticleEmitterInstance::Rewind()
+{
+}
+
+void FParticleEmitterInstance::UpdateBoundingBox(float DeltaTime)
+{
+}
+
+void FParticleEmitterInstance::ForceUpdateBoundingBox()
+{
+}
+
+uint32 FParticleEmitterInstance::RequiredBytes()
+{
+    return 0;
+}
+
 void FParticleEmitterInstance::CheckEmitterFinished()
 {
     // Grab the current LOD level
@@ -292,6 +373,70 @@ void FParticleEmitterInstance::CheckEmitterFinished()
     }
 }
 
+/*-----------------------------------------------------------------------------
+    FParticleEmitterInstance
+-----------------------------------------------------------------------------*/
+// Only update the PeakActiveParticles if the frame rate is 20 or better
+const float FParticleEmitterInstance::PeakActiveParticleUpdateDelta = 0.05f;
+
+FParticleEmitterInstance::FParticleEmitterInstance() :
+      SpriteTemplate(NULL)
+    , Component(NULL)
+    , CurrentLODLevel(NULL)
+    , CurrentLODLevelIndex(0)
+    , TypeDataOffset(0)
+    , TypeDataInstanceOffset(-1)
+    , SubUVDataOffset(0)
+    , DynamicParameterDataOffset(0)
+    , LightDataOffset(0)
+    , LightVolumetricScatteringIntensity(0)
+    , OrbitModuleOffset(0)
+    , CameraPayloadOffset(0)
+    , PayloadOffset(0)
+    , bEnabled(1)
+    , bKillOnDeactivate(0)
+    , bKillOnCompleted(0)
+    , bHaltSpawning(0)
+    , bHaltSpawningExternal(0)
+    , bRequiresLoopNotification(0)
+    , bIgnoreComponentScale(0)
+    , bIsBeam(0)
+    , bAxisLockEnabled(0)
+    , bFakeBurstsWhenSpawningSupressed(0)
+    , LockAxisFlags(EPAL_NONE)
+    , SortMode(PSORTMODE_None)
+    , ParticleData(NULL)
+    , ParticleIndices(NULL)
+    , InstanceData(NULL)
+    , InstancePayloadSize(0)
+    , ParticleSize(0)
+    , ParticleStride(0)
+    , ActiveParticles(0)
+    , ParticleCounter(0)
+    , MaxActiveParticles(0)
+    , SpawnFraction(0.0f)
+    , SecondsSinceCreation(0.0f)
+    , EmitterTime(0.0f)
+    , LoopCount(0)
+    , IsRenderDataDirty(0)
+    , EmitterDuration(0.0f)
+    , TrianglesToRender(0)
+    , MaxVertexIndex(0)
+    , CurrentMaterial(NULL)
+    , PositionOffsetThisTick(0)
+    , PivotOffset(-0.5f,-0.5f)
+{
+}
+
+FParticleEmitterInstance::~FParticleEmitterInstance()
+{
+}
+
+bool FParticleEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase& OutData)
+{
+    return true;
+}
+
 UParticleLODLevel* FParticleEmitterInstance::GetCurrentLODLevelChecked()
 {
     if (SpriteTemplate == NULL) return nullptr;
@@ -326,12 +471,36 @@ void FParticleEmitterInstance::FakeBursts()
     //}
 }
 
+float FParticleEmitterInstance::Tick_EmitterTimeSetup(float DeltaTime, UParticleLODLevel* CurrentLODLevel)
+{
+    return 0.f;
+}
+
 uint32 FParticleEmitterInstance::GetModuleDataOffset(UParticleModule* Module)
 {
     if (!SpriteTemplate) return 0;
 
     uint32* Offset = SpriteTemplate->ModuleOffsetMap.Find(Module);
     return (Offset != nullptr) ? *Offset : 0;
+}
+
+uint8* FParticleEmitterInstance::GetTypeDataModuleInstanceData()
+{
+    return nullptr;
+}
+
+uint32 FParticleEmitterInstance::CalculateParticleStride(uint32 ParticleSize)
+{
+    return 0;
+}
+
+void FParticleEmitterInstance::ResetBurstList()
+{
+}
+
+float FParticleEmitterInstance::GetCurrentBurstRateOffset(float& DeltaTime, int32& Burst)
+{
+    return 0.f;
 }
 
 float FParticleEmitterInstance::Spawn(float DeltaTime)
@@ -581,4 +750,89 @@ void FParticleEmitterInstance::SpawnParticles(int32 Count, float StartTime, floa
     {
         SpawnInternal(false);
     }*/
+}
+
+void FParticleEmitterInstance::ForceSpawn(float DeltaTime, int32 InSpawnCount, int32 InBurstCount, FVector& InLocation, FVector& InVelocity)
+{
+}
+
+void FParticleEmitterInstance::PreSpawn(FBaseParticle* Particle, const FVector& InitialLocation, const FVector& InitialVelocity)
+{
+}
+
+void FParticleEmitterInstance::PostSpawn(FBaseParticle* Particle, float InterpolationPercentage, float SpawnTime)
+{
+}
+
+bool FParticleEmitterInstance::HasCompleted()
+{
+    return true;
+}
+
+void FParticleDataContainer::Alloc(int32 InParticleDataNumBytes, int32 InParticleIndicesNumShorts)
+{
+    // check(InParticleDataNumBytes > 0 && ParticleIndicesNumShorts >= 0
+    //     && InParticleDataNumBytes % sizeof(uint16) == 0); // we assume that the particle storage has reasonable alignment below
+    ParticleDataNumBytes = InParticleDataNumBytes;
+    ParticleIndicesNumShorts = InParticleIndicesNumShorts;
+
+    MemBlockSize = ParticleDataNumBytes + ParticleIndicesNumShorts * sizeof(uint16);
+
+    // ParticleData = (uint8*)FastParticleSmallBlockAlloc(MemBlockSize);
+    ParticleIndices = (uint16*)(ParticleData + ParticleDataNumBytes);
+}
+
+void FParticleDataContainer::Free()
+{
+    if (ParticleData)
+    {
+        // check(MemBlockSize > 0);
+        // FastParticleSmallBlockFree(ParticleData, MemBlockSize);
+    }
+    MemBlockSize = 0;
+    ParticleDataNumBytes = 0;
+    ParticleIndicesNumShorts = 0;
+    ParticleData = nullptr;
+    ParticleIndices = nullptr;
+}
+
+
+
+FDynamicSpriteEmitterReplayDataBase::FDynamicSpriteEmitterReplayDataBase()
+    : //Material(nullptr)
+     RequiredModule(nullptr)
+    , NormalsSphereCenter(FVector::ZeroVector)
+    , NormalsCylinderDirection(FVector::ZeroVector)
+    , InvDeltaSeconds(0.0f)
+    , MaxDrawCount(0)
+    , OrbitModuleOffset(0)
+    , DynamicParameterDataOffset(0)
+    , LightDataOffset(0)
+    , LightVolumetricScatteringIntensity(0)
+    , CameraPayloadOffset(0)
+    , SubUVDataOffset(0)
+    , SubImages_Horizontal(1)
+    , SubImages_Vertical(1)
+    , bUseLocalSpace(false)
+    , bLockAxis(false)
+    , ScreenAlignment(0)
+    , LockAxisFlag(0)
+    , EmitterRenderMode(0)
+    , EmitterNormalsMode(0)
+    , PivotOffset(-0.5f, -0.5f)
+    , bUseVelocityForMotionBlur(false)
+    , bRemoveHMDRoll(false)
+    , MinFacingCameraBlendDistance(0.f)
+    , MaxFacingCameraBlendDistance(0.f)
+{
+}
+
+FDynamicSpriteEmitterReplayDataBase::~FDynamicSpriteEmitterReplayDataBase()
+{
+    delete RequiredModule;
+}
+
+void FDynamicSpriteEmitterReplayDataBase::Serialize(FArchive& Ar)
+{
+    FDynamicEmitterReplayDataBase::Serialize(Ar);
 }
