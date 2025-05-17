@@ -515,10 +515,15 @@ void FStructProperty::DisplayRawDataInImGui(const char* PropertyLabel, void* Dat
     {
         if (ImGui::TreeNodeEx(PropertyLabel, ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_DefaultOpen))
         {
-            for (const FProperty* Property : (*StructType)->GetProperties())
+            // TODO: 나중에 Display 순서를 부모부터 띄우게 수정하기
+            UStruct* CurrentStruct = *StructType;
+            for (; CurrentStruct; CurrentStruct = CurrentStruct->GetSuperStruct())
             {
-                void* Data = static_cast<std::byte*>(DataPtr) + Property->Offset;
-                Property->DisplayRawDataInImGui(Property->Name, Data);
+                for (const FProperty* Property : CurrentStruct->GetProperties())
+                {
+                    void* Data = static_cast<std::byte*>(DataPtr) + Property->Offset;
+                    Property->DisplayRawDataInImGui(Property->Name, Data);
+                }
             }
             ImGui::TreePop();
         }
