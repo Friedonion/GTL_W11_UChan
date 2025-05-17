@@ -342,6 +342,10 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\GameFramework\PlayerController.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\GameFramework\SpringArmComponent.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Level.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleComponents.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModules.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Size\ParticleModules_Size.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModules_Spawn.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\ReferenceSkeleton.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\UnrealClient.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\UserInterface\Console.cpp" />
@@ -402,6 +406,8 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClCompile Include="Engine\Source\ThirdParty\ImGui\include\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Engine\Source\ThirdParty\tinyfiledialogs\include\tinyfiledialogs.cpp" />
     <ClCompile Include="LuaScripts\LuaScriptComponent.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\ParticleEmitterInstances.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Components\ParticleSystemComponent.cpp" />
     <ClCompile Include="SoundManager.cpp" />
     <None Include="Shaders\CompositingShader.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -564,6 +570,7 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClInclude Include="Engine\Source\Runtime\Core\Math\NumericLimits.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Math\Plane.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Math\Quat.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Math\RandomStream.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Math\Rotator.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Math\Transform.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Math\Vector.h" />
@@ -675,6 +682,17 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\GameFramework\PlayerController.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\GameFramework\SpringArmComponent.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Level.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleEmitter.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleLODLevel.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModule.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModuleRequired.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleSystem.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Size\ParticleModuleSizeBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Size\ParticleModuleSizeScaleBySpeed.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModuleSpawn.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModuleSpawnBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\TypeData\ParticleModuleTypeDataBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\ParticleHelper.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\ReferenceSkeleton.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\UnrealClient.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\UserInterface\Console.h" />
@@ -796,6 +814,8 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClInclude Include="LuaScripts\LuaBindingHelpers.h" />
     <ClInclude Include="LuaScripts\LuaScriptComponent.h" />
     <ClInclude Include="LuaScripts\LuaScriptFileUtils.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\ParticleEmitterInstances.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\ParticleSystemComponent.h" />
     <ClInclude Include="SoundManager.h" />
     <None Include="Shaders\EditorShaderConstants.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
