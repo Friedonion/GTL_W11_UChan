@@ -69,6 +69,25 @@ public:
         return GetTypeSpecificDataAs<UClass*>().value_or(nullptr);
     }
 
+    /**
+     * Property를 실제 데이터 타입으로 변환합니다.
+     * @tparam T 변환할 타입
+     * @param Object 변환할 값을 가지고 있는 Object
+     * @return Object의 실제 값
+     *
+     * @warning 타입이 잘못되면 UB가 발생할 수 있습니다.
+     */
+    template <typename T>
+    T* GetPropertyData(UObject* Object) const
+    {
+        return reinterpret_cast<T*>(reinterpret_cast<std::byte*>(Object) + Offset);
+    }
+
+    void* GetPropertyData(UObject* Object) const
+    {
+        return reinterpret_cast<std::byte*>(Object) + Offset;
+    }
+
 private:
     /**
      * TypeSpecificData에서 특정 타입 T의 값을 안전하게 가져옵니다.
@@ -112,26 +131,6 @@ private:
             return std::get<T>(TypeSpecificData);
         }
         return std::nullopt;
-    }
-
-protected:
-    /**
-     * Property를 실제 데이터 타입으로 변환합니다.
-     * @tparam T 변환할 타입
-     * @param Object 변환할 값을 가지고 있는 Object
-     * @return Object의 실제 값
-     *
-     * @warning 타입이 잘못되면 UB가 발생할 수 있습니다.
-     */
-    template <typename T>
-    T* GetPropertyData(UObject* Object) const
-    {
-        return reinterpret_cast<T*>(reinterpret_cast<std::byte*>(Object) + Offset);
-    }
-
-    void* GetPropertyData(UObject* Object) const
-    {
-        return reinterpret_cast<std::byte*>(Object) + Offset;
     }
 
 public:
