@@ -2,6 +2,7 @@
 // ReSharper disable CppClangTidyClangDiagnosticPedantic
 // ReSharper disable CppClangTidyClangDiagnosticReservedMacroIdentifier
 #pragma once
+#include <concepts>
 #include "Class.h"
 #include "ScriptStruct.h"
 #include "UObjectHash.h"
@@ -84,6 +85,7 @@ public: \
     DECLARE_COMMON_STRUCT_BODY(TStruct, TSuperStruct) \
     static UScriptStruct* StaticStruct() \
     { \
+        static_assert(std::derived_from<TStruct, TSuperStruct>, INLINE_STRINGIFY(TStruct) " must inherit from " INLINE_STRINGIFY(TSuperStruct)); \
         static UScriptStruct StructInfo{ \
             INLINE_STRINGIFY(TStruct), \
             static_cast<uint32>(sizeof(TStruct)), \
