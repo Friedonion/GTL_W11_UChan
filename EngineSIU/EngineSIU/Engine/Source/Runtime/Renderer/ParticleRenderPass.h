@@ -1,8 +1,21 @@
+
 #pragma once
 #include "IRenderPass.h"
-#include "DirectXTK/BufferHelpers.h"
+#include "Math/Color.h"
+#include "Math/Matrix.h"
+#include "Container/Array.h"
 
-class ParticleRenderPass : public IRenderPass
+class ID3D11BlendState;
+class ID3D11DepthStencilState;
+class ID3D11Buffer;
+
+struct FParticleInstanceData
+{
+    FMatrix World;
+    FLinearColor Color;
+};
+
+class FParticleRenderPass : public IRenderPass
 {
 public:
     virtual void Initialize(FDXDBufferManager* InBufferManager, FGraphicsDevice* InGraphics, FDXDShaderManager* InShaderManager) override;
@@ -22,8 +35,10 @@ private:
     FDXDBufferManager* BufferManager = nullptr;
     FGraphicsDevice* Graphics = nullptr;
     FDXDShaderManager* ShaderManager = nullptr;
-    
-    ID3D11Buffer* InstanceBuffer = nullptr;
+
     ID3D11BlendState* BlendState = nullptr;
     ID3D11DepthStencilState* DepthState = nullptr;
+
+    ID3D11Buffer* InstanceBuffer = nullptr;
+    TArray<FParticleInstanceData> InstanceData;
 };

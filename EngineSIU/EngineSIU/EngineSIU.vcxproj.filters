@@ -718,9 +718,6 @@
     <ClInclude Include="Engine\Source\Runtime\Core\Stats\Stats.h">
       <Filter>Engine\Source\Runtime\Core\Stats</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Source\Runtime\Core\Traits\IsCharType.h">
-      <Filter>Engine\Source\Runtime\Core\Traits</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Source\Runtime\CoreUObject\Template\SubclassOf.h">
       <Filter>Engine\Source\Runtime\CoreUObject\Template</Filter>
     </ClInclude>
@@ -1658,7 +1655,6 @@
     <ClCompile Include="Engine\Source\Contents\Actors\SkeletalMeshActorTest.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Core\Math\Transform.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimSequence.cpp" />
-    <ClCompile Include="Engine\Source\Editor\PropertyEditor\BoneHierarchyViewerPanel.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\World\SkeletalViewerWorld.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimationAsset.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimSequenceBase.cpp" />
@@ -1678,6 +1674,14 @@
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimNotify.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimNotifyState.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimStateMachine.cpp" />
+    <ClCompile Include="Engine\Source\Contents\AnimInstance\MyAnimInstance.cpp" />
+    <ClCompile Include="Engine\Source\Editor\PropertyEditor\SkeletalMeshViewerPanel.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\PropertyDisplay.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\ScriptStruct.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\Struct.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimSoundNotify.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Renderer\ParticleRenderPass.cpp" />
+    <ClCompile Include="Shaders\ParticleVertexShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="EngineSIU.natvis" />
@@ -1689,6 +1693,9 @@
     <FxCompile Include="Shaders\DepthOnlyVS.hlsl" />
     <FxCompile Include="Shaders\LightPBR.hlsl" />
     <FxCompile Include="Shaders\PointLightCubemapGS.hlsl" />
+    <FxCompile Include="Shaders\ParticlePixelShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\SkeletalMeshComponent.h" />
@@ -1711,7 +1718,6 @@
     <ClInclude Include="Engine\Source\Runtime\Core\Math\Axis.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Math\Transform.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimSequence.h" />
-    <ClInclude Include="Engine\Source\Editor\PropertyEditor\BoneHierarchyViewerPanel.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\World\SkeletalViewerWorld.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimationAsset.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimSequenceBase.h" />
@@ -1734,6 +1740,28 @@
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimNotify.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimNotifyState.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimStateMachine.h" />
+    <ClInclude Include="Engine\Source\Contents\AnimInstance\MyAnimInstance.h" />
+    <ClInclude Include="Engine\Source\Editor\PropertyEditor\SkeletalMeshViewerPanel.h" />
+    <ClInclude Include="Engine\Source\Runtime\CoreUObject\Template\IsTSubclassOf.h" />
+    <ClInclude Include="Engine\Source\Runtime\CoreUObject\UObject\PropertyTypes.h" />
+    <ClInclude Include="Engine\Source\Runtime\CoreUObject\UObject\ScriptStruct.h" />
+    <ClInclude Include="Engine\Source\Runtime\CoreUObject\UObject\Struct.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Misc\Optional.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Templates\IsArray.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Templates\IsCharType.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Templates\TemplateUtilities.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Templates\TypeUtilities.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimSoundNotify.h" />
+    <ClInclude Include="Engine\Source\Runtime\Renderer\ParticleRenderPass.h" />
+    <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum.hpp" />
+    <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_all.hpp" />
+    <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_containers.hpp" />
+    <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_flags.hpp" />
+    <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_format.hpp" />
+    <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_fuse.hpp" />
+    <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_iostream.hpp" />
+    <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_switch.hpp" />
+    <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_utility.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\CompositingShader.hlsl" />

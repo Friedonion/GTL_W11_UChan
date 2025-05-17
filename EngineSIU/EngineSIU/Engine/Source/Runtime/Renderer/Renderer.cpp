@@ -20,6 +20,8 @@
 #include "DepthPrePass.h"
 #include "TileLightCullingPass.h"
 
+#include "ParticleRenderPass.h"
+
 #include "CompositingPass.h"
 #include "LightHeatMapRenderPass.h"
 #include "PostProcessCompositingPass.h"
@@ -63,6 +65,8 @@ void FRenderer::Initialize(FGraphicsDevice* InGraphics, FDXDBufferManager* InBuf
     DepthPrePass = AddRenderPass<FDepthPrePass>();
     TileLightCullingPass = AddRenderPass<FTileLightCullingPass>();
     LightHeatMapRenderPass = AddRenderPass<FLightHeatMapRenderPass>();
+
+    ParticleRenderPass = AddRenderPass<FParticleRenderPass>();
     
     CompositingPass = AddRenderPass<FCompositingPass>();
     PostProcessCompositingPass = AddRenderPass<FPostProcessCompositingPass>();
@@ -190,6 +194,33 @@ void FRenderer::CreateCommonShader() const
         return;
     }
     
+    D3D11_INPUT_ELEMENT_DESC ParticleLayout[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,     0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,        0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "WORLD",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 0,  D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "WORLD",    1, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "WORLD",    2, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "WORLD",    3, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 64, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+    };
+
+    hr= ShaderManager->AddVertexShaderAndInputLayout(
+        L"ParticleSpriteVS",
+        L"Shaders/ParticleVertexShader.hlsl",
+        "mainVS",
+        ParticleLayout, ARRAYSIZE(ParticleLayout)
+    );
+
+    if (FAILED(hr)) { return; }
+
+    hr= ShaderManager->AddPixelShader(
+        L"ParticleSpritePS",
+        L"Shaders/ParticlePixelShader.hlsl",
+        "mainPS"
+    );
+
+    if (FAILED(hr)) { return; }
+
 #pragma region UberShader
     D3D_SHADER_MACRO DefinesGouraud[] =
     {
@@ -315,6 +346,9 @@ void FRenderer::Render(const std::shared_ptr<FEditorViewportClient>& Viewport)
     }
 
     RenderWorldScene(Viewport);
+
+    ParticleRenderPass->Render(Viewport);
+
     RenderPostProcess(Viewport);
     RenderEditorOverlay(Viewport);
     RenderSkeletalMeshViewerOverlay(Viewport);

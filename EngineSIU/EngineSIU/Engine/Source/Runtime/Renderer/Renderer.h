@@ -47,6 +47,8 @@ class FDepthPrePass;
 class FTileLightCullingPass;
 class FGPUTimingManager;
 
+class FParticleRenderPass;
+
 class FRenderer
 {
 public:
@@ -102,6 +104,9 @@ public:
     FStaticMeshRenderPass* StaticMeshRenderPass = nullptr;
     FSkeletalMeshRenderPass* SkeletalMeshRenderPass = nullptr;
     FWorldBillboardRenderPass* WorldBillboardRenderPass = nullptr;
+
+    FParticleRenderPass* ParticleRenderPass = nullptr;
+    
     FEditorBillboardRenderPass* EditorBillboardRenderPass = nullptr;
     FGizmoRenderPass* GizmoRenderPass = nullptr;
     FUpdateLightBufferPass* UpdateLightBufferPass = nullptr;
@@ -109,14 +114,14 @@ public:
     FFogRenderPass* FogRenderPass = nullptr;
     FCameraEffectRenderPass* CameraEffectRenderPass = nullptr;
     FEditorRenderPass* EditorRenderPass = nullptr;
-    
     FDepthPrePass* DepthPrePass = nullptr;
     FTileLightCullingPass* TileLightCullingPass = nullptr;
     FLightHeatMapRenderPass* LightHeatMapRenderPass = nullptr;
 
+
+    
     FCompositingPass* CompositingPass = nullptr;
     FPostProcessCompositingPass* PostProcessCompositingPass = nullptr;
-    
     FSlateRenderPass* SlateRenderPass = nullptr;
 
 private:
