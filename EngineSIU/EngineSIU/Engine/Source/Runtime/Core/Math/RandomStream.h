@@ -3,6 +3,8 @@
 #include "Core/HAL/PlatformType.h"
 #include <ctime>
 
+#include "UObject/NameTypes.h"
+
 struct FRandomStream
 {
 public:

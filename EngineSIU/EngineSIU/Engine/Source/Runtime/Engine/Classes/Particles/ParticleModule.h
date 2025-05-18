@@ -479,7 +479,7 @@ public:
      *
      * @return FRandomStream&	The random stream to use for the provided instance.
      */
-    //FRandomStream& GetRandomStream(FParticleEmitterInstance* Owner);
+    FRandomStream& GetRandomStream(FParticleEmitterInstance* Owner);
 };
 
 

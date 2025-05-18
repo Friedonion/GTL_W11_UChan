@@ -626,4 +626,14 @@ struct FMath
     {
         return Value - FloorToDouble(Value);
     }
+
+    static FORCEINLINE float Fractional(float Value)
+    {
+        return Value - TruncToFloat(Value);
+    }
+
+    static FORCEINLINE double Fractional(double Value)
+    {
+        return Value - TruncToDouble(Value);
+    }
 };

@@ -69,6 +69,13 @@ bool UParticleModule::GenerateLODModuleValues(UParticleModule* SourceModule, flo
     return true;
 }
 
+FRandomStream& UParticleModule::GetRandomStream(FParticleEmitterInstance* Owner)
+{
+    FParticleRandomSeedInstancePayload* Payload = Owner->GetModuleRandomSeedInstanceData(this);
+    FRandomStream& RandomStream = (Payload != nullptr) ? Payload->RandomStream : Owner->Component->RandomStream;
+    return RandomStream;
+}
+
 /*-----------------------------------------------------------------------------
     UParticleModuleRequired implementation.
 -----------------------------------------------------------------------------*/
@@ -173,12 +180,12 @@ void UParticleModuleLifetime::CompileModule( struct FParticleEmitterBuildInfo& E
 
 void UParticleModuleLifetime::Spawn(FParticleEmitterInstance* Owner, int32 Offset, float SpawnTime, FBaseParticle* ParticleBase)
 {
-    SpawnEx(Owner, Offset, SpawnTime, ParticleBase);
+    SpawnEx(Owner, Offset, SpawnTime, &GetRandomStream(Owner), ParticleBase);
 }
 
-void UParticleModuleLifetime::SpawnEx(FParticleEmitterInstance* Owner, int32 Offset, float SpawnTime, FBaseParticle* ParticleBase)
+void UParticleModuleLifetime::SpawnEx(FParticleEmitterInstance* Owner, int32 Offset, float SpawnTime, struct FRandomStream* InRandomStream, FBaseParticle* ParticleBase)
 {
-    SPAWN_INIT;
+    SPAWN_INIT
     {
         float MaxLifetime = Lifetime; //.GetValue(Owner->EmitterTime, Owner->Component, InRandomStream);
         if(Particle.OneOverMaxLifetime > 0.f)
@@ -205,7 +212,6 @@ void UParticleModuleLifetime::SetToSensibleDefaults(UParticleEmitter* Owner)
     //     LifetimeDist->Max = 1.0f;
     //     LifetimeDist->bIsDirty = true;
     // }
-    
 }
 
 float UParticleModuleLifetime::GetMaxLifetime()

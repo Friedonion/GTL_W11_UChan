@@ -126,6 +126,18 @@ enum EDynamicEmitterType
     Helper functions.
 -----------------------------------------------------------------------------*/
 
+inline void Particle_SetColorFromVector(const FVector& InColorVec, const float InAlpha, FLinearColor& OutColor)
+{
+    OutColor.R = InColorVec.X;
+    OutColor.G = InColorVec.Y;
+    OutColor.B = InColorVec.Z;
+    OutColor.A = InAlpha;
+}
+
+/*-----------------------------------------------------------------------------
+    FBaseParticle
+-----------------------------------------------------------------------------*/
+
 struct FBaseParticle
 {
     // 48 bytes

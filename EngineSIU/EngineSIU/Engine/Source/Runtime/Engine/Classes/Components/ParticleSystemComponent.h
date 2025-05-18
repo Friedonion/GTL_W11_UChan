@@ -3,6 +3,7 @@
 #include "UObject/ObjectMacros.h"
 #include "Core/Container/Array.h"
 #include "Components/PrimitiveComponent.h"
+#include "Math/RandomStream.h"
 
 class UParticleSystem;
 class FDynamicEmitterDataBase;
@@ -30,6 +31,9 @@ public:
 public:
     // 업데이트는 진행하지만 Spawning를 막는 용도로 보임, Fadeout 등
     uint8 bSuppressSpawning : 1;
+
+    /** Stream of random values to use with this component */
+    FRandomStream RandomStream;
 
 private:
     float DeltaTimeTick;
