@@ -1677,9 +1677,13 @@
     <ClCompile Include="Engine\Source\Contents\AnimInstance\MyAnimInstance.cpp" />
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\SkeletalMeshViewerPanel.cpp" />
     <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\PropertyDisplay.cpp" />
-    <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\ScriptStruct.cpp" />
-    <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\Struct.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimSoundNotify.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\ParticleEmitterInstances.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Components\ParticleSystemComponent.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Size\ParticleModules_Size.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleComponents.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModules_Spawn.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModules.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Renderer\ParticleRenderPass.cpp" />
     <ClCompile Include="Shaders\ParticleVertexShader.hlsl" />
   </ItemGroup>
@@ -1744,8 +1748,6 @@
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\SkeletalMeshViewerPanel.h" />
     <ClInclude Include="Engine\Source\Runtime\CoreUObject\Template\IsTSubclassOf.h" />
     <ClInclude Include="Engine\Source\Runtime\CoreUObject\UObject\PropertyTypes.h" />
-    <ClInclude Include="Engine\Source\Runtime\CoreUObject\UObject\ScriptStruct.h" />
-    <ClInclude Include="Engine\Source\Runtime\CoreUObject\UObject\Struct.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Misc\Optional.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Templates\IsArray.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Templates\IsCharType.h" />
@@ -1762,6 +1764,20 @@
     <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_iostream.hpp" />
     <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_switch.hpp" />
     <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_utility.hpp" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModule.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\ParticleHelper.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleLODLevel.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModuleRequired.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\TypeData\ParticleModuleTypeDataBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleEmitter.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleSystem.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\ParticleEmitterInstances.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\ParticleSystemComponent.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Size\ParticleModuleSizeBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Size\ParticleModuleSizeScaleBySpeed.h" />
+    <ClInclude Include="Engine\Source\Runtime\Core\Math\RandomStream.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModuleSpawnBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModuleSpawn.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\CompositingShader.hlsl" />
