@@ -224,7 +224,8 @@ public:
 
     /** The rate at which to spawn particles									*/
     // UPROPERTY()
-    //struct FRawDistributionFloat SpawnRate;
+    // struct FRawDistributionFloat SpawnRate;
+    float SpawnRate;
 
     /** The array of burst entries.												*/
     //UPROPERTY(export, noclear)
@@ -420,14 +421,14 @@ public:
     //~ End UObject Interface
 
     //~ Begin UParticleModule Interface
-    //virtual void SetToSensibleDefaults(UParticleEmitter* Owner) override;
+    virtual void SetToSensibleDefaults(UParticleEmitter* Owner) override;
     //virtual	bool AddModuleCurvesToEditor(UInterpCurveEdSetup* EdSetup, TArray<const FCurveEdEntry*>& OutCurveEntries) override
     //{
     //    // Overide the base implementation to prevent old SpawnRate from being added...
     //    return true;
     //}
     virtual EModuleType	GetModuleType() const override { return EPMT_Required; }
-    //virtual bool GenerateLODModuleValues(UParticleModule* SourceModule, float Percentage, UParticleLODLevel* LODLevel) override;
+    virtual bool GenerateLODModuleValues(UParticleModule* SourceModule, float Percentage, UParticleLODLevel* LODLevel) override;
     //~ End UParticleModule Interface
 
     inline int32 GetNumFrames() const

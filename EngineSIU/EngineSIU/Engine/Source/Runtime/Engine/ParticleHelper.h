@@ -73,6 +73,7 @@
 	}
 
 
+class UMaterial;
 /*-----------------------------------------------------------------------------
     Particle State Flags
 -----------------------------------------------------------------------------*/
@@ -365,7 +366,7 @@ struct FDynamicEmitterDataBase
 struct FDynamicSpriteEmitterReplayDataBase
     : public FDynamicEmitterReplayDataBase
 {
-    // UMaterial* Material;
+    UMaterial* Material;
     struct FParticleRequiredModule *RequiredModule;
     FVector							NormalsSphereCenter;
     FVector							NormalsCylinderDirection;
@@ -407,17 +408,17 @@ struct FDynamicSpriteEmitterDataBase : public FDynamicEmitterDataBase
         FDynamicEmitterDataBase(RequiredModule),
         bUsesDynamicParameter(false)
     {
-        //MaterialResource = nullptr;
+        MaterialResource = nullptr;
     }
 
     virtual ~FDynamicSpriteEmitterDataBase()
     {
     }
 
-    /*const FMaterialRenderProxy* GetMaterialRenderProxy()
+    const UMaterial* GetMaterialRenderProxy()
     {
         return MaterialResource;
-    }*/
+    }
 
     /**
      *	Sort the given sprite particles
@@ -436,6 +437,7 @@ struct FDynamicSpriteEmitterDataBase : public FDynamicEmitterDataBase
     /*void SortSpriteParticles(int32 SortMode, bool bLocalSpace,
         int32 ParticleCount, const uint8* ParticleData, int32 ParticleStride, const uint16* ParticleIndices,
         const FSceneView* View, const FMatrix& LocalToWorld, FParticleOrder* ParticleOrder) const;*/
+    // 반투명 파티클들 렌더 순서 정렬
     void SortSpriteParticles(int32 SortMode, bool bLocalSpace,
         int32 ParticleCount, const uint8* ParticleData, int32 ParticleStride, const uint16* ParticleIndices,
         const FMatrix& LocalToWorld, FParticleOrder* ParticleOrder) const;
@@ -514,7 +516,7 @@ struct FDynamicSpriteEmitterDataBase : public FDynamicEmitterDataBase
         FAsyncBufferFillData& Data) const;*/
 
     /** The material render proxy for this emitter */
-    //const FMaterialRenderProxy* MaterialResource;
+    const UMaterial* MaterialResource;
     /** true if the particle emitter utilizes the DynamicParameter module */
     uint32 bUsesDynamicParameter : 1;
 };

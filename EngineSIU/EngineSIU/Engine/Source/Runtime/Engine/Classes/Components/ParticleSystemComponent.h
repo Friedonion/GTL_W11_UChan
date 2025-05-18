@@ -16,7 +16,7 @@ public:
 
     TArray<struct FParticleEmitterInstance*> EmitterInstances;
     // UMaterialInterface 미구현 - UMaterial로 대체?
-    //TArray<UMaterialInterface*> EmitterMaterials;
+    TArray<UMaterial*> EmitterMaterials;
     UParticleSystem* Template;
 
     TArray<FDynamicEmitterDataBase*> EmitterRenderData;
