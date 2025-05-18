@@ -27,6 +27,7 @@ public:
 private:
     friend class FObjectFactory;
     friend class FSceneMgr;
+    friend class UStruct;
     friend class UClass;
 
     uint32 UUID;
@@ -59,7 +60,6 @@ public:
 
     UClass* GetClass() const { return ClassPrivate; }
 
-
     /** this가 SomeBase인지, SomeBase의 자식 클래스인지 확인합니다. */
     bool IsA(const UClass* SomeBase) const;
 
@@ -70,36 +70,25 @@ public:
         return IsA(T::StaticClass());
     }
 
+
+    // UObjectBaseUtility
+
+    /** 이 Object를 삭제 대기열에 추가합니다. */
+    void MarkAsGarbage();
+
+    // ~UObjectBaseUtility
+
 public:
-    void* operator new(size_t size)
+    FVector4 EncodeUUID() const
     {
-        UE_LOG(ELogLevel::Display, "UObject Created : %d", size);
+        FVector4 Result;
 
-        void* RawMemory = FPlatformMemory::Malloc<EAT_Object>(size);
-        UE_LOG(
-            ELogLevel::Display,
-            "TotalAllocationBytes : %d, TotalAllocationCount : %d",
-            FPlatformMemory::GetAllocationBytes<EAT_Object>(),
-            FPlatformMemory::GetAllocationCount<EAT_Object>()
-        );
-        return RawMemory;
-    }
+        Result.X = static_cast<float>(UUID % 0xFF);
+        Result.Y = static_cast<float>(UUID >> 8 & 0xFF);
+        Result.Z = static_cast<float>(UUID >> 16 & 0xFF);
+        Result.W = static_cast<float>(UUID >> 24 & 0xFF);
 
-    void operator delete(void* ptr, size_t size)
-    {
-        UE_LOG(ELogLevel::Display, "UObject Deleted : %d", size);
-        FPlatformMemory::Free<EAT_Object>(ptr, size);
-    }
-
-    FVector4 EncodeUUID() const {
-        FVector4 result;
-
-        result.X = UUID % 0xFF;
-        result.Y = UUID >> 8 & 0xFF;
-        result.Z = UUID >> 16 & 0xFF;
-        result.W = UUID >> 24 & 0xFF;
-
-        return result;
+        return Result;
     }
 
     virtual void SerializeAsset(FArchive& Ar) {}

@@ -17,21 +17,6 @@ UAnimSequenceBase::UAnimSequenceBase()
     GetController();
 }
 
-UAnimSequenceBase::~UAnimSequenceBase()
-{
-    if (DataModel)
-    {
-        delete DataModel;
-        DataModel = nullptr;
-    }
-
-    if (Controller)
-    {
-        delete Controller;
-        Controller = nullptr;
-    }
-}
-
 float UAnimSequenceBase::GetPlayLength() const
 {
     if (DataModel)

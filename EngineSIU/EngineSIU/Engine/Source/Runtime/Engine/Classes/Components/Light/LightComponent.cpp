@@ -9,10 +9,6 @@ ULightComponentBase::ULightComponentBase()
     ViewMatrices.SetNum(1);
 }
 
-ULightComponentBase::~ULightComponentBase()
-{
-  
-}
 void ULightComponentBase::Initialize()
 {
 }

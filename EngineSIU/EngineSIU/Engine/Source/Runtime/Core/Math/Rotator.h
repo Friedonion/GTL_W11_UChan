@@ -41,6 +41,11 @@ struct FRotator
     FRotator operator*(float Scalar) const;
     FRotator& operator*=(float Scalar);
 
+    friend FRotator operator*(float Scalar, const FRotator& Rotator)
+    {
+        return Rotator * Scalar; // 기존 멤버 함수 재활용
+    }
+
     FRotator operator/(const FRotator& Other) const;
     FRotator operator/(float Scalar) const;
     FRotator& operator/=(float Scalar);
@@ -79,9 +84,4 @@ inline FArchive& operator<<(FArchive& Ar, FRotator& R)
 {
     Ar << R.Pitch << R.Yaw << R.Roll;
     return Ar;
-}
-
-inline FRotator operator*(float Scalar, const FRotator& Rotator)
-{
-    return Rotator * Scalar; // 기존 멤버 함수 재활용
 }

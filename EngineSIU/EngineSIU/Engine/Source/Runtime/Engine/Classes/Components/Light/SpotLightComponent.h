@@ -3,15 +3,16 @@
 
 class USpotLightComponent :public ULightComponentBase
 {
-
     DECLARE_CLASS(USpotLightComponent, ULightComponentBase)
+
 public:
     USpotLightComponent();
-    virtual ~USpotLightComponent();
+    virtual ~USpotLightComponent() override = default;
+    
     virtual UObject* Duplicate(UObject* InOuter) override;
     
-    void GetProperties(TMap<FString, FString>& OutProperties) const override;
-    void SetProperties(const TMap<FString, FString>& InProperties) override;
+    virtual void GetProperties(TMap<FString, FString>& OutProperties) const override;
+    virtual void SetProperties(const TMap<FString, FString>& InProperties) override;
     FVector GetDirection();
 
     FSpotLightInfo& GetSpotLightInfo();
@@ -43,7 +44,6 @@ public:
 
     bool GetCastShadows() const { return SpotLightInfo.CastShadows; }
     void SetCastShadows(bool InCastShadows) { SpotLightInfo.CastShadows = InCastShadows; }
-
     
     void UpdateViewMatrix() override;
     void UpdateProjectionMatrix() override;

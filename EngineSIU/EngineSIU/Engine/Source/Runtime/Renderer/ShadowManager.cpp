@@ -348,7 +348,9 @@ bool FShadowManager::CreateSpotShadowResources()
 
 void FShadowManager::ReleaseSpotShadowResources()
 {
-    if (SpotShadowDepthRHI) { SpotShadowDepthRHI->Release();
+    if (SpotShadowDepthRHI)
+    {
+        SpotShadowDepthRHI->Release();
         delete SpotShadowDepthRHI;
         SpotShadowDepthRHI = nullptr;
     }

@@ -14,13 +14,13 @@ private:
     void CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont);
     void CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont);
     static void CreateFlagButton();
-    static void CreatePIEButton(ImVec2 ButtonSize, ImFont* IconFont);
+    void CreatePIEButton(ImVec2 ButtonSize, ImFont* IconFont);
     static void CreateSRTButton(ImVec2 ButtonSize);
     void CreateLightSpawnButton(ImVec2 InButtonSize, ImFont* IconFont);
     
 private:
     float Width = 300, Height = 100;
-    bool bOpenMenu = false;
+    bool bOpenModal = false;
     bool bShowImGuiDemoWindow = false; // 데모 창 표시 여부를 관리하는 변수
 
     float* FOV = nullptr;

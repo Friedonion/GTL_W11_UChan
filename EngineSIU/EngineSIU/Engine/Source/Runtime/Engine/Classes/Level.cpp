@@ -11,8 +11,6 @@ void ULevel::InitLevel(UWorld* InOwningWorld)
 
 void ULevel::Release()
 {
-    
-    
     for (AActor* Actor : Actors)
     {
         Actor->EndPlay(EEndPlayReason::WorldTransition);

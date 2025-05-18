@@ -14,10 +14,10 @@ void OutlinerEditorPanel::Render()
     /* Pre Setup */
     ImGuiIO& io = ImGui::GetIO();
     
-    float PanelWidth = (Width) * 0.2f - 6.0f;
+    float PanelWidth = (Width) * 0.2f - 5.0f;
     float PanelHeight = (Height) * 0.3f;
 
-    float PanelPosX = (Width) * 0.8f + 5.0f;
+    float PanelPosX = (Width) * 0.8f + 4.0f;
     float PanelPosY = 5.0f;
 
     ImVec2 MinSize(140, 100);

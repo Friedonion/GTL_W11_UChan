@@ -10,8 +10,9 @@ class ULightComponentBase : public USceneComponent
 
 public:
     ULightComponentBase();
-    virtual ~ULightComponentBase() override;
-    void Initialize();
+    virtual ~ULightComponentBase() override = default;
+    
+    virtual void Initialize();
     virtual UObject* Duplicate(UObject* InOuter) override;
     
     virtual void GetProperties(TMap<FString, FString>& OutProperties) const override;
@@ -37,10 +38,9 @@ public:
     }
     
 protected:
-
     // PointLight: 6개의 ViewMatrix를 가집니다
-    TArray<FMatrix>        ViewMatrices;
-    FMatrix        ProjectionMatrix;
+    TArray<FMatrix> ViewMatrices;
+    FMatrix ProjectionMatrix;
     
     FBoundingBox AABB;
 

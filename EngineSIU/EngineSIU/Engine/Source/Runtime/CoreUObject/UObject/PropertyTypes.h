@@ -39,6 +39,7 @@ enum class EPropertyType : uint8
 
     Enum,                          // 커스텀 Enum 타입
     Struct,                        // 사용자 정의 구조체 타입
+    StructPointer,                 // 사용자 정의 구조체 포인터 타입
     SubclassOf,                    // TSubclassOf
     Object,                        // UObject* 타입
 };
@@ -91,6 +92,16 @@ consteval EPropertyType GetPropertyType()
             return EPropertyType::Object;
         }
 
+        // 커스텀 구조체 포인터
+        else if constexpr (std::is_class_v<PointedToType> && requires { PointedToType::StaticStruct(); })
+        {
+            // 언리얼에서도 커스텀 구조체 포인터에 대해서 지원 안하길래,
+            // UI 구현하기 귀찮으니까 그냥 static_assert를 넣었습니다.
+            // static_assert 지워도 리플렉션 시스템에 정상 등록은 되지만, UI는 뜨지 않습니다.
+            static_assert(TAlwaysFalse<T>, "Custom struct pointer types are not supported.");
+            return EPropertyType::StructPointer;
+        }
+
         // 전방 선언된 타입이 들어올 경우, 상속관계를 확인할 수 없음
         // 이때는 UObject일 확률도 있기 때문에 런타임에 검사
         return EPropertyType::UnresolvedPointer;
@@ -104,21 +115,24 @@ consteval EPropertyType GetPropertyType()
     // enum class만 지원
     else if constexpr (std::is_scoped_enum_v<T>)    { return EPropertyType::Enum;   }
 
-    // 리플렉션 시스템에 등록된 커스텀 구조체 (StructTraits 또는 유사한 메커니즘 사용)
-    // 이때 T가 UObject 값 타입이 아니어야 함 (UObject 값 타입은 보통 프로퍼티로 사용 안 함)
-    // else if constexpr (TStructTraits<T>::bIsReflectedStruct && !std::is_base_of_v<UObject, T>)
-    // {
-    //     if (OutUnresolvedTypeName) { *OutUnresolvedTypeName = GetTypeNameString<T>(); } // 경우에 따라 이름 필요
-    //     return EPropertyType::Struct; // 또는 StructTraits에 UnresolvedStruct 플래그가 있다면 그것 사용
-    // }
-
     // 커스텀 구조체
-    // else if constexpr (std::is_class_v<T> && !std::derived_from<T, UObject>)
-    // {
-    //     // TODO: 임시용
-    //     // 나중에 커스텀 구조체 타입에 대해서 만들어야함
-    //     return EPropertyType::Struct;
-    // }
+    else if constexpr (std::is_class_v<T> && !std::derived_from<T, UObject>)
+    {
+        if constexpr (requires { T::StaticStruct(); })
+        {
+            return EPropertyType::Struct;
+        }
+        else
+        {
+            // Reflection System에 등록이 되어있지 않은 구조체면 컴파일 에러
+            static_assert(
+                TAlwaysFalse<T>,
+                "The type T is not registered in the reflection system. "
+                "Make sure to register it using DECLARE_STRUCT() macro or provide StaticStruct() function."
+            );
+            return EPropertyType::Unknown;
+        }
+    }
 
     else
     {
@@ -176,17 +190,6 @@ template <EPropertyFlags Flags>
 constexpr bool HasAnyFlags(EPropertyFlags FlagToCheck)
 {
     return HasAnyFlags(Flags, FlagToCheck);
-}
-
-constexpr bool HasFlag(EPropertyFlags Flags, EPropertyFlags FlagToCheck)
-{
-    return HasAllFlags(Flags, FlagToCheck);
-}
-
-template <EPropertyFlags Flags>
-constexpr bool HasFlag(EPropertyFlags FlagToCheck)
-{
-    return HasFlag(Flags, FlagToCheck);
 }
 
 // 특정 플래그만 제외하는 연산자

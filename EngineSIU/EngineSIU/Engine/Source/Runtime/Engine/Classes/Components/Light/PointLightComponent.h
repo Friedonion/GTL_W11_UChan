@@ -3,13 +3,12 @@
 
 class UPointLightComponent :public ULightComponentBase
 {
-
     DECLARE_CLASS(UPointLightComponent, ULightComponentBase)
+
 public:
     UPointLightComponent();
-    virtual ~UPointLightComponent() override;
+    virtual ~UPointLightComponent() override = default;
 
-    void Initialize();
     void InitShadowDebugView();
 
     virtual UObject* Duplicate(UObject* InOuter) override;
@@ -20,8 +19,6 @@ public:
     FPointLightInfo& GetPointLightInfo();
     void SetPointLightInfo(const FPointLightInfo& InPointLightInfo);
 
-    
-
     float GetRadius() const;
     void SetRadius(float InRadius);
 
@@ -30,28 +27,22 @@ public:
 
     FLinearColor GetLightColor() const;
     void SetLightColor(const FLinearColor& InColor);
-
-
+    
     float GetIntensity() const;
     void SetIntensity(float InIntensity);
 
     int GetType() const;
     void SetType(int InType);
 
-    
-    void UpdateViewMatrix() override;
-    void UpdateProjectionMatrix() override;
+    virtual void UpdateViewMatrix() override;
+    virtual void UpdateProjectionMatrix() override;
 
-    
 private:
     FPointLightInfo PointLightInfo;
 
     TArray<ID3D11Texture2D*> OutputTextures = {};
     TArray<ID3D11ShaderResourceView*> OutputSRVs = {};
     ID3D11ShaderResourceView* SliceSRVs[6] = { nullptr };
-
-public:
-    //TArray<FDepthStencilRHI> GetShadowMap() override;
 };
 
 

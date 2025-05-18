@@ -2,7 +2,6 @@
 #include "EngineStatics.h"
 #include "Object.h"
 #include "Class.h"
-#include "Define.h"
 #include "UObjectArray.h"
 #include "UserInterface/Console.h"
 
@@ -12,21 +11,23 @@ public:
     static UObject* ConstructObject(UClass* InClass, UObject* InOuter, FName InName = NAME_None)
     {
         const uint32 Id = UEngineStatics::GenUUID();
-        FString Name = InClass->GetName() + "_" + std::to_string(Id);
+        FName Name = FString::Printf(TEXT("%s_%d"), *InClass->GetName(), Id);
+
         if (InName != NAME_None)
         {
-            Name = InName.ToString();
+            Name = InName;
         }
 
         UObject* Obj = InClass->ClassCTOR();
-        Obj->ClassPrivate = InClass;
-        Obj->NamePrivate = Name;
         Obj->UUID = Id;
+        Obj->NamePrivate = Name;
+        Obj->ClassPrivate = InClass;
         Obj->OuterPrivate = InOuter;
 
         GUObjectArray.AddObject(Obj);
 
-        UE_LOG(ELogLevel::Display, "Created New Object : %s", *Name);
+        UE_LOGFMT(ELogLevel::Display, "Created Object: {}, Size: {}", Obj->GetName(), InClass->GetStructSize());
+
         return Obj;
     }
 

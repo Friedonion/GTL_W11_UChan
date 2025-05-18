@@ -13,7 +13,7 @@ class UAnimSequenceBase : public UAnimationAsset
 
 public:
     UAnimSequenceBase();
-    virtual ~UAnimSequenceBase() override;
+    virtual ~UAnimSequenceBase() override = default;
 
     TArray<FAnimNotifyEvent> Notifies;
 
@@ -27,6 +27,7 @@ protected:
     UAnimDataModel* DataModel;
 
     UAnimDataController* Controller;
+    
 public:
     virtual float GetPlayLength() const override;
 

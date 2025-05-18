@@ -1,14 +1,15 @@
 #pragma once
 #include <concepts>
-#include "Object.h"
+#include "Struct.h"
 #include "Property.h"
 
-
 class FArchive;
+
+
 /**
  * UObject의 RTTI를 가지고 있는 클래스
  */
-class UClass : public UObject
+class UClass : public UStruct
 {
     using ClassConstructorType = UObject*(*)();
 
@@ -29,26 +30,20 @@ public:
     UClass(UClass&&) = delete;
     UClass& operator=(UClass&&) = delete;
 
+    using Super = UStruct;
+    using ThisClass = UClass;
+
 public:
     static TMap<FName, UClass*>& GetClassMap();
     static UClass* FindClass(const FName& ClassName);
 
-    /** 컴파일 타임에 알 수 없는 프로퍼티 타입을 런타임에 검사합니다. */
-    static void ResolvePendingProperties();
-
-private:
-    /** 컴파일 타임에 알 수 없는 프로퍼티 목록들 */
-    static TArray<FProperty*>& GetUnresolvedProperties();
-
 public:
-    uint32 GetClassSize() const { return ClassSize; }
-    uint32 GetClassAlignment() const { return ClassAlignment; }
-
     /** SomeBase의 자식 클래스인지 확인합니다. */
     bool IsChildOf(const UClass* SomeBase) const;
 
     template <typename T>
-        requires std::derived_from<T, UObject>
+    requires
+        std::derived_from<T, UObject>
     bool IsChildOf() const;
 
     /**
@@ -56,24 +51,16 @@ public:
      *
      * @note AActor::StaticClass()->GetSuperClass() == UObject::StaticClass()
      */
-    UClass* GetSuperClass() const { return SuperClass; }
+    FORCEINLINE UClass* GetSuperClass() const
+    {
+        return static_cast<UClass*>(SuperStruct);  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+    }
 
     UObject* GetDefaultObject() const;
 
     template <typename T>
         requires std::derived_from<T, UObject>
     T* GetDefaultObject() const;
-
-    const TArray<FProperty*>& GetProperties() const { return Properties; }
-
-    /**
-     * UClass에 Property를 추가합니다
-     * @param Prop 추가할 Property
-     */
-    void RegisterProperty(FProperty* Prop);
-
-    /** 바이너리 직렬화 함수 */
-    void SerializeBin(FArchive& Ar, void* Data);
 
 protected:
     virtual UObject* CreateDefaultObject();
@@ -82,13 +69,7 @@ public:
     ClassConstructorType ClassCTOR;
 
 private:
-    uint32 ClassSize;
-    uint32 ClassAlignment;
-
-    UClass* SuperClass = nullptr;
     UObject* ClassDefaultObject = nullptr;
-
-    TArray<FProperty*> Properties;
 };
 
 template <typename T>

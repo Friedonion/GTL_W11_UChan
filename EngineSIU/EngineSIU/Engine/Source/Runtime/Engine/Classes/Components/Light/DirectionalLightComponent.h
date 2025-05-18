@@ -8,7 +8,7 @@ class UDirectionalLightComponent : public ULightComponentBase
 
 public:
     UDirectionalLightComponent();
-    virtual ~UDirectionalLightComponent() override;
+    virtual ~UDirectionalLightComponent() override = default;
 
     virtual UObject* Duplicate(UObject* InOuter) override;
     

@@ -3,6 +3,7 @@
 #include "Container/Array.h"
 #include "D3D11RHI/DXDShaderManager.h"
 
+class FShadowManager;
 class USkeletalMesh;
 class UMaterial;
 struct FSkeletalMeshRenderData;
@@ -21,6 +22,8 @@ public:
     virtual ~FSkeletalMeshRenderPassBase() override;
 
     virtual void Initialize(FDXDBufferManager* InBufferManager, FGraphicsDevice* InGraphics, FDXDShaderManager* InShaderManager) override;
+
+    void InitializeShadowManager(FShadowManager* InShadowManager);
 
     virtual void PrepareRenderArr() override;
 
@@ -54,6 +57,8 @@ protected:
     FDXDBufferManager* BufferManager;
     FGraphicsDevice* Graphics;
     FDXDShaderManager* ShaderManager;
+
+    FShadowManager* ShadowManager;
 
     TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
 
