@@ -18,7 +18,10 @@ public:
 
     void  SetSupportedWorldTypes(EWorldTypeBitFlag mask) { SupportedMask = mask; }
     EWorldTypeBitFlag GetSupportedWorldTypes() const { return SupportedMask; }
+    void  SetPreviewType(EPreviewTypeBitFlag type) { PreviewType = type; }
+    EPreviewTypeBitFlag GetPreviewType() const { return PreviewType; }
 
 private:
     EWorldTypeBitFlag SupportedMask = EWorldTypeBitFlag::None;
+    EPreviewTypeBitFlag PreviewType = EPreviewTypeBitFlag::None;
 };

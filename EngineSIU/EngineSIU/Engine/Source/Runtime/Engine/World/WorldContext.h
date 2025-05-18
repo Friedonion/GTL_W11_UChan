@@ -33,5 +33,4 @@ struct FWorldContext
 
 private:
     UWorld* ThisCurrentWorld;
-
 };

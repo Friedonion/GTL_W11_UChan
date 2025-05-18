@@ -53,7 +53,7 @@ void FEditorViewportClient::Initialize(EViewScreenLocation InViewportIndex, cons
 
 void FEditorViewportClient::Tick(const float DeltaTime)
 {
-    if (GEngine->ActiveWorld->WorldType == EWorldType::Editor or GEngine->ActiveWorld->WorldType == EWorldType::SkeletalViewer)
+    if (GEngine->ActiveWorld->WorldType == EWorldType::Editor or GEngine->ActiveWorld->WorldType == EWorldType::EditorPreview)
     {
         UpdateEditorCameraMovement(DeltaTime);
     }
@@ -102,6 +102,7 @@ void FEditorViewportClient::UpdateEditorCameraMovement(const float DeltaTime)
 
 void FEditorViewportClient::InputKey(const FKeyEvent& InKeyEvent)
 {
+    const auto Engine = Cast<UEditorEngine>(GEngine);
     if (GetKeyState(VK_RBUTTON) & 0x8000)
     {
         switch (InKeyEvent.GetCharacter())
@@ -216,7 +217,6 @@ void FEditorViewportClient::InputKey(const FKeyEvent& InKeyEvent)
         {
         case 'F':
         {
-            UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
             USceneComponent* SelectedComponent = Engine->GetSelectedComponent();
             AActor* SelectedActor = Engine->GetSelectedActor();
 
@@ -269,7 +269,7 @@ void FEditorViewportClient::InputKey(const FKeyEvent& InKeyEvent)
         case 'M':
         {
             FEngineLoop::GraphicDevice.Resize(GEngineLoop.AppWnd);
-            SLevelEditor* LevelEd = GEngineLoop.GetLevelEditor();
+            SLevelEditor* LevelEd = Engine->GetLevelEditor();
             LevelEd->SetEnableMultiViewport(!LevelEd->IsMultiViewport());
             break;
         }
@@ -283,9 +283,10 @@ void FEditorViewportClient::InputKey(const FKeyEvent& InKeyEvent)
         {
         case VK_DELETE:
         {
-            if (GEngine->ActiveWorld->WorldType == EWorldType::SkeletalViewer)
+            if (GEngine->ActiveWorld->WorldType == EWorldType::EditorPreview)
+            {
                 return;
-            UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
+            }
             if (Engine)
             {
                 USceneComponent* SelectedComponent = Engine->GetSelectedComponent();

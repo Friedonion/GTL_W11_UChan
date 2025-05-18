@@ -16,11 +16,6 @@
 #include "Animation/AnimSoundNotify.h"
 #include "SoundManager.h"
 
-SkeletalMeshViewerPanel::SkeletalMeshViewerPanel()
-{
-    SetSupportedWorldTypes(EWorldTypeBitFlag::SkeletalViewer);
-}
-
 void SkeletalMeshViewerPanel::Render()
 {
     UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
@@ -55,7 +50,7 @@ void SkeletalMeshViewerPanel::Render()
     
     
     if (Engine->ActiveWorld) {
-        if (Engine->ActiveWorld->WorldType == EWorldType::SkeletalViewer) {
+        if (Engine->ActiveWorld->WorldType == EWorldType::EditorPreview) {
 
             if (CopiedRefSkeleton == nullptr) {
                 CopyRefSkeleton(); // 선택된 액터/컴포넌트로부터 스켈레톤 정보 복사

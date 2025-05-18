@@ -29,9 +29,6 @@ uint32 FEngineLoop::TotalAllocationCount = 0;
 FEngineLoop::FEngineLoop()
     : AppWnd(nullptr)
     , UIManager(nullptr)
-    , LevelEditor(nullptr)
-    , UnrealEditor(nullptr)
-    , BufferManager(nullptr)
 {
 }
 
@@ -47,13 +44,10 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     /* must be initialized before window. */
     WindowInit(hInstance);
 
-    UnrealEditor = new UnrealEd();
     BufferManager = new FDXDBufferManager();
     UIManager = new UImGuiManager;
     AppMessageHandler = std::make_unique<FSlateAppMessageHandler>();
-    LevelEditor = new SLevelEditor();
 
-    UnrealEditor->Initialize();
     GraphicDevice.Initialize(AppWnd);
 
     if (!GPUTimingManager.Initialize(GraphicDevice.Device, GraphicDevice.DeviceContext))
@@ -86,32 +80,46 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     UIManager->Initialize(AppWnd, GraphicDevice.Device, GraphicDevice.DeviceContext);
     ResourceManager.Initialize(&Renderer, &GraphicDevice);
     
-    uint32 ClientWidth = 0;
-    uint32 ClientHeight = 0;
-    GetClientSize(ClientWidth, ClientHeight);
-    LevelEditor->Initialize(ClientWidth, ClientHeight);
 
     GEngine = FObjectFactory::ConstructObject<UEditorEngine>(nullptr);
     GEngine->Init();
 
+    auto UnrealEditor = new UnrealEd;
+    auto LevelEditor = new SLevelEditor;
 
-    FSoundManager::GetInstance().Initialize();
-    FSoundManager::GetInstance().LoadSound("fishdream", "Contents/Sounds/fishdream.mp3");
-    FSoundManager::GetInstance().LoadSound("sizzle", "Contents/Sounds/sizzle.mp3");
-    //FSoundManager::GetInstance().PlaySound("fishdream");
+    auto Engine = Cast<UEditorEngine>(GEngine);
+    Engine->SetUnrealEditor(UnrealEditor);
+    Engine->SetLevelEditor(LevelEditor);
+
+    uint32 ClientWidth = 0;
+    uint32 ClientHeight = 0;
+    GetClientSize(ClientWidth, ClientHeight);
+    Engine->GetLevelEditor()->Initialize(ClientWidth, ClientHeight);
+    Engine->GetUnrealEditor()->Initialize();
 
     UpdateUI();
+
+    // Load Sound Assets
+    {
+        FSoundManager::GetInstance().Initialize();
+        FSoundManager::GetInstance().LoadSound("fishdream", "Contents/Sounds/fishdream.mp3");
+        FSoundManager::GetInstance().LoadSound("sizzle", "Contents/Sounds/sizzle.mp3");
+        //FSoundManager::GetInstance().PlaySound("fishdream");
+    }
 
     return 0;
 }
 
 void FEngineLoop::Render() const
 {
-    GraphicDevice.Prepare();
+    auto Engine = Cast<UEditorEngine>(GEngine);
+    auto LevelEditor = Engine->GetLevelEditor();
     
+    GraphicDevice.Prepare();
+
     if (LevelEditor->IsMultiViewport())
     {
-        const std::shared_ptr<FEditorViewportClient> ActiveViewportCache = GetLevelEditor()->GetActiveViewportClient();
+        const std::shared_ptr<FEditorViewportClient> ActiveViewportCache = LevelEditor->GetActiveViewportClient();
         for (int Idx = 0; Idx < 4; ++Idx)
         {
             LevelEditor->SetActiveViewportClient(Idx);
@@ -123,7 +131,7 @@ void FEngineLoop::Render() const
             LevelEditor->SetActiveViewportClient(Idx);
             Renderer.RenderViewport(LevelEditor->GetActiveViewportClient());
         }
-        GetLevelEditor()->SetActiveViewportClient(ActiveViewportCache);
+        LevelEditor->SetActiveViewportClient(ActiveViewportCache);
     }
     else
     {
@@ -170,10 +178,11 @@ void FEngineLoop::Tick()
         const float DeltaTime = static_cast<float>(ElapsedTime / 1000.f);
 
         GEngine->Tick(DeltaTime);
-        LevelEditor->Tick(DeltaTime);
+        auto Engine = Cast<UEditorEngine>(GEngine);
+        Engine->GetLevelEditor()->Tick(DeltaTime);
         Render();
         UIManager->BeginFrame();
-        UnrealEditor->Render();
+        Engine->GetUnrealEditor()->Render();
 
         FConsole::GetInstance().Draw();
         EngineProfiler.Render(GraphicDevice.DeviceContext, GraphicDevice.ScreenWidth, GraphicDevice.ScreenHeight);
@@ -210,7 +219,6 @@ void FEngineLoop::GetClientSize(uint32& OutWidth, uint32& OutHeight) const
 
 void FEngineLoop::Exit()
 {
-    LevelEditor->Release();
     UIManager->Shutdown();
     ResourceManager.Release(&Renderer);
     Renderer.Release();
@@ -218,10 +226,8 @@ void FEngineLoop::Exit()
     
     GEngine->Release();
 
-    delete UnrealEditor;
     delete BufferManager;
     delete UIManager;
-    delete LevelEditor;
 }
 
 void FEngineLoop::WindowInit(HINSTANCE hInstance)
@@ -254,17 +260,31 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
 
     switch (Msg)
     {
+    case WM_CLOSE:
+        //const auto hInstance = reinterpret_cast<HINSTANCE>(GetWindowLongPtrW(hWnd, GWLP_HINSTANCE));
+        WCHAR ClassName[256];
+        GetClassNameW(hWnd, ClassName, sizeof(ClassName) / sizeof(WCHAR));
+        //GEngineLoop.DestroyEngineWindow(hWnd, hInstance, ClassName);
+        if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
+        {
+            //if (GEngineLoop.AppWindows.Num() == 0 || GEngineLoop.DefaultWindow == hWnd)
+            {
+                EditorEngine->GetLevelEditor()->SaveConfig();
+            }
+            //if (!EditorEngine->GetLevelEditor()->GetViewportClients(hWnd).IsEmpty())
+            //{
+            //    EditorEngine->RemoveWorld(EditorEngine->GetLevelEditor()->GetViewportClients(hWnd)[0]->World);
+            //}
+            //EditorEngine->GetLevelEditor()->RemoveViewportClients(hWnd);
+        }
+    /// Close -> Destroy When there is no more window
     case WM_DESTROY:
         PostQuitMessage(0);
-        if (auto LevelEditor = GEngineLoop.GetLevelEditor())
-        {
-            LevelEditor->SaveConfig();
-        }
         break;
     case WM_SIZE:
         if (wParam != SIZE_MINIMIZED)
         {
-            if (auto LevelEditor = GEngineLoop.GetLevelEditor())
+            if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
             {
                 FEngineLoop::GraphicDevice.Resize(hWnd);
                 // FEngineLoop::Renderer.DepthPrePass->ResizeDepthStencil();
@@ -273,10 +293,10 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
                 uint32 ClientHeight = 0;
                 GEngineLoop.GetClientSize(ClientWidth, ClientHeight);
             
-                LevelEditor->ResizeEditor(ClientWidth, ClientHeight);
+                EditorEngine->GetLevelEditor()->ResizeEditor(ClientWidth, ClientHeight);
                 FEngineLoop::Renderer.TileLightCullingPass->ResizeViewBuffers(
-                  static_cast<uint32>(LevelEditor->GetActiveViewportClient()->GetD3DViewport().Width),
-                    static_cast<uint32>(LevelEditor->GetActiveViewportClient()->GetD3DViewport().Height)
+                  static_cast<uint32>(EditorEngine->GetLevelEditor()->GetActiveViewportClient()->GetD3DViewport().Width),
+                    static_cast<uint32>(EditorEngine->GetLevelEditor()->GetActiveViewportClient()->GetD3DViewport().Height)
                 );
             }
         }
@@ -293,9 +313,13 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
 void FEngineLoop::UpdateUI()
 {
     FConsole::GetInstance().OnResize(AppWnd);
-    if (GEngineLoop.GetUnrealEditor())
+    auto Engine = Cast<UEditorEngine>(GEngine);
+    if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
     {
-        GEngineLoop.GetUnrealEditor()->OnResize(AppWnd);
+        if (const UnrealEd* UnrealEditor = EditorEngine->GetUnrealEditor())
+        {
+            UnrealEditor->OnResize(AppWnd);
+        }
     }
     ViewportTypePanel::GetInstance().OnResize(AppWnd);
 }

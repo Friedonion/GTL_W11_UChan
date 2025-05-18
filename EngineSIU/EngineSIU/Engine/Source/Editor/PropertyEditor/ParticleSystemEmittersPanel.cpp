@@ -1,10 +1,5 @@
 #include "ParticleSystemEmittersPanel.h"
 
-ParticleSystemEmittersPanel::ParticleSystemEmittersPanel()
-{
-    SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
-}
-
 void ParticleSystemEmittersPanel::Render()
 {
     UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);

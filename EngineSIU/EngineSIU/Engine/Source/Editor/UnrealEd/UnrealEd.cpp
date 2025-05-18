@@ -9,20 +9,41 @@
 #include "World/World.h"
 void UnrealEd::Initialize()
 {
+    /* Main Editor */
     auto ControlPanel = std::make_shared<ControlEditorPanel>();
+    ControlPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE | EWorldTypeBitFlag::EditorPreview);
     Panels["ControlPanel"] = ControlPanel;
     
     auto OutlinerPanel = std::make_shared<OutlinerEditorPanel>();
+    OutlinerPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE);
     Panels["OutlinerPanel"] = OutlinerPanel;
     
     auto PropertyPanel = std::make_shared<PropertyEditorPanel>();
+    PropertyPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE);
     Panels["PropertyPanel"] = PropertyPanel;
 
-    // TODO : SkeletalViewe 전용 UI 분리
-    auto BoneHierarchyPanel = std::make_shared<SkeletalMeshViewerPanel>();
-    Panels["BoneHierarchyPaenl"] = BoneHierarchyPanel;
+    /* SkeletalMesh */
+    auto SkeletalMeshPropertyPanel = std::make_shared<PropertyEditorPanel>();
+    SkeletalMeshPropertyPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
+    SkeletalMeshPropertyPanel->SetPreviewType(EPreviewTypeBitFlag::SkeletalMesh);
+    Panels["SkeletalMeshPropertyPanel"] = SkeletalMeshPropertyPanel;
+
+    /* AnimSequence */
+    // TODO : SkeletalViewer 전용 UI 분리
+    auto BoneHierarchyAnimPanel = std::make_shared<SkeletalMeshViewerPanel>();
+    BoneHierarchyAnimPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
+    BoneHierarchyAnimPanel->SetPreviewType(EPreviewTypeBitFlag::AnimSequence);
+    Panels["BoneHierarchyPanel"] = BoneHierarchyAnimPanel;
+
+    /* Particle System */
+    auto ParticleDetailPanel = std::make_shared<PropertyEditorPanel>();
+    ParticleDetailPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
+    ParticleDetailPanel->SetPreviewType(EPreviewTypeBitFlag::ParticleSystem);
+    Panels["ParticleDetailPanel"] = ParticleDetailPanel;
 
     auto ParticleEmittersPanel = std::make_shared<ParticleSystemEmittersPanel>();
+    ParticleEmittersPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
+    ParticleEmittersPanel->SetPreviewType(EPreviewTypeBitFlag::ParticleSystem);
     Panels["ParticleSystemEmittersPanel"] = ParticleEmittersPanel;
 }
 
@@ -49,9 +70,6 @@ void UnrealEd::Render() const
     case EWorldType::GameRPC:
         currentMask = EWorldTypeBitFlag::GameRPC;
         break;
-    case EWorldType::SkeletalViewer:
-        currentMask = EWorldTypeBitFlag::SkeletalViewer;
-        break;
     case EWorldType::Inactive:
         currentMask = EWorldTypeBitFlag::Inactive;
         break;
@@ -64,7 +82,18 @@ void UnrealEd::Render() const
     {
         if (HasFlag(Panel.Value->GetSupportedWorldTypes(), currentMask))
         {
-            Panel.Value->Render();
+            if (currentMask == EWorldTypeBitFlag::EditorPreview)
+            {
+                // @todo PreviewType을 알 수 있는 방법 추가하기
+                if (HasFlag(Panel.Value->GetPreviewType(), EPreviewTypeBitFlag::AnimSequence))
+                {
+                    Panel.Value->Render();
+                }
+            }
+            else
+            {
+                Panel.Value->Render();
+            }
         }
     }
 }

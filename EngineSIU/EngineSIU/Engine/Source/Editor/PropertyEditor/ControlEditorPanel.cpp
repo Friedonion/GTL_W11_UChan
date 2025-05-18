@@ -51,11 +51,6 @@
 #include "Components/ParticleSystemComponent.h"
 #include "Engine/Classes/Engine/AssetManager.h"
 
-ControlEditorPanel::ControlEditorPanel()
-{
-    SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE | EWorldTypeBitFlag::EditorPreview | EWorldTypeBitFlag::SkeletalViewer);
-}
-
 void ControlEditorPanel::Render()
 {
     /* Pre Setup */
@@ -203,7 +198,7 @@ void ControlEditorPanel::Render()
 
 void ControlEditorPanel::CreateMenuButton(const ImVec2 ButtonSize, ImFont* IconFont)
 {
-    if (GEngine->ActiveWorld->WorldType == EWorldType::SkeletalViewer)
+    if (GEngine->ActiveWorld->WorldType == EWorldType::EditorPreview)
     {
         return;
     }
@@ -287,6 +282,7 @@ void ControlEditorPanel::CreateMenuButton(const ImVec2 ButtonSize, ImFont* IconF
 
 void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* IconFont)
 {
+    const auto Engine = Cast<UEditorEngine>(GEngine);
     ImGui::PushFont(IconFont);
     if (ImGui::Button("\ue9c4", ButtonSize)) // Slider
     {
@@ -297,17 +293,17 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
     if (ImGui::BeginPopup("SliderControl"))
     {
         ImGui::Text("Grid Scale");
-        GridScale = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetGridSize();
+        GridScale = Engine->GetLevelEditor()->GetActiveViewportClient()->GetGridSize();
         ImGui::SetNextItemWidth(120.0f);
         if (ImGui::DragFloat("##Grid Scale", &GridScale, 0.1f, 1.0f, 20.0f, "%.1f"))
         {
-            GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->SetGridSize(GridScale);
+            Engine->GetLevelEditor()->GetActiveViewportClient()->SetGridSize(GridScale);
         }
 
         ImGui::Separator();
 
         ImGui::Text("Camera FOV");
-        FOV = &GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->ViewFOV;
+        FOV = &Engine->GetLevelEditor()->GetActiveViewportClient()->ViewFOV;
         ImGui::SetNextItemWidth(120.0f);
         if (ImGui::DragFloat("##Fov", FOV, 0.1f, 30.0f, 120.0f, "%.1f"))
         {
@@ -317,11 +313,11 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
         ImGui::Spacing();
 
         ImGui::Text("Camera Speed");
-        CameraSpeed = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetCameraSpeedScalar();
+        CameraSpeed = Engine->GetLevelEditor()->GetActiveViewportClient()->GetCameraSpeedScalar();
         ImGui::SetNextItemWidth(120.0f);
         if (ImGui::DragFloat("##CamSpeed", &CameraSpeed, 0.1f, 0.198f, 192.0f, "%.1f"))
         {
-            GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->SetCameraSpeed(CameraSpeed);
+            Engine->GetLevelEditor()->GetActiveViewportClient()->SetCameraSpeed(CameraSpeed);
         }
 
         ImGui::Separator();
@@ -546,7 +542,8 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
 
 void ControlEditorPanel::CreateFlagButton()
 {
-    const std::shared_ptr<FEditorViewportClient> ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+    const auto Engine = Cast<UEditorEngine>(GEngine);
+    const std::shared_ptr<FEditorViewportClient> ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient();
 
     const char* ViewTypeNames[] = { "Perspective", "Top", "Bottom", "Left", "Right", "Front", "Back" };
     const ELevelViewportType ActiveViewType = ActiveViewport->GetViewportType();
@@ -616,7 +613,7 @@ void ControlEditorPanel::CreateFlagButton()
 
 void ControlEditorPanel::CreatePIEButton(const ImVec2 ButtonSize, ImFont* IconFont)
 {
-    if (GEngine->ActiveWorld->WorldType == EWorldType::SkeletalViewer)
+    if (GEngine->ActiveWorld->WorldType == EWorldType::EditorPreview)
     {
         return;
     }
@@ -714,7 +711,7 @@ void ControlEditorPanel::OnResize(const HWND hWnd)
 
 void ControlEditorPanel::CreateLightSpawnButton(const ImVec2 InButtonSize, ImFont* IconFont)
 {
-    if (GEngine->ActiveWorld->WorldType == EWorldType::SkeletalViewer)
+    if (GEngine->ActiveWorld->WorldType == EWorldType::EditorPreview)
     {
         return;
     }

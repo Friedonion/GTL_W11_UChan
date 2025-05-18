@@ -9,11 +9,9 @@ enum class EWorldType
     EditorPreview,
     GamePreview,
     GameRPC,
-    SkeletalViewer,
     Inactive
 };
 
-// TODO : EWolrldType과 EWorldTypeBitFlag 혼용 중. EWorldTypeBitFlag으로 통일하기 
 enum class EWorldTypeBitFlag
 {
     None = 0,
@@ -23,8 +21,7 @@ enum class EWorldTypeBitFlag
     EditorPreview = 1 << 3,
     GamePreview = 1 << 4,
     GameRPC = 1 << 5,
-    SkeletalViewer = 1 << 6,
-    Inactive = 1 << 7
+    Inactive = 1 << 6
 };
 
 inline EWorldTypeBitFlag operator|(EWorldTypeBitFlag A, EWorldTypeBitFlag B)
@@ -42,6 +39,35 @@ inline EWorldTypeBitFlag operator&(EWorldTypeBitFlag A, EWorldTypeBitFlag B)
 }
 
 inline bool HasFlag(EWorldTypeBitFlag Mask, EWorldTypeBitFlag Flag)
+{
+    return (static_cast<uint32>(Mask) & static_cast<uint32>(Flag)) != 0;
+}
+
+enum class EPreviewTypeBitFlag
+{
+    None = 0,
+    StaticMesh = 1 << 0,
+    SkeletalMesh = 1 << 1,
+    Skeleton = 1 << 2,
+    AnimSequence = 1 << 3,
+    ParticleSystem = 1 << 4,
+};
+
+inline EPreviewTypeBitFlag operator|(EPreviewTypeBitFlag A, EPreviewTypeBitFlag B)
+{
+    return static_cast<EPreviewTypeBitFlag>(
+        static_cast<uint32>(A) | static_cast<uint32>(B)
+        );
+}
+
+inline EPreviewTypeBitFlag operator&(EPreviewTypeBitFlag A, EPreviewTypeBitFlag B)
+{
+    return static_cast<EPreviewTypeBitFlag>(
+        static_cast<uint32>(A) & static_cast<uint32>(B)
+        );
+}
+
+inline bool HasFlag(EPreviewTypeBitFlag Mask, EPreviewTypeBitFlag Flag)
 {
     return (static_cast<uint32>(Mask) & static_cast<uint32>(Flag)) != 0;
 }

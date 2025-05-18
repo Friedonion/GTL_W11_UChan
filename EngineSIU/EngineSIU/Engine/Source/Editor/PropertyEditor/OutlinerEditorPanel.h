@@ -5,7 +5,7 @@
 class OutlinerEditorPanel : public UEditorPanel
 {
 public:
-    OutlinerEditorPanel();
+    OutlinerEditorPanel() = default;
 
 public:
     virtual void Render() override;

@@ -51,22 +51,14 @@ public:
     FGPUTimingManager GPUTimingManager;
     FEngineProfiler EngineProfiler;
 
+    FSlateAppMessageHandler* GetAppMessageHandler() const { return AppMessageHandler.get(); }
 private:
     UImGuiManager* UIManager;
-    //TODO: GWorld 제거, Editor들 EditorEngine으로 넣기
 
     std::unique_ptr<FSlateAppMessageHandler> AppMessageHandler;
-    SLevelEditor* LevelEditor;
-    UnrealEd* UnrealEditor;
     FDXDBufferManager* BufferManager; //TODO: UEngine으로 옮겨야함.
 
     bool bIsExit = false;
     // @todo Option으로 선택 가능하도록
     int32 TargetFPS = 999;
-
-public:
-    SLevelEditor* GetLevelEditor() const { return LevelEditor; }
-    UnrealEd* GetUnrealEditor() const { return UnrealEditor; }
-
-    FSlateAppMessageHandler* GetAppMessageHandler() const { return AppMessageHandler.get(); }
 };
