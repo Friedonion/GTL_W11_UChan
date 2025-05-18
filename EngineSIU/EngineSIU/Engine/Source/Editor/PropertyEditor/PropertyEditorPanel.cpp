@@ -44,10 +44,11 @@
 #include "imgui/imgui_curve.h"
 #include "Math/Transform.h"
 #include "Animation/AnimStateMachine.h"
+#include "Runtime/CoreUObject/UObject/Property.h"
 
 PropertyEditorPanel::PropertyEditorPanel()
 {
-    SetSupportedWorldTypes(EWorldTypeBitFlag::Editor|EWorldTypeBitFlag::PIE);
+    SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE | EWorldTypeBitFlag::EditorPreview);
 }
 
 void PropertyEditorPanel::Render()
@@ -59,11 +60,31 @@ void PropertyEditorPanel::Render()
     }
     
     /* Pre Setup */
-    float PanelWidth = (Width) * 0.2f - 5.0f;
-    float PanelHeight = (Height)-((Height) * 0.3f + 10.0f) - 32.0f;
+    float PanelWidth;
+    float PanelHeight;
 
-    float PanelPosX = (Width) * 0.8f + 4.0f;
-    float PanelPosY = (Height) * 0.3f + 10.0f;
+    float PanelPosX;
+    float PanelPosY;
+
+    if (Engine->ActiveWorld)
+    {
+        if (Engine->ActiveWorld->WorldType == EWorldType::Editor)
+        {
+            PanelWidth = (Width) * 0.2f - 5.0f;
+            PanelHeight = (Height)-((Height) * 0.3f + 10.0f) - 32.0f;
+
+            PanelPosX = (Width) * 0.8f + 4.0f;
+            PanelPosY = (Height) * 0.3f + 10.0f;
+        }
+        else if (Engine->ActiveWorld->WorldType == EWorldType::EditorPreview)
+        {
+            PanelWidth = (Width) * 0.3f;
+            PanelHeight = (Height) * 0.35f;
+
+            PanelPosX = 0.f;
+            PanelPosY = Height * 0.55f;
+        }
+    }
 
     /* Panel Position */
     ImGui::SetNextWindowPos(ImVec2(PanelPosX, PanelPosY), ImGuiCond_Always);
@@ -90,12 +111,12 @@ void PropertyEditorPanel::Render()
         TargetComponent = SelectedActor->GetRootComponent();
     }
 
+    /*
     if (TargetComponent != nullptr)
     {
         AEditorPlayer* Player = Engine->GetEditorPlayer();
         RenderForSceneComponent(TargetComponent, Player);
     }
-
     if (SelectedActor)
     {
         RenderForActor(SelectedActor, TargetComponent);
@@ -174,7 +195,7 @@ void PropertyEditorPanel::Render()
     {
         RenderForSpringArmComponent(SpringArmComponent);
     }
-
+    */
     if (SelectedActor)
     {
         ImGui::Separator();
@@ -1517,6 +1538,6 @@ void PropertyEditorPanel::OnResize(HWND hWnd)
 {
     RECT ClientRect;
     GetClientRect(hWnd, &ClientRect);
-    Width = ClientRect.right - ClientRect.left;
-    Height = ClientRect.bottom - ClientRect.top;
+    Width = static_cast<float>(ClientRect.right - ClientRect.left);
+    Height = static_cast<float>(ClientRect.bottom - ClientRect.top);
 }
