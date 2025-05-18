@@ -7,6 +7,7 @@
 #include "Math/MathUtility.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "EngineLoop.h"
+#include "Engine/EditorEngine.h"
 
 UBillboardComponent::UBillboardComponent()
 {
@@ -98,8 +99,9 @@ void UBillboardComponent::SetUUIDParent(USceneComponent* InUUIDParent)
 
 FMatrix UBillboardComponent::CreateBillboardMatrix() const
 {
+    const auto Engine = Cast<UEditorEngine>(GEngine);
     // 카메라 뷰 행렬을 가져와서 위치 정보를 제거한 후 전치하여 LookAt 행렬 생성
-    FMatrix CameraView = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetViewMatrix();
+    FMatrix CameraView = Engine->GetLevelEditor()->GetActiveViewportClient()->GetViewMatrix();
     CameraView.M[0][3] = CameraView.M[1][3] = CameraView.M[2][3] = 0.0f;
     CameraView.M[3][0] = CameraView.M[3][1] = CameraView.M[3][2] = 0.0f;
     CameraView.M[3][3] = 1.0f;
@@ -126,6 +128,7 @@ FMatrix UBillboardComponent::CreateBillboardMatrix() const
 bool UBillboardComponent::CheckPickingOnNDC(const TArray<FVector>& QuadVertices, float& HitDistance) const
 {
     // TODO: 이 로직으로는 멀티 뷰포트에서 빌보드 피킹 안됨.
+    const auto Engine = Cast<UEditorEngine>(GEngine);
     
     // 마우스 위치를 클라이언트 좌표로 가져온 후 NDC 좌표로 변환
     POINT MousePos;
@@ -141,7 +144,7 @@ bool UBillboardComponent::CheckPickingOnNDC(const TArray<FVector>& QuadVertices,
     const float NdcY = -((2.0f * MousePos.y / Viewport.Height) - 1.0f);
 
     // MVP 행렬 계산
-    const std::shared_ptr<FEditorViewportClient> ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+    const std::shared_ptr<FEditorViewportClient> ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient();
     const FMatrix M = CreateBillboardMatrix();
     const FMatrix V = ActiveViewport->GetViewMatrix();
     const FMatrix P = ActiveViewport->GetProjectionMatrix();

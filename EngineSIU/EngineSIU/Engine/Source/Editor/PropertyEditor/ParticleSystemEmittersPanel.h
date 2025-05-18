@@ -6,7 +6,7 @@
 class ParticleSystemEmittersPanel : public UEditorPanel
 {
 public:
-    ParticleSystemEmittersPanel();
+    ParticleSystemEmittersPanel() = default;
 
     virtual void Render() override;
     virtual void OnResize(HWND hWnd) override;

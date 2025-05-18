@@ -10,7 +10,7 @@ class UAnimDataModel;
 class SkeletalMeshViewerPanel : public UEditorPanel
 {
 public:
-    SkeletalMeshViewerPanel();
+    SkeletalMeshViewerPanel() = default;
 
     virtual void Render() override;
     virtual void OnResize(HWND hWnd) override;

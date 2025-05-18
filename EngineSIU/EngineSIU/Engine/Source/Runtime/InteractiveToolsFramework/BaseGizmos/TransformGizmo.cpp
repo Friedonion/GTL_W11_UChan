@@ -89,7 +89,7 @@ void ATransformGizmo::Tick(float DeltaTime)
     Super::Tick(DeltaTime);
 
     // Editor 모드에서만 Tick. SkeletalMeshViewer모드에서도 tick
-    if (GEngine->ActiveWorld->WorldType != EWorldType::Editor and GEngine->ActiveWorld->WorldType != EWorldType::SkeletalViewer)
+    if (GEngine->ActiveWorld->WorldType != EWorldType::Editor and GEngine->ActiveWorld->WorldType != EWorldType::EditorPreview)
     {
         return;
     }
@@ -132,7 +132,7 @@ void ATransformGizmo::Tick(float DeltaTime)
         }
 
         //본 부착용
-        if (GEngine->ActiveWorld->WorldType == EWorldType::SkeletalViewer)
+        if (GEngine->ActiveWorld->WorldType == EWorldType::EditorPreview)
         {
             USkeletalMeshComponent* SkeletalMeshComp = Cast<USkeletalMeshComponent>(TargetComponent);
             if (SkeletalMeshComp)

@@ -29,9 +29,10 @@ public:
     
 
     void StartPIE();
-    void StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAsset* AnimAsset);
     void BindEssentialObjects();
     void EndPIE();
+
+    void StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAsset* AnimAsset);
     void EndSkeletalMeshViewer();
 
     // 주석은 UE에서 사용하던 매개변수.
@@ -66,11 +67,20 @@ public:
 
 public:
     AEditorPlayer* GetEditorPlayer() const;
-    
+
+    SLevelEditor* GetLevelEditor() const { return LevelEditor; }
+    UnrealEd* GetUnrealEditor() const { return UnrealEditor; }
+
+    void SetLevelEditor(SLevelEditor* InLevelEditor) { LevelEditor = InLevelEditor; }
+    void SetUnrealEditor(UnrealEd* InUnrealEditor) { UnrealEditor = InUnrealEditor; }
+
 private:
     AEditorPlayer* EditorPlayer = nullptr;
     FVector CameraLocation;
     FVector CameraRotation;
+
+    SLevelEditor* LevelEditor;
+    UnrealEd* UnrealEditor;
 };
 
 

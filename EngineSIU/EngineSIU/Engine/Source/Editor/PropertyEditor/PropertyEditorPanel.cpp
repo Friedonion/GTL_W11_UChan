@@ -46,11 +46,6 @@
 #include "Animation/AnimStateMachine.h"
 #include "Runtime/CoreUObject/UObject/Property.h"
 
-PropertyEditorPanel::PropertyEditorPanel()
-{
-    SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE | EWorldTypeBitFlag::EditorPreview);
-}
-
 void PropertyEditorPanel::Render()
 {
     UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
@@ -78,11 +73,22 @@ void PropertyEditorPanel::Render()
         }
         else if (Engine->ActiveWorld->WorldType == EWorldType::EditorPreview)
         {
-            PanelWidth = (Width) * 0.3f;
-            PanelHeight = (Height) * 0.35f;
+            if (GetPreviewType() == EPreviewTypeBitFlag::SkeletalMesh)
+            {
+                PanelWidth = (Width) * 0.2f - 5.0f;
+                PanelHeight = (Height)-((Height) * 0.3f + 10.0f) - 32.0f;
 
-            PanelPosX = 0.f;
-            PanelPosY = Height * 0.55f;
+                PanelPosX = (Width) * 0.8f + 4.0f;
+                PanelPosY = (Height) * 0.3f + 10.0f;
+            }
+            if (GetPreviewType() == EPreviewTypeBitFlag::ParticleSystem)
+            {
+                PanelWidth = (Width) * 0.3f;
+                PanelHeight = (Height) * 0.35f;
+
+                PanelPosX = 0.f;
+                PanelPosY = Height * 0.65f;
+            }
         }
     }
 
@@ -910,6 +916,7 @@ void PropertyEditorPanel::RenderForSpotLightComponent(USpotLightComponent* SpotL
 
 void PropertyEditorPanel::RenderForLightCommon(ULightComponentBase* LightComponent) const
 {
+    const auto Engine = Cast<UEditorEngine>(GEngine);
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
 
     // --- "Override Camera" 버튼 추가 ---
@@ -928,7 +935,7 @@ void PropertyEditorPanel::RenderForLightCommon(ULightComponentBase* LightCompone
         LightRotationVector.Z = LightRotation.Yaw;
 
         // 2. 활성 에디터 뷰포트 클라이언트 가져오기 (!!! 엔진별 구현 필요 !!!)
-        std::shared_ptr<FEditorViewportClient> ViewportClient = GEngineLoop.GetLevelEditor()->GetActiveViewportClient(); // 위에 정의된 헬퍼 함수 사용 (또는 직접 구현)
+        std::shared_ptr<FEditorViewportClient> ViewportClient = Engine->GetLevelEditor()->GetActiveViewportClient(); // 위에 정의된 헬퍼 함수 사용 (또는 직접 구현)
 
         // 3. 뷰포트 클라이언트가 유효하면 카메라 설정
         if (ViewportClient)

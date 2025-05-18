@@ -14,6 +14,7 @@
 #include "Components/Light/DirectionalLightComponent.h"
 #include "LevelEditor/SLevelEditor.h"
 #include "Editor/UnrealEd/EditorViewportClient.h"
+#include "UnrealEd/UnrealEd.h"
 
 extern FEngineLoop GEngineLoop;
 
@@ -61,6 +62,12 @@ void UEditorEngine::Release()
         WorldContext->World()->Release();
     }
     WorldList.Empty();
+
+    LevelEditor->Release();
+    LevelEditor = nullptr;
+
+    delete UnrealEditor;
+    delete LevelEditor;
 }
 
 void UEditorEngine::Tick(float DeltaTime)
@@ -107,7 +114,7 @@ void UEditorEngine::Tick(float DeltaTime)
                 }
             }
         }
-        else if (WorldContext->WorldType == EWorldType::SkeletalViewer)
+        else if (WorldContext->WorldType == EWorldType::EditorPreview)
         {
             if (UWorld* World = WorldContext->World())
             {
@@ -171,14 +178,14 @@ void UEditorEngine::StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAs
         return;
     }
     
-    FWorldContext& WorldContext = CreateNewWorldContext(EWorldType::SkeletalViewer);
+    FWorldContext& WorldContext = CreateNewWorldContext(EWorldType::EditorPreview);
 
     
-    SkeletalMeshViewerWorld = USkeletalViewerWorld::CreateWorld(this, EWorldType::SkeletalViewer, FString("SkeletalMeshViewerWorld"));
+    SkeletalMeshViewerWorld = USkeletalViewerWorld::CreateWorld(this, EWorldType::EditorPreview, FString("SkeletalMeshViewerWorld"));
 
     WorldContext.SetCurrentWorld(SkeletalMeshViewerWorld);
     ActiveWorld = SkeletalMeshViewerWorld;
-    SkeletalMeshViewerWorld->WorldType = EWorldType::SkeletalViewer;
+    SkeletalMeshViewerWorld->WorldType = EWorldType::EditorPreview;
 
     // 스켈레탈 액터 스폰
     ASkeletalMeshActor* SkeletalActor = SkeletalMeshViewerWorld->SpawnActor<ASkeletalMeshActor>();
@@ -199,14 +206,14 @@ void UEditorEngine::StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAs
     DirectionalLight->SetActorRotation(FRotator(45.f, 45.f, 0.f));
     DirectionalLight->GetComponentByClass<UDirectionalLightComponent>()->SetIntensity(4.0f);
 
-    FViewportCamera& Camera = *GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetPerspectiveCamera();
-    CameraLocation = Camera.GetLocation();
-    CameraRotation = Camera.GetRotation();
+    FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
+    CameraLocation = Camera->GetLocation();
+    CameraRotation = Camera->GetRotation();
     
-    Camera.SetRotation(FVector(0.0f, 30, 180));
+    Camera->SetRotation(FVector(0.0f, 30, 180));
     if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(MeshComp))
     {
-        float FOV = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetCameraFOV();
+        float FOV = LevelEditor->GetActiveViewportClient()->GetCameraFOV();
 
         // 로컬 바운딩 박스
         FBoundingBox Box = Primitive->GetBoundingBox();
@@ -222,7 +229,7 @@ void UEditorEngine::StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAs
         float Distance = Radius / FMath::Tan(VerticalFOV * 0.5f);
 
         // 카메라 위치 설정
-        Camera.SetLocation(WorldCenter - Camera.GetForwardVector() * Distance);
+        Camera->SetLocation(WorldCenter - Camera->GetForwardVector() * Distance);
     }
 
     if (AEditorPlayer* Player = GetEditorPlayer())
@@ -292,9 +299,9 @@ void UEditorEngine::EndSkeletalMeshViewer()
         GUObjectArray.MarkRemoveObject(SkeletalMeshViewerWorld);
         SkeletalMeshViewerWorld = nullptr;
         
-        FViewportCamera& Camera = *GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetPerspectiveCamera();
-        Camera.SetLocation(CameraLocation);
-        Camera.SetRotation(CameraRotation);
+        FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
+        Camera->SetLocation(CameraLocation);
+        Camera->SetRotation(CameraRotation);
         
         DeselectActor(GetSelectedActor());
         DeselectComponent(GetSelectedComponent());

@@ -6,7 +6,7 @@
 class ControlEditorPanel : public UEditorPanel
 {
 public:
-    ControlEditorPanel();
+    ControlEditorPanel() = default;
     virtual void Render() override;
     virtual void OnResize(HWND hWnd) override;
 

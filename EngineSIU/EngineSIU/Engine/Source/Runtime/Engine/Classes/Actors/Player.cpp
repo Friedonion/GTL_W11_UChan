@@ -28,6 +28,8 @@ void AEditorPlayer::Input()
     if (io.WantCaptureMouse) return;
     if (io.WantCaptureKeyboard) return;
 
+    auto Engine = Cast<UEditorEngine>(GEngine);
+
     if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
     {
         if (!bLeftMouseDown)
@@ -52,14 +54,13 @@ void AEditorPlayer::Input()
 
             FVector pickPosition;
 
-            std::shared_ptr<FEditorViewportClient> ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+            std::shared_ptr<FEditorViewportClient> ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient();
             ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport, pickPosition);
             bool res = PickGizmo(pickPosition, ActiveViewport.get());
             if (!res) PickActor(pickPosition);
             if (res)
             {
-                UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
-                if (Engine->ActiveWorld->WorldType == EWorldType::SkeletalViewer)
+                if (Engine->ActiveWorld->WorldType == EWorldType::EditorPreview)
                 if (USkeletalMeshComponent* SkeletalMeshComp = Cast<USkeletalMeshComponent>(Engine->GetSelectedComponent()))
                 {
                     UGizmoBaseComponent* Gizmo = Cast<UGizmoBaseComponent>(ActiveViewport->GetPickedGizmoComponent());
@@ -84,7 +85,7 @@ void AEditorPlayer::Input()
             {
                 PickedObjControl();
             }
-            else if (Engine->ActiveWorld->WorldType == EWorldType::SkeletalViewer)
+            else if (Engine->ActiveWorld->WorldType == EWorldType::EditorPreview)
             {
                 PickedBoneControl();
             }
@@ -95,7 +96,7 @@ void AEditorPlayer::Input()
         if (bLeftMouseDown)
         {
             bLeftMouseDown = false;
-            std::shared_ptr<FEditorViewportClient> ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+            std::shared_ptr<FEditorViewportClient> ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient();
             ActiveViewport->SetPickedGizmoComponent(nullptr);
         }
     }
@@ -222,6 +223,8 @@ void AEditorPlayer::AddCoordMode()
 
 void AEditorPlayer::ScreenToViewSpace(int32 ScreenX, int32 ScreenY, std::shared_ptr<FEditorViewportClient> ActiveViewport, FVector& RayOrigin)
 {
+    auto Engine = Cast<UEditorEngine>(GEngine);
+
     FRect Rect = ActiveViewport->GetViewport()->GetRect();
     
     float ViewportX = static_cast<float>(ScreenX) - Rect.TopLeftX;
@@ -232,7 +235,7 @@ void AEditorPlayer::ScreenToViewSpace(int32 ScreenX, int32 ScreenY, std::shared_
     RayOrigin.X = ((2.0f * ViewportX / Rect.Width) - 1) / ProjectionMatrix[0][0];
     RayOrigin.Y = -((2.0f * ViewportY / Rect.Height) - 1) / ProjectionMatrix[1][1];
     
-    if (GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->IsOrthographic())
+    if (Engine->GetLevelEditor()->GetActiveViewportClient()->IsOrthographic())
     {
         RayOrigin.Z = 0.0f;  // 오쏘 모드에서는 unproject 시 near plane 위치를 기준
     }
@@ -244,10 +247,12 @@ void AEditorPlayer::ScreenToViewSpace(int32 ScreenX, int32 ScreenY, std::shared_
 
 int AEditorPlayer::RayIntersectsObject(const FVector& PickPosition, USceneComponent* Component, float& HitDistance, int& IntersectCount)
 {
+    auto Engine = Cast<UEditorEngine>(GEngine);
+
     FMatrix WorldMatrix = Component->GetWorldMatrix();
-    FMatrix ViewMatrix = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetViewMatrix();
+    FMatrix ViewMatrix = Engine->GetLevelEditor()->GetActiveViewportClient()->GetViewMatrix();
     
-    bool bIsOrtho = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->IsOrthographic();
+    bool bIsOrtho = Engine->GetLevelEditor()->GetActiveViewportClient()->IsOrthographic();
     
 
     if (bIsOrtho)
@@ -259,7 +264,7 @@ int AEditorPlayer::RayIntersectsObject(const FVector& PickPosition, USceneCompon
         // 오쏘에서는 픽킹 원점은 unproject된 픽셀의 위치
         FVector rayOrigin = worldPickPos;
         // 레이 방향은 카메라의 정면 방향 (평행)
-        FVector orthoRayDir = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->OrthogonalCamera.GetForwardVector().GetSafeNormal();
+        FVector orthoRayDir = Engine->GetLevelEditor()->GetActiveViewportClient()->OrthogonalCamera.GetForwardVector().GetSafeNormal();
 
         // 객체의 로컬 좌표계로 변환
         FMatrix LocalMatrix = FMatrix::Inverse(WorldMatrix);
@@ -301,7 +306,7 @@ int AEditorPlayer::RayIntersectsObject(const FVector& PickPosition, USceneCompon
 void AEditorPlayer::PickedObjControl()
 {
     UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
-    FEditorViewportClient* ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient().get();
+    FEditorViewportClient* ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient().get();
     if (Engine && Engine->GetSelectedActor() && ActiveViewport->GetPickedGizmoComponent())
     {
         POINT CurrentMousePos;
@@ -345,7 +350,7 @@ void AEditorPlayer::PickedObjControl()
 void AEditorPlayer::PickedBoneControl()
 {
     UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
-    FEditorViewportClient* ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient().get();
+    FEditorViewportClient* ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient().get();
     if (Engine && Engine->GetSelectedActor() && ActiveViewport->GetPickedGizmoComponent())
     {
         
@@ -413,7 +418,8 @@ void AEditorPlayer::PickedBoneControl()
 
 void AEditorPlayer::ControlRotation(USceneComponent* Component, UGizmoBaseComponent* Gizmo, float DeltaX, float DeltaY)
 {
-    const auto ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+    auto Engine = Cast<UEditorEngine>(GEngine);
+    const auto ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient();
     const FViewportCamera* ViewTransform = ActiveViewport->GetViewportType() == LVT_Perspective
                                                         ? &ActiveViewport->PerspectiveCamera
                                                         : &ActiveViewport->OrthogonalCamera;
@@ -471,7 +477,8 @@ void AEditorPlayer::ControlRotation(USceneComponent* Component, UGizmoBaseCompon
 
 void AEditorPlayer::ControlScale(USceneComponent* Component, UGizmoBaseComponent* Gizmo, float DeltaX, float DeltaY)
 {
-    const auto ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+    const auto Engine = Cast<UEditorEngine>(GEngine);
+    const auto ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient();
     const FViewportCamera* ViewTransform = ActiveViewport->GetViewportType() == LVT_Perspective
                                                         ? &ActiveViewport->PerspectiveCamera
                                                         : &ActiveViewport->OrthogonalCamera;
@@ -500,7 +507,8 @@ void AEditorPlayer::ControlScale(USceneComponent* Component, UGizmoBaseComponent
 }
 FQuat AEditorPlayer::ControlBoneRotation(FTransform& BoneTransform, UGizmoBaseComponent* Gizmo, float DeltaX, float DeltaY)
 {
-    const auto ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+    const auto Engine = Cast<UEditorEngine>(GEngine);
+    const auto ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient();
     const FViewportCamera* ViewTransform = ActiveViewport->GetViewportType() == LVT_Perspective
                                                         ? &ActiveViewport->PerspectiveCamera
                                                         : &ActiveViewport->OrthogonalCamera;
@@ -585,7 +593,8 @@ FQuat AEditorPlayer::ControlBoneRotation(FTransform& BoneTransform, UGizmoBaseCo
 
 FVector AEditorPlayer::ControlBoneScale(FTransform& BoneTransform, UGizmoBaseComponent* Gizmo, float DeltaX, float DeltaY)
 {
-    const auto ActiveViewport = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+    const auto Engine = Cast<UEditorEngine>(GEngine);
+    const auto ActiveViewport = Engine->GetLevelEditor()->GetActiveViewportClient();
     const FViewportCamera* ViewTransform = ActiveViewport->GetViewportType() == LVT_Perspective
                                                         ? &ActiveViewport->PerspectiveCamera
                                                         : &ActiveViewport->OrthogonalCamera;

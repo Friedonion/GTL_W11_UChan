@@ -472,7 +472,7 @@ void FRenderer::RenderSkeletalMeshViewerOverlay(const std::shared_ptr<FEditorVie
     const uint64 ShowFlag = Viewport->GetShowFlag();
     const EViewModeIndex ViewMode = Viewport->GetViewMode();
     
-    if (GEngine->ActiveWorld->WorldType != EWorldType::SkeletalViewer)
+    if (GEngine->ActiveWorld->WorldType != EWorldType::EditorPreview)
     {
         return;
     }
