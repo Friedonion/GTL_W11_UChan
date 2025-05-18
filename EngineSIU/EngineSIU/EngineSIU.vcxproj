@@ -220,6 +220,7 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClCompile Include="Engine\Source\Editor\LevelEditor\SLevelEditor.cpp" />
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\ControlEditorPanel.cpp" />
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\OutlinerEditorPanel.cpp" />
+    <ClCompile Include="Engine\Source\Editor\PropertyEditor\ParticleSystemEmittersPanel.cpp" />
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\PropertyEditorPanel.cpp" />
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\ShowFlags.cpp" />
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\SkeletalMeshViewerPanel.cpp" />
@@ -530,6 +531,7 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\ControlEditorPanel.h" />
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\IWindowToggleable.h" />
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\OutlinerEditorPanel.h" />
+    <ClInclude Include="Engine\Source\Editor\PropertyEditor\ParticleSystemEmittersPanel.h" />
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\PropertyEditorPanel.h" />
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\ShowFlags.h" />
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\SkeletalMeshViewerPanel.h" />

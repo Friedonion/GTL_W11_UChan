@@ -5,6 +5,7 @@
 #include "PropertyEditor/OutlinerEditorPanel.h"
 #include "PropertyEditor/PropertyEditorPanel.h"
 #include "PropertyEditor/SkeletalMeshViewerPanel.h"
+#include "PropertyEditor/ParticleSystemEmittersPanel.h"
 #include "World/World.h"
 void UnrealEd::Initialize()
 {
@@ -20,6 +21,9 @@ void UnrealEd::Initialize()
     // TODO : SkeletalViewe 전용 UI 분리
     auto BoneHierarchyPanel = std::make_shared<SkeletalMeshViewerPanel>();
     Panels["BoneHierarchyPaenl"] = BoneHierarchyPanel;
+
+    auto ParticleEmittersPanel = std::make_shared<ParticleSystemEmittersPanel>();
+    Panels["ParticleSystemEmittersPanel"] = ParticleEmittersPanel;
 }
 
 void UnrealEd::Render() const
@@ -51,10 +55,10 @@ void UnrealEd::Render() const
     case EWorldType::Inactive:
         currentMask = EWorldTypeBitFlag::Inactive;
         break;
+    case EWorldType::None:
     default:
         currentMask = EWorldTypeBitFlag::None;
         break;
-        
     }
     for (const auto& Panel : Panels)
     {
