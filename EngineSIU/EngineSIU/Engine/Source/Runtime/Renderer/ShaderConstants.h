@@ -240,7 +240,6 @@ struct alignas(16) FConstantBufferCameraVignette
 struct alignas(16) FConstantBufferLetterBox
 {
     FLinearColor LetterBoxColor;
-
     float ScreenAspectRatio;
     float LetterBoxAspectRatio;
     FVector2D Padding;

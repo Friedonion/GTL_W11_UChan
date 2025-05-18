@@ -6,6 +6,7 @@
 #include "D3D11RHI/DXDBufferManager.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "UnrealClient.h"
+#include "Engine/ResourceMgr.h"
 #include <random>
 
 void FParticleRenderPass::Initialize(FDXDBufferManager* InBufferManager, FGraphicsDevice* InGraphics, FDXDShaderManager* InShaderManager)
@@ -33,7 +34,7 @@ void FParticleRenderPass::PrepareRenderArr()
 
         FParticleInstanceData Inst;
         Inst.World = World;
-        Inst.Color = FLinearColor(1, 1, 1, 1);
+        Inst.Color = FLinearColor(1, 1, 1, 0.5);
         InstanceData[i] = Inst;
     }
     UpdateInstanceBuffer();
@@ -140,6 +141,12 @@ void FParticleRenderPass::RenderParticles(const std::shared_ptr<FEditorViewportC
         ShaderManager->GetPixelShaderByKey(L"ParticleSpritePS"), nullptr, 0);
 
     BufferManager->BindConstantBuffer(TEXT("FCameraConstantBuffer"), 13, EShaderStage::Vertex);
+
+    ParticleTexture = FEngineLoop::ResourceManager.GetTexture(L"Assets/Texture/Fire001.bmp");
+    if (!ParticleTexture) return;
+    Graphics->DeviceContext->PSSetShaderResources(0, 1, &ParticleTexture->TextureSRV);
+    Graphics->DeviceContext->PSSetSamplers(0, 1, &ParticleTexture->SamplerState);
+
     
     Graphics->DeviceContext->DrawIndexedInstanced(QuadIB.NumIndices, InstanceData.Num(), 0, 0, 0);
 }

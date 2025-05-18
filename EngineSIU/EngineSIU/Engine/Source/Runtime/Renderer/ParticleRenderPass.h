@@ -8,6 +8,7 @@
 class ID3D11BlendState;
 class ID3D11DepthStencilState;
 class ID3D11Buffer;
+struct FTexture;
 
 struct FParticleInstanceData
 {
@@ -41,4 +42,7 @@ private:
 
     ID3D11Buffer* InstanceBuffer = nullptr;
     TArray<FParticleInstanceData> InstanceData;
+
+    // 임시코드
+    std::shared_ptr<FTexture> ParticleTexture; 
 };
