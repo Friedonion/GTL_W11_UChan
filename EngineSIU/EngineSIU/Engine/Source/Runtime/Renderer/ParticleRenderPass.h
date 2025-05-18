@@ -14,6 +14,7 @@ struct FParticleInstanceData
 {
     FMatrix World;
     FLinearColor Color;
+    int SubImageIndexX;
 };
 
 class FParticleRenderPass : public IRenderPass
@@ -44,5 +45,7 @@ private:
     TArray<FParticleInstanceData> InstanceData;
 
     // 임시코드
-    std::shared_ptr<FTexture> ParticleTexture; 
+    std::shared_ptr<FTexture> ParticleTexture;
+    int SubImageCountX;
+    int SubImageCountY;
 };

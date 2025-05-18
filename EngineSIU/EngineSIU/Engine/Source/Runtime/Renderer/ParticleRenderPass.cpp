@@ -15,6 +15,9 @@ void FParticleRenderPass::Initialize(FDXDBufferManager* InBufferManager, FGraphi
     Graphics = InGraphics;
     ShaderManager = InShaderManager;
 
+    SubImageCountX = 6;
+    SubImageCountY = 6;
+
     CreateBlendState();
     CreateDepthState();
     CreateInstanceBuffer();
@@ -36,6 +39,8 @@ void FParticleRenderPass::PrepareRenderArr()
         Inst.World = World;
         Inst.Color = FLinearColor(1, 1, 1, 0.5);
         InstanceData[i] = Inst;
+        int TotalFrames = SubImageCountX * SubImageCountY;
+        Inst.SubImageIndexX = FMath::RandRange(0, TotalFrames - 1);
     }
     UpdateInstanceBuffer();
 }
@@ -140,10 +145,16 @@ void FParticleRenderPass::RenderParticles(const std::shared_ptr<FEditorViewportC
     Graphics->DeviceContext->PSSetShader(
         ShaderManager->GetPixelShaderByKey(L"ParticleSpritePS"), nullptr, 0);
 
+    FParticleConstant SubUVData = { SubImageCountX, SubImageCountY };
+    BufferManager->UpdateConstantBuffer(TEXT("FParticleConstant"), SubUVData);
+    BufferManager->BindConstantBuffer(TEXT("FParticleConstant"), 7, EShaderStage::Vertex);
+
+
     BufferManager->BindConstantBuffer(TEXT("FCameraConstantBuffer"), 13, EShaderStage::Vertex);
 
-    ParticleTexture = FEngineLoop::ResourceManager.GetTexture(L"Assets/Texture/Fire001.bmp");
+    ParticleTexture = FEngineLoop::ResourceManager.GetTexture(L"Assets/Texture/T_Explosion_SubUV.png");
     if (!ParticleTexture) return;
+
     Graphics->DeviceContext->PSSetShaderResources(0, 1, &ParticleTexture->TextureSRV);
     Graphics->DeviceContext->PSSetSamplers(0, 1, &ParticleTexture->SamplerState);
 

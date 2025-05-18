@@ -1,5 +1,13 @@
 #include "ShaderRegisters.hlsl"
 
+cbuffer FParticleConstant : register(b7)
+{
+    int SubImageCountX;
+    int SubImageCountY;
+    float2 Padding;
+};
+
+
 struct VS_INPUT
 {
     float3 Position : POSITION;
@@ -9,7 +17,9 @@ struct VS_INPUT
     float4 World2 : WORLD2;
     float4 World3 : WORLD3;
     float4 Color : COLOR;
+    uint SubImageIndex : SUBIMAGE_INDEX;
 };
+
 
 
 struct VS_OUTPUT
@@ -32,7 +42,14 @@ VS_OUTPUT mainVS(VS_INPUT input)
 
     output.Pos = mul(worldPos, ViewMatrix);
     output.Pos = mul(output.Pos, ProjectionMatrix);
-    output.TexCoord = input.TexCoord;
+    
+    float2 cellSize = float2(1.0 / SubImageCountX, 1.0 / SubImageCountY);
+    int frameX = input.SubImageIndex % SubImageCountX;
+    int frameY = input.SubImageIndex / SubImageCountX;
+    float2 uvOffset = float2(frameX, frameY) * cellSize;
+
+    output.TexCoord = input.TexCoord * cellSize + uvOffset;
+
     output.Color = input.Color;
 
     return output;

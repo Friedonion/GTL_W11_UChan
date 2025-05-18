@@ -120,6 +120,10 @@ void FRenderer::CreateConstantBuffers()
     UINT SubUVBufferSize = sizeof(FSubUVConstant);
     BufferManager->CreateBufferGeneric<FSubUVConstant>("FSubUVConstant", nullptr, SubUVBufferSize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 
+    UINT ParticleBufferSize = sizeof(FParticleConstant);
+    BufferManager->CreateBufferGeneric<FParticleConstant>("FParticleConstant", nullptr, ParticleBufferSize,D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
+
+
     UINT MaterialBufferSize = sizeof(FMaterialConstants);
     BufferManager->CreateBufferGeneric<FMaterialConstants>("FMaterialConstants", nullptr, MaterialBufferSize, D3D11_BIND_CONSTANT_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
 
@@ -195,14 +199,16 @@ void FRenderer::CreateCommonShader() const
     }
     
     D3D11_INPUT_ELEMENT_DESC ParticleLayout[] = {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,     0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,        0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "WORLD",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 0,  D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-        { "WORLD",    1, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-        { "WORLD",    2, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-        { "WORLD",    3, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-        { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 64, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,     0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
+     { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,        0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+     { "WORLD",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 0,  D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "WORLD",    1, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "WORLD",    2, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "WORLD",    3, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 64, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "SUBIMAGE_INDEX", 0, DXGI_FORMAT_R32_UINT,      1, 80, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
     };
+
 
     hr= ShaderManager->AddVertexShaderAndInputLayout(
         L"ParticleSpriteVS",
