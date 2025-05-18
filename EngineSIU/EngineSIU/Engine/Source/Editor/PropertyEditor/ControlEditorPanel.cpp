@@ -53,7 +53,7 @@
 
 ControlEditorPanel::ControlEditorPanel()
 {
-    SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE | EWorldTypeBitFlag::SkeletalViewer);
+    SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE | EWorldTypeBitFlag::EditorPreview | EWorldTypeBitFlag::SkeletalViewer);
 }
 
 void ControlEditorPanel::Render()
@@ -104,6 +104,27 @@ void ControlEditorPanel::Render()
             if (ImGui::MenuItem("ImGui Demo"))
             {
                 bShowImGuiDemoWindow = true;
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Viewer"))
+        {
+            if (ImGui::MenuItem("StaticMesh"))
+            {
+                
+            }
+            if (ImGui::MenuItem("SkeletalMesh"))
+            {
+                
+            }
+            if (ImGui::MenuItem("AnimaSequence"))
+            {
+                
+            }
+            if (ImGui::MenuItem("Particle System"))
+            {
+                
             }
             ImGui::EndMenu();
         }

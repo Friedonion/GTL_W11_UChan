@@ -23,9 +23,9 @@ public:
     virtual void Tick(float DeltaTime) override;
     void Release() override;
 
+    UWorld* EditorWorld = nullptr;
     UWorld* PIEWorld = nullptr;
     USkeletalViewerWorld* SkeletalMeshViewerWorld = nullptr;
-    UWorld* EditorWorld = nullptr;
     
 
     void StartPIE();
