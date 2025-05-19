@@ -10,7 +10,7 @@ class UParticleModuleSpawnBase : public UParticleModule
 {
     DECLARE_CLASS(UParticleModuleSpawnBase, UParticleModule)
 public:
-    UParticleModuleSpawnBase() = default;
+    UParticleModuleSpawnBase();
     ~UParticleModuleSpawnBase() = default;
 
     /**

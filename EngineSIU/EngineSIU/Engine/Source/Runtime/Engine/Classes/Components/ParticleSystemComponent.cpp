@@ -4,9 +4,15 @@
 #include "Particles/ParticleEmitter.h"
 #include "Particles/ParticleLODLevel.h"
 #include "Engine/ParticleEmitterInstances.h"
+#include "UObject/ObjectFactory.h"
 
 UParticleSystemComponent::UParticleSystemComponent()
+    : DeltaTimeTick(0.0f)
+    , TimeSinceLastTick(0)
+    , bSuppressSpawning(false)
+    , bNeedsFinalize(false)
 {
+    Template = FObjectFactory::ConstructObject<UParticleSystem>(this);
 }
 
 UParticleSystemComponent::~UParticleSystemComponent()

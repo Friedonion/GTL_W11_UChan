@@ -204,7 +204,7 @@ public:
      * Called once to compile the effects of this module on runtime simulation.
      * @param EmitterInfo - Information needed for runtime simulation.
      */
-    //virtual void CompileModule(struct FParticleEmitterBuildInfo& EmitterInfo);
+    virtual void CompileModule(struct FParticleEmitterBuildInfo& EmitterInfo);
 
     /**
      *	Called on a particle that is freshly spawned by the emitter.
@@ -262,7 +262,7 @@ public:
      *
      *	@param	Owner			The UParticleEmitter that the module is being added to.
      */
-    //virtual void SetToSensibleDefaults(UParticleEmitter* Owner);
+    virtual void SetToSensibleDefaults(UParticleEmitter* Owner);
 
     /**
      *	Fill an array with each Object property that fulfills the FCurveEdInterface interface.
@@ -479,7 +479,7 @@ public:
      *
      * @return FRandomStream&	The random stream to use for the provided instance.
      */
-    //FRandomStream& GetRandomStream(FParticleEmitterInstance* Owner);
+    FRandomStream& GetRandomStream(FParticleEmitterInstance* Owner);
 };
 
 

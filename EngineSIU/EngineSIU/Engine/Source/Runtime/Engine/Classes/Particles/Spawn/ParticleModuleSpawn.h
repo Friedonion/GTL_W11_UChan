@@ -12,7 +12,7 @@ class UParticleModuleSpawn : public UParticleModuleSpawnBase
 {
     DECLARE_CLASS(UParticleModuleSpawn, UParticleModuleSpawnBase)
 public:
-    UParticleModuleSpawn() = default;
+    UParticleModuleSpawn();
     ~UParticleModuleSpawn() = default;
 
     /** The rate at which to spawn particles. */

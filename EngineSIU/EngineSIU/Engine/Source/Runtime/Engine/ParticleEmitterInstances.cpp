@@ -40,7 +40,7 @@ void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
         SpawnFraction = Tick_SpawnParticles(DeltaTime, LODLevel, bSuppressSpawning, bFirstTime);
 
         // PostUpdate (beams only)
-        //Tick_ModulePostUpdate(DeltaTime, LODLevel);
+        Tick_ModulePostUpdate(DeltaTime, LODLevel);
 
         //if (ActiveParticles > 0)
         //{
@@ -482,6 +482,22 @@ uint32 FParticleEmitterInstance::GetModuleDataOffset(UParticleModule* Module)
 
     uint32* Offset = SpriteTemplate->ModuleOffsetMap.Find(Module);
     return (Offset != nullptr) ? *Offset : 0;
+}
+
+/** Get pointer to emitter instance random seed payload data for a particular module */
+FParticleRandomSeedInstancePayload* FParticleEmitterInstance::GetModuleRandomSeedInstanceData(UParticleModule* Module)
+{
+    // If there is instance data present, look up the modules offset
+    if (InstanceData)
+    {
+        uint32* Offset = SpriteTemplate->ModuleRandomSeedInstanceOffsetMap.Find(Module);
+        if (Offset)
+        {
+            //check(*Offset < (uint32)InstancePayloadSize);
+            return (FParticleRandomSeedInstancePayload*)&(InstanceData[*Offset]);
+        }
+    }
+    return NULL;
 }
 
 uint8* FParticleEmitterInstance::GetTypeDataModuleInstanceData()

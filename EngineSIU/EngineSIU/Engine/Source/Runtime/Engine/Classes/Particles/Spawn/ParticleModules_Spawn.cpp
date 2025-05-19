@@ -5,24 +5,23 @@
 #include "Particles/ParticleModule.h"
 #include "Particles/Spawn/ParticleModuleSpawn.h"
 
-//UParticleModuleSpawnBase::UParticleModuleSpawnBase(const FObjectInitializer& ObjectInitializer)
-//    : Super(ObjectInitializer)
-//{
-//    bProcessSpawnRate = true;
-//    bProcessBurstList = true;
-//}
+UParticleModuleSpawnBase::UParticleModuleSpawnBase()
+{
+    bProcessSpawnRate = true;
+    bProcessBurstList = true;
+}
 
-//UParticleModuleSpawn::UParticleModuleSpawn(const FObjectInitializer& ObjectInitializer)
-//    : Super(ObjectInitializer)
-//{
-//    bProcessSpawnRate = true;
-//    LODDuplicate = false;
-//    bApplyGlobalSpawnRateScale = true;
-//}
+UParticleModuleSpawn::UParticleModuleSpawn()
+{
+    bProcessSpawnRate = true;
+    LODDuplicate = false;
+    bApplyGlobalSpawnRateScale = true;
+}
 
 void UParticleModuleSpawn::InitializeDefaults()
 {
     // Initialize Values
+    Rate = 10.f;
 }
 
 bool UParticleModuleSpawn::GetSpawnAmount(FParticleEmitterInstance* Owner,
