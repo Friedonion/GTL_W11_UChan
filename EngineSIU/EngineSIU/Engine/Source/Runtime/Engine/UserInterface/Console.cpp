@@ -158,8 +158,6 @@ void FEngineProfiler::Render(ID3D11DeviceContext* Context, UINT Width, UINT Heig
         ImGui::EndTable();
     }
 
-
-
     ImGui::End();
 }
 

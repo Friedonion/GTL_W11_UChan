@@ -23,16 +23,17 @@ SLevelEditor::SLevelEditor()
 
 void SLevelEditor::Initialize(uint32 InEditorWidth, uint32 InEditorHeight)
 {
-    EditorWidth = InEditorWidth * 0.8f;
-    EditorHeight = InEditorHeight - 104.f;
+    // @todo Check double conversion
+    const float DesiredEditorWidth = static_cast<float>(InEditorWidth) * 0.8f;
+    const float DesiredEditorHeight = static_cast<float>(InEditorHeight) - 104.f;
     
-    ResizeEditor(EditorWidth, EditorHeight);
+    ResizeEditor(DesiredEditorWidth, DesiredEditorHeight);
     
     VSplitter = new SSplitterV();
-    VSplitter->Initialize(FRect(0.0f, 0.f, EditorWidth, EditorHeight));
+    VSplitter->Initialize(FRect(0.0f, 0.f, DesiredEditorWidth, DesiredEditorHeight));
     
     HSplitter = new SSplitterH();
-    HSplitter->Initialize(FRect(0.f, 0.0f, EditorWidth, EditorHeight));
+    HSplitter->Initialize(FRect(0.f, 0.0f, DesiredEditorWidth, DesiredEditorHeight));
     
     FRect Top = VSplitter->SideLT->GetRect();
     FRect Bottom = VSplitter->SideRB->GetRect();
@@ -184,12 +185,12 @@ void SLevelEditor::LoadConfig()
     int32 WindowHeight = GetValueFromConfig(Config, "WindowHeight", EditorHeight);
     if (WindowWidth > 100 && WindowHeight > 100)
     {
-        MoveWindow(GEngineLoop.AppWnd, WindowX, WindowY, WindowWidth, WindowHeight, true);
+        MoveWindow(GEngineLoop.MainWnd, WindowX, WindowY, WindowWidth, WindowHeight, true);
     }
     bool Zoomed = GetValueFromConfig(Config, "Zoomed", false);
     if (Zoomed)
     {
-        ShowWindow(GEngineLoop.AppWnd, SW_MAXIMIZE);
+        ShowWindow(GEngineLoop.MainWnd, SW_MAXIMIZE);
     }
     
     FEditorViewportClient::Pivot.X = GetValueFromConfig(Config, "OrthoPivotX", 0.0f);
@@ -243,12 +244,12 @@ void SLevelEditor::SaveConfig()
     ActiveViewportClient->SaveConfig(config);
 
     RECT WndRect = {};
-    GetWindowRect(GEngineLoop.AppWnd, &WndRect);
+    GetWindowRect(GEngineLoop.MainWnd, &WndRect);
     config["WindowX"] = std::to_string(WndRect.left);
     config["WindowY"] = std::to_string(WndRect.top);
     config["WindowWidth"] = std::to_string(WndRect.right - WndRect.left);
     config["WindowHeight"] = std::to_string(WndRect.bottom - WndRect.top);
-    config["Zoomed"] = std::to_string(IsZoomed(GEngineLoop.AppWnd));
+    config["Zoomed"] = std::to_string(IsZoomed(GEngineLoop.MainWnd));
     
     config["bMultiView"] = std::to_string(bMultiViewportMode);
     config["ActiveViewportIndex"] = std::to_string(ActiveViewportClient->ViewportIndex);
@@ -371,7 +372,7 @@ void SLevelEditor::RegisterEditorInputDelegates()
             {
                 POINT Point;
                 GetCursorPos(&Point);
-                ScreenToClient(GEngineLoop.AppWnd, &Point);
+                ScreenToClient(GEngineLoop.MainWnd, &Point);
                 FVector2D ClientPos = FVector2D{ static_cast<float>(Point.x), static_cast<float>(Point.y) };
                 SelectViewport(ClientPos);
                 VSplitter->OnPressed({ ClientPos.X, ClientPos.Y });
@@ -419,7 +420,7 @@ void SLevelEditor::RegisterEditorInputDelegates()
                 POINT Point;
 
                 GetCursorPos(&Point);
-                ScreenToClient(GEngineLoop.AppWnd, &Point);
+                ScreenToClient(GEngineLoop.MainWnd, &Point);
                 FVector2D ClientPos = FVector2D{ static_cast<float>(Point.x), static_cast<float>(Point.y) };
                 const bool bIsVerticalHovered = VSplitter->IsSplitterHovered({ ClientPos.X, ClientPos.Y });
                 const bool bIsHorizontalHovered = HSplitter->IsSplitterHovered({ ClientPos.X, ClientPos.Y });

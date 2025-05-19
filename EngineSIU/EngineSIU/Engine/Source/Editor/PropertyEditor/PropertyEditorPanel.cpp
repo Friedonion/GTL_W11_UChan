@@ -117,7 +117,7 @@ void PropertyEditorPanel::Render()
         TargetComponent = SelectedActor->GetRootComponent();
     }
 
-    /*
+    //*
     if (TargetComponent != nullptr)
     {
         AEditorPlayer* Player = Engine->GetEditorPlayer();
@@ -201,7 +201,7 @@ void PropertyEditorPanel::Render()
     {
         RenderForSpringArmComponent(SpringArmComponent);
     }
-    */
+    //*/
     if (SelectedActor)
     {
         ImGui::Separator();
@@ -733,7 +733,8 @@ void PropertyEditorPanel::RenderForSkeletalMesh(USkeletalMeshComponent* Skeletal
             }
             if (SkeletalMeshComp->GetSkeletalMeshAsset())
             {
-                Engine->StartSkeletalMeshViewer(FName(SkeletalMeshComp->GetSkeletalMeshAsset()->GetRenderData()->ObjectName), SkeletalMeshComp->GetAnimation());
+                // @todo Create Preview Window
+                //Engine->StartSkeletalMeshViewer(FName(SkeletalMeshComp->GetSkeletalMeshAsset()->GetRenderData()->ObjectName), SkeletalMeshComp->GetAnimation());
             }
         }
         ImGui::TreePop();

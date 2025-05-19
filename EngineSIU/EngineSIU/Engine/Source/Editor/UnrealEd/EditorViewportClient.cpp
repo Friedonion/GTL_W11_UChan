@@ -268,7 +268,7 @@ void FEditorViewportClient::InputKey(const FKeyEvent& InKeyEvent)
         }
         case 'M':
         {
-            FEngineLoop::GraphicDevice.Resize(GEngineLoop.AppWnd);
+            FEngineLoop::GraphicDevice.Resize(GEngineLoop.MainWnd);
             SLevelEditor* LevelEd = Engine->GetLevelEditor();
             LevelEd->SetEnableMultiViewport(!LevelEd->IsMultiViewport());
             break;

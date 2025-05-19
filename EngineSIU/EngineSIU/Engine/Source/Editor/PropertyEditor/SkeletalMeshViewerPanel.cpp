@@ -112,8 +112,9 @@ void SkeletalMeshViewerPanel::Render()
         ImGui::Begin("Exit Viewer", nullptr, ExitPanelFlags);
         if (ImGui::Button("Exit Viewer", ImVec2(ExitPanelWidth, ExitPanelHeight))) {
             ClearRefSkeletalMeshComponent();
-            UEditorEngine* EdEngine = Cast<UEditorEngine>(GEngine);
-            EdEngine->EndSkeletalMeshViewer();
+            // @todo Close SkeletalMeshViewer Window
+            //UEditorEngine* EdEngine = Cast<UEditorEngine>(GEngine);
+            //EdEngine->EndSkeletalMeshViewer();
         }
         ImGui::End();
         ImGui::PopStyleVar();

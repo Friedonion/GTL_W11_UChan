@@ -26,7 +26,7 @@ FVector2D FWindowsCursor::GetClientPosition()
 {
     POINT CursorPos;
     ::GetCursorPos(&CursorPos);
-    ::ScreenToClient(GEngineLoop.AppWnd, &CursorPos);
+    ::ScreenToClient(GEngineLoop.MainWnd, &CursorPos);
 
     return {
         static_cast<float>(CursorPos.x),
@@ -37,7 +37,7 @@ FVector2D FWindowsCursor::GetClientPosition()
 void FWindowsCursor::SetClientPosition(const int32 X, const int32 Y)
 {
     POINT CursorPos = { X, Y };
-    ::ClientToScreen(GEngineLoop.AppWnd, &CursorPos);
+    ::ClientToScreen(GEngineLoop.MainWnd, &CursorPos);
     ::SetCursorPos(CursorPos.x, CursorPos.y);
 }
 

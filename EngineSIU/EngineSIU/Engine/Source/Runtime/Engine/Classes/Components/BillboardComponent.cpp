@@ -133,7 +133,7 @@ bool UBillboardComponent::CheckPickingOnNDC(const TArray<FVector>& QuadVertices,
     // 마우스 위치를 클라이언트 좌표로 가져온 후 NDC 좌표로 변환
     POINT MousePos;
     GetCursorPos(&MousePos);
-    ScreenToClient(GEngineLoop.AppWnd, &MousePos);
+    ScreenToClient(GEngineLoop.MainWnd, &MousePos);
 
     D3D11_VIEWPORT Viewport;
     UINT NumViewports = 1;

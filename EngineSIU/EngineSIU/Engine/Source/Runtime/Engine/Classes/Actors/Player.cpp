@@ -39,7 +39,7 @@ void AEditorPlayer::Input()
             POINT mousePos;
             GetCursorPos(&mousePos);
             GetCursorPos(&LastMousePos);
-            ScreenToClient(GEngineLoop.AppWnd, &mousePos);
+            ScreenToClient(GEngineLoop.MainWnd, &mousePos);
 
             /*
             uint32 UUID = FEngineLoop::GraphicDevice.GetPixelUUID(mousePos);
