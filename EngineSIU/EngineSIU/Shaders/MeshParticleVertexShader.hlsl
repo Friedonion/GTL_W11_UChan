@@ -3,12 +3,14 @@
 struct VS_INPUT
 {
     float3 Position : POSITION;
+    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
     float2 TexCoord : TEXCOORD;
     float4 World0 : WORLD0;
     float4 World1 : WORLD1;
     float4 World2 : WORLD2;
     float4 World3 : WORLD3;
-    float4 Color : COLOR;
 };
 
 struct VS_OUTPUT
