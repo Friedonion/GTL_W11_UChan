@@ -852,3 +852,20 @@ void FDynamicSpriteEmitterReplayDataBase::Serialize(FArchive& Ar)
 {
     FDynamicEmitterReplayDataBase::Serialize(Ar);
 }
+
+FDynamicEmitterDataBase::FDynamicEmitterDataBase(const UParticleModuleRequired* RequiredModule)
+    : bSelected(false)
+    , EmitterIndex(INDEX_NONE)
+{
+    
+}
+
+FParticleSpriteEmitterInstance::FParticleSpriteEmitterInstance() :
+    FParticleEmitterInstance()
+{
+}
+
+/** Destructor	*/
+FParticleSpriteEmitterInstance::~FParticleSpriteEmitterInstance()
+{
+}

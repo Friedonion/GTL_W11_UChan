@@ -76,7 +76,7 @@ class UParticleEmitter : public UObject
 {
     DECLARE_CLASS(UParticleEmitter, UObject)
 public:
-    UParticleEmitter() = default;
+    UParticleEmitter();
     ~UParticleEmitter() = default;
     //~=============================================================================
     //	General variables
@@ -188,8 +188,7 @@ public:
     // UObject Interface
     //virtual void Serialize(FArchive& Ar)override;
 
-    // @todo document
-    //virtual FParticleEmitterInstance* CreateInstance(UParticleSystemComponent* InComponent);
+    virtual FParticleEmitterInstance* CreateInstance(UParticleSystemComponent* InComponent);
 
     //virtual void UpdateModuleLists();
 
@@ -206,7 +205,7 @@ public:
      *
      *	@return The index of the created LOD level
      */
-    //int32 CreateLODLevel(int32 LODLevel, bool bGenerateModuleData = true);
+    int32 CreateLODLevel(int32 LODLevel, bool bGenerateModuleData = true);
 
     /** IsLODLevelValid
      *	Returns true if the given LODLevel is one of the array entries.
@@ -243,7 +242,7 @@ public:
      *	@return NULL if the requested LODLevel is not valid.
      *			The pointer to the requested UParticleLODLevel if valid.
      */
-    //UParticleLODLevel* GetLODLevel(int32 LODLevel);
+    UParticleLODLevel* GetLODLevel(int32 LODLevel);
 
     /**
      *	Autogenerate the lowest LOD level...
