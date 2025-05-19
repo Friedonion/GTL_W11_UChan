@@ -134,6 +134,11 @@ inline void Particle_SetColorFromVector(const FVector& InColorVec, const float I
     OutColor.A = InAlpha;
 }
 
+// Special module indices...
+#define INDEX_TYPEDATAMODULE	(INDEX_NONE - 1)
+#define INDEX_REQUIREDMODULE	(INDEX_NONE - 2)
+#define INDEX_SPAWNMODULE		(INDEX_NONE - 3)
+
 /*-----------------------------------------------------------------------------
     FBaseParticle
 -----------------------------------------------------------------------------*/
@@ -383,7 +388,7 @@ struct FDynamicSpriteEmitterReplayDataBase
     FVector							NormalsSphereCenter;
     FVector							NormalsCylinderDirection;
     float							InvDeltaSeconds;
-    FVector						LWCTile;
+    // FVector						LWCTile;
     int32							MaxDrawCount;
     int32							OrbitModuleOffset;
     int32							DynamicParameterDataOffset;
@@ -395,7 +400,7 @@ struct FDynamicSpriteEmitterReplayDataBase
     int32							SubImages_Vertical;
     bool						bUseLocalSpace;
     bool						bLockAxis;
-    uint8						ScreenAlignment;
+    //uint8						ScreenAlignment;
     uint8						LockAxisFlag;
     uint8						EmitterRenderMode;
     uint8						EmitterNormalsMode;

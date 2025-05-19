@@ -38,6 +38,11 @@ public:
     /** Stream of random values to use with this component */
     FRandomStream RandomStream;
 
+    /** This is created at start up and then added to each emitter */
+    float EmitterDelay;
+
+    /** Indicates that the component has not been ticked since being registered. */
+    uint8 bJustRegistered:1;
 private:
     int32 LODLevel;
 

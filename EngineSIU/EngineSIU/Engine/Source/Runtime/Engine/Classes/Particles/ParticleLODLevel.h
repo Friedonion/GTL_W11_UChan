@@ -13,7 +13,7 @@ class UParticleLODLevel : public UObject
 {
     DECLARE_CLASS(UParticleLODLevel, UObject)
 public:
-    UParticleLODLevel() = default;
+    UParticleLODLevel();
     ~UParticleLODLevel() = default;
     
     /** The index value of the LOD level												*/
@@ -91,16 +91,16 @@ public:
      *
      *	@return		The maximum active particle count for the LOD level.
      */
-    //virtual int32	CalculateMaxActiveParticleCount();
+    virtual int32	CalculateMaxActiveParticleCount();
 
     /** Update to the new SpawnModule method */
     //void	ConvertToSpawnModule();
 
     /** @return the index of the given module if it is contained in the LOD level */
-    //int32		GetModuleIndex(UParticleModule* InModule);
+    int32 GetModuleIndex(UParticleModule* InModule);
 
     /** @return the module at the given index if it is contained in the LOD level */
-    //UParticleModule* GetModuleAtIndex(int32 InIndex);
+    UParticleModule* GetModuleAtIndex(int32 InIndex);
 
     /**
      *	Sets the LOD 'Level' to the given value, properly updating the modules LOD validity settings.
@@ -128,7 +128,7 @@ public:
      * Compiles all modules for this LOD level.
      * @param EmitterBuildInfo - Where to store emitter information.
      */
-    //void CompileModules(struct FParticleEmitterBuildInfo& EmitterBuildInfo);
+    void CompileModules(struct FParticleEmitterBuildInfo& EmitterBuildInfo);
 
     /**
      * Append all used materials to the material list.
