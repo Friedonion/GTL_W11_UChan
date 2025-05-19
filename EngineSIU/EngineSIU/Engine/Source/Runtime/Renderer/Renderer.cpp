@@ -20,7 +20,7 @@
 #include "DepthPrePass.h"
 #include "TileLightCullingPass.h"
 
-#include "UnifiedParticleRenderPass.h"
+#include "ParticleRenderPass.h"
 
 #include "CompositingPass.h"
 #include "LightHeatMapRenderPass.h"

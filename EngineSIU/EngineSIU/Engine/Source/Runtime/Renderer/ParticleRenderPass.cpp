@@ -1,6 +1,5 @@
-// UnifiedParticleRenderPass.cpp
 
-#include "UnifiedParticleRenderPass.h"
+#include "ParticleRenderPass.h"
 #include "Engine/EditorEngine.h"
 #include "D3D11RHI/DXDShaderManager.h"
 #include "D3D11RHI/DXDBufferManager.h"
