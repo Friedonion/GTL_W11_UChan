@@ -332,6 +332,8 @@ public:
      */
     void SetDelay(float InDelay);
 
+    void UpdateAllModuleLists();
+
     /** Return the currently set LOD method											*/
     virtual enum ParticleSystemLODMethod GetCurrentLODMethod();
 

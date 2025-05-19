@@ -20,7 +20,10 @@ public:
     TArray<UMaterial*> EmitterMaterials;
     UParticleSystem* Template;
 
+
     TArray<FDynamicEmitterDataBase*> EmitterRenderData;
+
+    virtual int32 GetLODLevel();
 
     virtual void TickComponent(float DeltaTime) override;
 
@@ -41,6 +44,8 @@ public:
     /** Indicates that the component has not been ticked since being registered. */
     uint8 bJustRegistered:1;
 private:
+    int32 LODLevel;
+
     float DeltaTimeTick;
 
     int32 TotalActiveParticles;

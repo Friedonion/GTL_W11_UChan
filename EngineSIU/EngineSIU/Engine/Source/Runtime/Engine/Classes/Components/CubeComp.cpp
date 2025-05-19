@@ -8,7 +8,8 @@ UCubeComp::UCubeComp()
     SetType(StaticClass()->GetName());
     AABB.MaxLocation = { 1,1,1 };
     AABB.MinLocation = { -1,-1,-1 };
-
+    FObjManager::CreateStaticMesh("Contents/Reference/Reference.obj");
+    SetStaticMesh(FObjManager::GetStaticMesh(L"Reference.obj"));
 }
 
 void UCubeComp::InitializeComponent()

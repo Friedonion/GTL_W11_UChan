@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "UObject/ObjectMacros.h"
 #include "Particles/ParticleEmitter.h"
@@ -17,6 +17,7 @@ enum EParticleScreenAlignment : int
     PSA_MAX,
 };
 
+//UCLASS(collapsecategories, hidecategories = Object, editinlinenew, MinimalAPI)
 class UParticleSpriteEmitter : public UParticleEmitter
 {
     DECLARE_CLASS(UParticleSpriteEmitter, UParticleEmitter)
