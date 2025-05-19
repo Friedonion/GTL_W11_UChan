@@ -1,4 +1,4 @@
-﻿// ReSharper disable CppClangTidyPerformanceNoIntToPtr
+// ReSharper disable CppClangTidyPerformanceNoIntToPtr
 // ReSharper disable CppMemberFunctionMayBeConst
 
 #include "RawInput.h"
@@ -10,24 +10,22 @@
 #define HID_USAGE_GENERIC_KEYBOARD     ((USHORT) 0x06)
 
 
-FRawInput::FRawInput(HWND hWnd, InputCallback InCallback)
-    : AppWnd(hWnd)
-    , Callback(std::move(InCallback))
+FRawInput::FRawInput(InputCallback InCallback)
+    : Callback(std::move(InCallback))
 {
-    if (!hWnd)
-    {
-        throw std::invalid_argument("HWND cannot be null.");
-    }
     RegisterDevices();
 }
 
-void FRawInput::ProcessRawInput(LPARAM lParam) const
+void FRawInput::ProcessRawInput(HWND AppWnd, LPARAM lParam) const
 {
     uint32 DataSize = 0;
 
     // 입력 데이터 크기 확인
     GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, nullptr, &DataSize, sizeof(RAWINPUTHEADER));
-    if (DataSize == 0) return;
+    if (DataSize == 0)
+    {
+        return;
+    }
 
     // 입력 데이터 버퍼 할당
     TArray<BYTE> Buffer;
@@ -42,7 +40,7 @@ void FRawInput::ProcessRawInput(LPARAM lParam) const
     const RAWINPUT* RawInput = reinterpret_cast<const RAWINPUT*>(Buffer.GetData());
     if (Callback)
     {
-        Callback(*RawInput);
+        Callback(AppWnd, *RawInput);
     }
 }
 
@@ -54,12 +52,13 @@ bool FRawInput::IsValid() const
 void FRawInput::RegisterDevices()
 {
     // 키보드 입력 장치 등록 (사용 페이지: 0x01, 사용: 0x06)
-    const RAWINPUTDEVICE KeyboardRid = {
+    const RAWINPUTDEVICE KeyboardRid = 
+    {
         HID_USAGE_PAGE_GENERIC,
-        HID_USAGE_GENERIC_KEYBOARD,        // 키보드 사용
-        // RIDEV_INPUTSINK | RIDEV_DEVNOTIFY, // 백그라운드 입력 수신 및 장치 변경시 알림
+        HID_USAGE_GENERIC_KEYBOARD,             // 키보드 사용
+        // RIDEV_INPUTSINK | RIDEV_DEVNOTIFY,   // 백그라운드 입력 수신 및 장치 변경시 알림
         RIDEV_DEVNOTIFY,
-        AppWnd                             // RawInput 메시지를 받을 대상 창
+        nullptr//AppWnd                         // RawInput 메시지를 받을 대상 창
     };
 
     if (!RegisterRawInputDevices(&KeyboardRid, 1, sizeof(KeyboardRid)))
@@ -71,10 +70,10 @@ void FRawInput::RegisterDevices()
     // 마우스 입력 장치 등록 (사용 페이지: 0x01, 사용: 0x02)
     const RAWINPUTDEVICE MouseRid = {
         HID_USAGE_PAGE_GENERIC,
-        HID_USAGE_GENERIC_MOUSE,           // 마우스 사용
-        // RIDEV_INPUTSINK | RIDEV_DEVNOTIFY, // 백그라운드 입력 수신 및 장치 변경시 알림
+        HID_USAGE_GENERIC_MOUSE,                // 마우스 사용
+        // RIDEV_INPUTSINK | RIDEV_DEVNOTIFY,   // 백그라운드 입력 수신 및 장치 변경시 알림
         RIDEV_DEVNOTIFY,
-        AppWnd                             // RawInput 메시지를 받을 대상 창
+        nullptr//AppWnd                         // RawInput 메시지를 받을 대상 창
     };
 
     if (!RegisterRawInputDevices(&MouseRid, 1, sizeof(MouseRid)))
