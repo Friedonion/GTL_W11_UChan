@@ -183,20 +183,25 @@ public:
     TArray<UParticleModule*> ModulesNeedingRandomSeedInstanceData;
 
     /** SubUV animation asset to use for cutout geometry. */
-    //class USubUVAnimation* RESTRICT SubUVAnimation;
+    class USubUVAnimation* __restrict SubUVAnimation;
 
     // UObject Interface
     //virtual void Serialize(FArchive& Ar)override;
+    //virtual void PostLoad() override;
 
+    // @todo document
     virtual FParticleEmitterInstance* CreateInstance(UParticleSystemComponent* InComponent);
+    
+    // Sets up this emitter with sensible defaults so we can see some particles as soon as its created.
+    //virtual void SetToSensibleDefaults() {}
+    
+    virtual void UpdateModuleLists();
 
-    //virtual void UpdateModuleLists();
+    void SetEmitterName(FName Name);
 
-    //void SetEmitterName(FName Name);
+    FName& GetEmitterName();
 
-    //FName& GetEmitterName();
-
-    //virtual	void SetLODCount(int32 LODCount);
+    virtual	void SetLODCount(int32 LODCount);
 
     /** CreateLODLevel
      *	Creates the given LOD level.
@@ -215,7 +220,7 @@ public:
      *	@return false if the requested LODLevel is not valid.
      *			true if the requested LODLevel is valid.
      */
-    //bool IsLODLevelValid(int32 LODLevel);
+    bool IsLODLevelValid(int32 LODLevel);
 
     /** GetCurrentLODLevel
     *	Returns the currently set LODLevel. Intended for game-time usage.
@@ -275,10 +280,10 @@ public:
     /**
      * Builds data needed for simulation by the emitter from all modules.
      */
-    //void Build();
+    void Build();
 
     /** Pre-calculate data size/offset and other info from modules in this Emitter */
-    //void CacheEmitterModuleInfo();
+    void CacheEmitterModuleInfo();
 
     /**
      *   Calculate spawn rate multiplier based on global effects quality level and emitter's quality scale

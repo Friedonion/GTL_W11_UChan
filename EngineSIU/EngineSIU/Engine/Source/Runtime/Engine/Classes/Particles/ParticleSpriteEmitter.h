@@ -21,9 +21,9 @@ enum EParticleScreenAlignment : int
 class UParticleSpriteEmitter : public UParticleEmitter
 {
     DECLARE_CLASS(UParticleSpriteEmitter, UParticleEmitter)
-public:
+
     UParticleSpriteEmitter();
-    //~UParticleSpriteEmitter();
+    virtual ~UParticleSpriteEmitter()=default;
 
     //~ Begin UObject Interface
     //virtual void PostLoad() override;
