@@ -957,6 +957,11 @@ bool UParticleSystem::CalculateMaxActiveParticleCounts()
     return bSuccess;
 }
 
+void UParticleSystem::SetDelay(float InDelay)
+{
+    Delay = InDelay;
+}
+
 void UParticleSystem::UpdateAllModuleLists()
 {
     for (int32 EmitterIdx = 0; EmitterIdx < Emitters.Num(); EmitterIdx++)
