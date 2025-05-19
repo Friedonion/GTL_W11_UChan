@@ -20,6 +20,7 @@
 #include "DepthPrePass.h"
 #include "TileLightCullingPass.h"
 
+#include "MeshParticleRenderPass.h"
 #include "ParticleRenderPass.h"
 
 #include "CompositingPass.h"
@@ -67,6 +68,7 @@ void FRenderer::Initialize(FGraphicsDevice* InGraphics, FDXDBufferManager* InBuf
     LightHeatMapRenderPass = AddRenderPass<FLightHeatMapRenderPass>();
 
     ParticleRenderPass = AddRenderPass<FParticleRenderPass>();
+    MeshParticleRenderPass = AddRenderPass<FMeshParticleRenderPass>();
     
     CompositingPass = AddRenderPass<FCompositingPass>();
     PostProcessCompositingPass = AddRenderPass<FPostProcessCompositingPass>();
@@ -198,30 +200,60 @@ void FRenderer::CreateCommonShader() const
         return;
     }
     
-    D3D11_INPUT_ELEMENT_DESC ParticleLayout[] = {
+    D3D11_INPUT_ELEMENT_DESC SpriteParticleLayout[] = {
      { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,     0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0 },
-     { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,        0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+     { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,        0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
      { "WORLD",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 0,  D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-     { "WORLD",    1, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-     { "WORLD",    2, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-     { "WORLD",    3, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-     { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, 64, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
-     { "SUBIMAGE_INDEX", 0, DXGI_FORMAT_R32_UINT,      1, 80, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "WORLD",    1, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "WORLD",    2, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "WORLD",    3, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,  1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+     { "SUBIMAGE_INDEX", 0, DXGI_FORMAT_R32_UINT,      1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
     };
 
 
     hr= ShaderManager->AddVertexShaderAndInputLayout(
         L"ParticleSpriteVS",
-        L"Shaders/ParticleVertexShader.hlsl",
+        L"Shaders/SpriteParticleVertexShader.hlsl",
         "mainVS",
-        ParticleLayout, ARRAYSIZE(ParticleLayout)
+        SpriteParticleLayout, ARRAYSIZE(SpriteParticleLayout)
     );
 
     if (FAILED(hr)) { return; }
 
     hr= ShaderManager->AddPixelShader(
         L"ParticleSpritePS",
-        L"Shaders/ParticlePixelShader.hlsl",
+        L"Shaders/SpriteParticlePixelShader.hlsl",
+        "mainPS"
+    );
+
+    if (FAILED(hr)) { return; }
+
+    // Mesh Particle 셰이더 레이아웃 설정
+    D3D11_INPUT_ELEMENT_DESC MeshParticleLayout[] = {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        
+        // 인스턴스 데이터
+        { "WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "WORLD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1 }
+    };
+
+    hr = ShaderManager->AddVertexShaderAndInputLayout(
+        L"MeshParticleVS",
+        L"Shaders/MeshParticleVertexShader.hlsl",
+        "mainVS",
+        MeshParticleLayout, ARRAYSIZE(MeshParticleLayout)
+    );
+
+    if (FAILED(hr)) { return; }
+
+    hr = ShaderManager->AddPixelShader(
+        L"MeshParticlePS",
+        L"Shaders/MeshParticlePixelShader.hlsl",
         "mainPS"
     );
 
@@ -354,6 +386,7 @@ void FRenderer::Render(const std::shared_ptr<FEditorViewportClient>& Viewport)
     RenderWorldScene(Viewport);
 
     ParticleRenderPass->Render(Viewport);
+    MeshParticleRenderPass->Render(Viewport);
 
     RenderPostProcess(Viewport);
     RenderEditorOverlay(Viewport);

@@ -48,6 +48,7 @@ class FTileLightCullingPass;
 class FGPUTimingManager;
 
 class FParticleRenderPass;
+class FMeshParticleRenderPass;
 
 class FRenderer
 {
@@ -106,6 +107,7 @@ public:
     FWorldBillboardRenderPass* WorldBillboardRenderPass = nullptr;
 
     FParticleRenderPass* ParticleRenderPass = nullptr;
+    FMeshParticleRenderPass* MeshParticleRenderPass = nullptr;
     
     FEditorBillboardRenderPass* EditorBillboardRenderPass = nullptr;
     FGizmoRenderPass* GizmoRenderPass = nullptr;

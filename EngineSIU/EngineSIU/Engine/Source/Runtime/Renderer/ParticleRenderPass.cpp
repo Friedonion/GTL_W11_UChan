@@ -147,9 +147,9 @@ void FParticleRenderPass::RenderParticles(const std::shared_ptr<FEditorViewportC
 
     FParticleConstant SubUVData = { SubImageCountX, SubImageCountY };
     BufferManager->UpdateConstantBuffer(TEXT("FParticleConstant"), SubUVData);
+
+    
     BufferManager->BindConstantBuffer(TEXT("FParticleConstant"), 7, EShaderStage::Vertex);
-
-
     BufferManager->BindConstantBuffer(TEXT("FCameraConstantBuffer"), 13, EShaderStage::Vertex);
 
     ParticleTexture = FEngineLoop::ResourceManager.GetTexture(L"Assets/Texture/T_Explosion_SubUV.png");
