@@ -27,8 +27,7 @@ uint32 FEngineLoop::TotalAllocationBytes = 0;
 uint32 FEngineLoop::TotalAllocationCount = 0;
 
 FEngineLoop::FEngineLoop()
-    : AppWnd(nullptr)
-    , UIManager(nullptr)
+    : MainWnd(nullptr)
 {
 }
 
@@ -41,14 +40,16 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
 {
     FPlatformTime::InitTiming();
 
+    WCHAR WindowClass[] = L"JungleWindowClass";
+    WCHAR Title[] = L"Game Tech Lab";
+
     /* must be initialized before window. */
-    WindowInit(hInstance);
+    CreateEngineWnd(hInstance, WindowClass, Title);
 
     BufferManager = new FDXDBufferManager();
-    UIManager = new UImGuiManager;
     AppMessageHandler = std::make_unique<FSlateAppMessageHandler>();
 
-    GraphicDevice.Initialize(AppWnd);
+    GraphicDevice.Initialize(MainWnd);
 
     if (!GPUTimingManager.Initialize(GraphicDevice.Device, GraphicDevice.DeviceContext))
     {
@@ -77,27 +78,16 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     BufferManager->Initialize(GraphicDevice.Device, GraphicDevice.DeviceContext);
     Renderer.Initialize(&GraphicDevice, BufferManager, &GPUTimingManager);
     PrimitiveDrawBatch.Initialize(&GraphicDevice);
-    UIManager->Initialize(AppWnd, GraphicDevice.Device, GraphicDevice.DeviceContext);
     ResourceManager.Initialize(&Renderer, &GraphicDevice);
     
 
     GEngine = FObjectFactory::ConstructObject<UEditorEngine>(nullptr);
     GEngine->Init();
 
-    auto UnrealEditor = new UnrealEd;
-    auto LevelEditor = new SLevelEditor;
-
-    auto Engine = Cast<UEditorEngine>(GEngine);
-    Engine->SetUnrealEditor(UnrealEditor);
-    Engine->SetLevelEditor(LevelEditor);
-
-    uint32 ClientWidth = 0;
-    uint32 ClientHeight = 0;
-    GetClientSize(ClientWidth, ClientHeight);
-    Engine->GetLevelEditor()->Initialize(ClientWidth, ClientHeight);
-    Engine->GetUnrealEditor()->Initialize();
-
-    UpdateUI();
+    for (const auto& AppWnd : AppWnds)
+    {
+        UpdateUI(AppWnd);
+    }
 
     // Load Sound Assets
     {
@@ -112,34 +102,66 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
 
 void FEngineLoop::Render() const
 {
-    auto Engine = Cast<UEditorEngine>(GEngine);
-    auto LevelEditor = Engine->GetLevelEditor();
-    
-    GraphicDevice.Prepare();
-
-    if (LevelEditor->IsMultiViewport())
+    auto EditorEngine = Cast<UEditorEngine>(GEngine);
+    if (EditorEngine == nullptr)
     {
-        const std::shared_ptr<FEditorViewportClient> ActiveViewportCache = LevelEditor->GetActiveViewportClient();
-        for (int Idx = 0; Idx < 4; ++Idx)
+        MessageBox(MainWnd, L"Cannot Cast GEngine into UEditorEngine.", L"[Error] void FEngineLoop::Render() const", MB_ICONERROR | MB_OK);
+        return;
+    }
+
+    auto LevelEditor = EditorEngine->GetLevelEditor();
+    if (LevelEditor == nullptr)
+    {
+        MessageBox(MainWnd, L"GetLevelEditor Failed.", L"[Error] void FEngineLoop::Render() const", MB_ICONERROR | MB_OK);
+        return;
+    }
+
+    auto UnrealEd = EditorEngine->GetUnrealEditor();
+    if (UnrealEd == nullptr)
+    {
+        MessageBox(MainWnd, L"GetUnrealEditor Failed.", L"[Error] void FEngineLoop::Render() const", MB_ICONERROR | MB_OK);
+        return;
+    }
+
+    TArray<HWND> CopiedAppWnds = AppWnds;
+    for (const auto& AppWnd : CopiedAppWnds)
+    {
+        GraphicDevice.Prepare(AppWnd);
+
+        /* Editor Viewport */
+        if (LevelEditor->IsMultiViewport())
         {
-            LevelEditor->SetActiveViewportClient(Idx);
-            Renderer.Render(LevelEditor->GetActiveViewportClient());
+            const std::shared_ptr<FEditorViewportClient> ActiveViewportCache = LevelEditor->GetActiveViewportClient();
+            for (int Idx = 0; Idx < 4; ++Idx)
+            {
+                LevelEditor->SetActiveViewportClient(Idx);
+                Renderer.Render(LevelEditor->GetActiveViewportClient());
+            }
+
+            for (int Idx = 0; Idx < 4; ++Idx)
+            {
+                LevelEditor->SetActiveViewportClient(Idx);
+                Renderer.RenderViewport(LevelEditor->GetActiveViewportClient());
+            }
+            LevelEditor->SetActiveViewportClient(ActiveViewportCache);
         }
-        
-        for (int Idx = 0; Idx < 4; ++Idx)
+        else
         {
-            LevelEditor->SetActiveViewportClient(Idx);
+            Renderer.Render(LevelEditor->GetActiveViewportClient());
+
             Renderer.RenderViewport(LevelEditor->GetActiveViewportClient());
         }
-        LevelEditor->SetActiveViewportClient(ActiveViewportCache);
-    }
-    else
-    {
-        Renderer.Render(LevelEditor->GetActiveViewportClient());
-        
-        Renderer.RenderViewport(LevelEditor->GetActiveViewportClient());
-    }
-    
+
+        /* Editor UI */
+        UImGuiManager::Get().BeginFrame(AppWnd);
+        {
+            UnrealEd->Render();
+        }
+        UImGuiManager::Get().EndFrame(AppWnd);
+
+
+        GraphicDevice.SwapBuffer(AppWnd);
+    }    
 }
 
 void FEngineLoop::Tick()
@@ -180,14 +202,14 @@ void FEngineLoop::Tick()
         GEngine->Tick(DeltaTime);
         auto Engine = Cast<UEditorEngine>(GEngine);
         Engine->GetLevelEditor()->Tick(DeltaTime);
-        Render();
-        UIManager->BeginFrame();
-        Engine->GetUnrealEditor()->Render();
 
+        Render();
+
+        /* MainWnd 특수 ImGui */
+        UImGuiManager::Get().BeginFrame(MainWnd);
         FConsole::GetInstance().Draw();
         EngineProfiler.Render(GraphicDevice.DeviceContext, GraphicDevice.ScreenWidth, GraphicDevice.ScreenHeight);
-
-        UIManager->EndFrame();
+        UImGuiManager::Get().EndFrame(MainWnd);
 
         // Pending 처리된 오브젝트 제거
         GUObjectArray.ProcessPendingDestroyObjects();
@@ -197,7 +219,6 @@ void FEngineLoop::Tick()
             GPUTimingManager.EndFrame();        // End GPU frame timing
         }
 
-        GraphicDevice.SwapBuffer();
         do
         {
             Sleep(0);
@@ -211,15 +232,15 @@ void FEngineLoop::Tick()
 void FEngineLoop::GetClientSize(uint32& OutWidth, uint32& OutHeight) const
 {
     RECT ClientRect = {};
-    GetClientRect(AppWnd, &ClientRect);
+    GetClientRect(MainWnd, &ClientRect);
             
     OutWidth = ClientRect.right - ClientRect.left;
     OutHeight = ClientRect.bottom - ClientRect.top;
 }
 
-void FEngineLoop::Exit()
+void FEngineLoop::Exit() const
 {
-    UIManager->Shutdown();
+    UImGuiManager::Get().Shutdown();
     ResourceManager.Release(&Renderer);
     Renderer.Release();
     GraphicDevice.Release();
@@ -227,15 +248,10 @@ void FEngineLoop::Exit()
     GEngine->Release();
 
     delete BufferManager;
-    delete UIManager;
 }
 
-void FEngineLoop::WindowInit(HINSTANCE hInstance)
+HWND FEngineLoop::CreateEngineWnd(const HINSTANCE hInstance, WCHAR WindowClass[], WCHAR Title[])
 {
-    WCHAR WindowClass[] = L"JungleWindowClass";
-
-    WCHAR Title[] = L"Game Tech Lab";
-
     WNDCLASSW Wc{};
     Wc.lpfnWndProc = AppWndProc;
     Wc.hInstance = hInstance;
@@ -244,30 +260,70 @@ void FEngineLoop::WindowInit(HINSTANCE hInstance)
 
     RegisterClassW(&Wc);
 
-    AppWnd = CreateWindowExW(
+    const HWND AppWnd = CreateWindowExW(
         0, WindowClass, Title, WS_POPUP | WS_VISIBLE | WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 1400, 1000,
         nullptr, nullptr, hInstance, nullptr
     );
+    AppWnds.Add(AppWnd);
+
+    GraphicDevice.AddWnd(AppWnd);
+
+    UImGuiManager::Get().AddWnd(AppWnd, GraphicDevice.Device, GraphicDevice.DeviceContext);
+
+    UpdateUI(AppWnd);
+
+    return AppWnd;
+}
+
+void FEngineLoop::DestroyEngineWnd(HWND AppWnd, HINSTANCE hInstance, WCHAR WindowClass[])
+{
+    DestroyWindow(AppWnd);
+    UnregisterClassW(WindowClass, hInstance);
+    AppWnds.Remove(AppWnd);
+
+    GraphicDevice.RemoveWnd(AppWnd);
+
+    UImGuiManager::Get().RemoveWnd(AppWnd);
+}
+
+void FEngineLoop::UpdateUI(HWND AppWnd) const
+{
+    FConsole::GetInstance().OnResize(AppWnd);
+    if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
+    {
+        if (const UnrealEd* UnrealEditor = EditorEngine->GetUnrealEditor())
+        {
+            UnrealEditor->OnResize(AppWnd);
+        }
+    }
+    ViewportTypePanel::GetInstance().OnResize(AppWnd);
 }
 
 LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, LPARAM lParam)
 {
-    if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam))
+    if (ImGuiContext* TargetContext = UImGuiManager::Get().GetImGuiContext(hWnd))
     {
-        return true;
+        ImGuiContext* OriginalContext = ImGui::GetCurrentContext();
+        ImGui::SetCurrentContext(TargetContext);
+        if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam))
+        {
+            ImGui::SetCurrentContext(OriginalContext);
+            return true;
+        }
+        ImGui::SetCurrentContext(OriginalContext);
     }
 
     switch (Msg)
     {
     case WM_CLOSE:
-        //const auto hInstance = reinterpret_cast<HINSTANCE>(GetWindowLongPtrW(hWnd, GWLP_HINSTANCE));
+        const auto hInstance = reinterpret_cast<HINSTANCE>(GetWindowLongPtrW(hWnd, GWLP_HINSTANCE));
         WCHAR ClassName[256];
         GetClassNameW(hWnd, ClassName, sizeof(ClassName) / sizeof(WCHAR));
-        //GEngineLoop.DestroyEngineWindow(hWnd, hInstance, ClassName);
+        GEngineLoop.DestroyEngineWnd(hWnd, hInstance, ClassName);
         if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
         {
-            //if (GEngineLoop.AppWindows.Num() == 0 || GEngineLoop.DefaultWindow == hWnd)
+            if (GEngineLoop.AppWnds.Num() == 0 || GEngineLoop.MainWnd == hWnd)
             {
                 EditorEngine->GetLevelEditor()->SaveConfig();
             }
@@ -276,6 +332,10 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
             //    EditorEngine->RemoveWorld(EditorEngine->GetLevelEditor()->GetViewportClients(hWnd)[0]->World);
             //}
             //EditorEngine->GetLevelEditor()->RemoveViewportClients(hWnd);
+        }
+        if (!(GEngineLoop.AppWnds.Num() == 0 || GEngineLoop.MainWnd == hWnd))
+        {
+            break;
         }
     /// Close -> Destroy When there is no more window
     case WM_DESTROY:
@@ -300,7 +360,7 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
                 );
             }
         }
-        GEngineLoop.UpdateUI();
+        GEngineLoop.UpdateUI(hWnd);
         break;
     default:
         GEngineLoop.AppMessageHandler->ProcessMessage(hWnd, Msg, wParam, lParam);
@@ -308,18 +368,4 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
     }
 
     return 0;
-}
-
-void FEngineLoop::UpdateUI()
-{
-    FConsole::GetInstance().OnResize(AppWnd);
-    auto Engine = Cast<UEditorEngine>(GEngine);
-    if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
-    {
-        if (const UnrealEd* UnrealEditor = EditorEngine->GetUnrealEditor())
-        {
-            UnrealEditor->OnResize(AppWnd);
-        }
-    }
-    ViewportTypePanel::GetInstance().OnResize(AppWnd);
 }

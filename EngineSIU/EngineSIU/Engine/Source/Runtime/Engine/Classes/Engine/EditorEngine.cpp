@@ -34,12 +34,20 @@ void UEditorEngine::Init()
     // Initialize the engine
     GEngine = this;
 
-    FWorldContext& EditorWorldContext = CreateNewWorldContext(EWorldType::Editor);
+    UWorld* EditorWorld = UWorld::CreateWorld(this, EWorldType::Editor, FString("EditorWorld"));
+    EditorWorldContext = CreateNewWorldContext(EditorWorld, EWorldType::Editor);
 
-    EditorWorld = UWorld::CreateWorld(this, EWorldType::Editor, FString("EditorWorld"));
-
-    EditorWorldContext.SetCurrentWorld(EditorWorld);
     ActiveWorld = EditorWorld;
+
+    LevelEditor = new SLevelEditor;
+    UnrealEditor = new UnrealEd;
+
+    uint32 ClientWidth = 0;
+    uint32 ClientHeight = 0;
+    GEngineLoop.GetClientSize(ClientWidth, ClientHeight);
+
+    LevelEditor->Initialize(ClientWidth, ClientHeight);
+    UnrealEditor->Initialize();
 
     EditorPlayer = FObjectFactory::ConstructObject<AEditorPlayer>(this);
 
@@ -139,7 +147,7 @@ void UEditorEngine::Tick(float DeltaTime)
 
 void UEditorEngine::StartPIE()
 {
-    if (PIEWorld)
+    if (PIEWorldContext)
     {
         UE_LOG(ELogLevel::Warning, TEXT("PIEWorld already exists!"));
         return;
@@ -151,92 +159,91 @@ void UEditorEngine::StartPIE()
 
     Handler->OnPIEModeStart();
 
-    FWorldContext& PIEWorldContext = CreateNewWorldContext(EWorldType::PIE);
-
-    PIEWorld = Cast<UWorld>(EditorWorld->Duplicate(this));
+    UWorld* PIEWorld = Cast<UWorld>(EditorWorldContext->World()->Duplicate(this));
+    // Duplicate에서 따로 WorldType을 설정해주지 않음.
     PIEWorld->WorldType = EWorldType::PIE;
+    PIEWorldContext = CreateNewWorldContext(PIEWorld, EWorldType::PIE);
 
-    PIEWorldContext.SetCurrentWorld(PIEWorld);
     ActiveWorld = PIEWorld;
     
     BindEssentialObjects();
     
-    PIEWorld->BeginPlay();
+    PIEWorldContext->World()->BeginPlay();
     // 여기서 Actor들의 BeginPlay를 해줄지 안에서 해줄 지 고민.
     // WorldList.Add(GetWorldContextFromWorld(PIEWorld));
 }
 
-void UEditorEngine::StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAsset* AnimAsset)
-{
-    if (SkeletalMeshName == "")
-    {
-        return;
-    }
-    if (SkeletalMeshViewerWorld)
-    {
-        UE_LOG(ELogLevel::Warning, TEXT("SkeletalMeshViewerWorld already exists!"));
-        return;
-    }
-    
-    FWorldContext& WorldContext = CreateNewWorldContext(EWorldType::EditorPreview);
-
-    
-    SkeletalMeshViewerWorld = USkeletalViewerWorld::CreateWorld(this, EWorldType::EditorPreview, FString("SkeletalMeshViewerWorld"));
-
-    WorldContext.SetCurrentWorld(SkeletalMeshViewerWorld);
-    ActiveWorld = SkeletalMeshViewerWorld;
-    SkeletalMeshViewerWorld->WorldType = EWorldType::EditorPreview;
-
-    // 스켈레탈 액터 스폰
-    ASkeletalMeshActor* SkeletalActor = SkeletalMeshViewerWorld->SpawnActor<ASkeletalMeshActor>();
-    SkeletalActor->SetActorTickInEditor(true);
-    
-    USkeletalMeshComponent* MeshComp = SkeletalActor->AddComponent<USkeletalMeshComponent>();
-    SkeletalActor->SetRootComponent(MeshComp);
-    SkeletalActor->SetActorLabel(TEXT("OBJ_SKELETALMESH"));
-    MeshComp->SetSkeletalMeshAsset(UAssetManager::Get().GetSkeletalMesh(SkeletalMeshName.ToString()));
-    SkeletalMeshViewerWorld->SetSkeletalMeshComponent(MeshComp);
-
-    MeshComp->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-    MeshComp->PlayAnimation(AnimAsset, true);
-    MeshComp->DEBUG_SetAnimationEnabled(true);
-    MeshComp->SetPlaying(true);
-    
-    ADirectionalLight* DirectionalLight = SkeletalMeshViewerWorld->SpawnActor<ADirectionalLight>();
-    DirectionalLight->SetActorRotation(FRotator(45.f, 45.f, 0.f));
-    DirectionalLight->GetComponentByClass<UDirectionalLightComponent>()->SetIntensity(4.0f);
-
-    FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
-    CameraLocation = Camera->GetLocation();
-    CameraRotation = Camera->GetRotation();
-    
-    Camera->SetRotation(FVector(0.0f, 30, 180));
-    if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(MeshComp))
-    {
-        float FOV = LevelEditor->GetActiveViewportClient()->GetCameraFOV();
-
-        // 로컬 바운딩 박스
-        FBoundingBox Box = Primitive->GetBoundingBox();
-        FVector LocalCenter = (Box.MinLocation + Box.MaxLocation) * 0.5f;
-        FVector LocalExtents = (Box.MaxLocation - Box.MinLocation) * 0.5f;
-        float Radius = LocalExtents.Length();
-        
-        FMatrix ComponentToWorld = Primitive->GetWorldMatrix();
-        FVector WorldCenter = ComponentToWorld.TransformPosition(LocalCenter);
-
-        // FOV 기반 거리 계산
-        float VerticalFOV = FMath::DegreesToRadians(FOV);
-        float Distance = Radius / FMath::Tan(VerticalFOV * 0.5f);
-
-        // 카메라 위치 설정
-        Camera->SetLocation(WorldCenter - Camera->GetForwardVector() * Distance);
-    }
-
-    if (AEditorPlayer* Player = GetEditorPlayer())
-    {
-        Player->SetCoordMode(ECoordMode::CDM_LOCAL);
-    }
-}
+//void UEditorEngine::StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAsset* AnimAsset)
+//{
+//    if (SkeletalMeshName == "")
+//    {
+//        return;
+//    }
+//    if (SkeletalMeshViewerWorld)
+//    {
+//        UE_LOG(ELogLevel::Warning, TEXT("SkeletalMeshViewerWorld already exists!"));
+//        return;
+//    }
+//    
+//    FWorldContext& WorldContext = CreateNewWorldContext(EWorldType::EditorPreview);
+//
+//    
+//    SkeletalMeshViewerWorld = USkeletalViewerWorld::CreateWorld(this, EWorldType::EditorPreview, FString("SkeletalMeshViewerWorld"));
+//
+//    WorldContext.SetCurrentWorld(SkeletalMeshViewerWorld);
+//    ActiveWorld = SkeletalMeshViewerWorld;
+//    SkeletalMeshViewerWorld->WorldType = EWorldType::EditorPreview;
+//
+//    // 스켈레탈 액터 스폰
+//    ASkeletalMeshActor* SkeletalActor = SkeletalMeshViewerWorld->SpawnActor<ASkeletalMeshActor>();
+//    SkeletalActor->SetActorTickInEditor(true);
+//    
+//    USkeletalMeshComponent* MeshComp = SkeletalActor->AddComponent<USkeletalMeshComponent>();
+//    SkeletalActor->SetRootComponent(MeshComp);
+//    SkeletalActor->SetActorLabel(TEXT("OBJ_SKELETALMESH"));
+//    MeshComp->SetSkeletalMeshAsset(UAssetManager::Get().GetSkeletalMesh(SkeletalMeshName.ToString()));
+//    SkeletalMeshViewerWorld->SetSkeletalMeshComponent(MeshComp);
+//
+//    MeshComp->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+//    MeshComp->PlayAnimation(AnimAsset, true);
+//    MeshComp->DEBUG_SetAnimationEnabled(true);
+//    MeshComp->SetPlaying(true);
+//    
+//    ADirectionalLight* DirectionalLight = SkeletalMeshViewerWorld->SpawnActor<ADirectionalLight>();
+//    DirectionalLight->SetActorRotation(FRotator(45.f, 45.f, 0.f));
+//    DirectionalLight->GetComponentByClass<UDirectionalLightComponent>()->SetIntensity(4.0f);
+//
+//    FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
+//    CameraLocation = Camera->GetLocation();
+//    CameraRotation = Camera->GetRotation();
+//    
+//    Camera->SetRotation(FVector(0.0f, 30, 180));
+//    if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(MeshComp))
+//    {
+//        float FOV = LevelEditor->GetActiveViewportClient()->GetCameraFOV();
+//
+//        // 로컬 바운딩 박스
+//        FBoundingBox Box = Primitive->GetBoundingBox();
+//        FVector LocalCenter = (Box.MinLocation + Box.MaxLocation) * 0.5f;
+//        FVector LocalExtents = (Box.MaxLocation - Box.MinLocation) * 0.5f;
+//        float Radius = LocalExtents.Length();
+//        
+//        FMatrix ComponentToWorld = Primitive->GetWorldMatrix();
+//        FVector WorldCenter = ComponentToWorld.TransformPosition(LocalCenter);
+//
+//        // FOV 기반 거리 계산
+//        float VerticalFOV = FMath::DegreesToRadians(FOV);
+//        float Distance = Radius / FMath::Tan(VerticalFOV * 0.5f);
+//
+//        // 카메라 위치 설정
+//        Camera->SetLocation(WorldCenter - Camera->GetForwardVector() * Distance);
+//    }
+//
+//    if (AEditorPlayer* Player = GetEditorPlayer())
+//    {
+//        Player->SetCoordMode(ECoordMode::CDM_LOCAL);
+//    }
+//}
 
 void UEditorEngine::BindEssentialObjects()
 {
@@ -269,13 +276,20 @@ void UEditorEngine::BindEssentialObjects()
 
 void UEditorEngine::EndPIE()
 {
-    if (PIEWorld)
+    if (PIEWorldContext == nullptr)
+    {
+        MessageBox(nullptr, L"PIE WORLD is not exist", nullptr, MB_OK | MB_ICONERROR);
+        return;
+    }
+
+    if (PIEWorldContext)
     {
         this->ClearActorSelection(); // PIE World 기준 Select Actor 해제 
-        WorldList.Remove(GetWorldContextFromWorld(PIEWorld));
-        PIEWorld->Release();
-        GUObjectArray.MarkRemoveObject(PIEWorld);
-        PIEWorld = nullptr;
+        WorldList.Remove(GetWorldContextFromWorld(PIEWorldContext->World()));
+        GUObjectArray.MarkRemoveObject(PIEWorldContext->World());
+        PIEWorldContext->World()->Release();
+        PIEWorldContext->SetCurrentWorld(nullptr);
+        PIEWorldContext = nullptr;
 
         // TODO: PIE에서 EditorWorld로 돌아올 때, 기존 선택된 Picking이 유지되어야 함. 현재는 에러를 막기위해 임시조치.
         DeselectActor(GetSelectedActor());
@@ -286,44 +300,45 @@ void UEditorEngine::EndPIE()
 
     Handler->OnPIEModeEnd();
     // 다시 EditorWorld로 돌아옴.
-    ActiveWorld = EditorWorld;
+    ActiveWorld = EditorWorldContext->World();
 }
 
-void UEditorEngine::EndSkeletalMeshViewer()
-{
-    if (SkeletalMeshViewerWorld)
-    {
-        this->ClearActorSelection();
-        WorldList.Remove(GetWorldContextFromWorld(SkeletalMeshViewerWorld));
-        SkeletalMeshViewerWorld->Release();
-        GUObjectArray.MarkRemoveObject(SkeletalMeshViewerWorld);
-        SkeletalMeshViewerWorld = nullptr;
-        
-        FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
-        Camera->SetLocation(CameraLocation);
-        Camera->SetRotation(CameraRotation);
-        
-        DeselectActor(GetSelectedActor());
-        DeselectComponent(GetSelectedComponent());
-    }
-    ActiveWorld = EditorWorld;
+//void UEditorEngine::EndSkeletalMeshViewer()
+//{
+//    if (SkeletalMeshViewerWorld)
+//    {
+//        this->ClearActorSelection();
+//        WorldList.Remove(GetWorldContextFromWorld(SkeletalMeshViewerWorld));
+//        SkeletalMeshViewerWorld->Release();
+//        GUObjectArray.MarkRemoveObject(SkeletalMeshViewerWorld);
+//        SkeletalMeshViewerWorld = nullptr;
+//        
+//        FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
+//        Camera->SetLocation(CameraLocation);
+//        Camera->SetRotation(CameraRotation);
+//        
+//        DeselectActor(GetSelectedActor());
+//        DeselectComponent(GetSelectedComponent());
+//    }
+//    ActiveWorld = EditorWorldContext->World();
+//
+//    if (AEditorPlayer* Player = GetEditorPlayer())
+//    {
+//        Player->SetCoordMode(ECoordMode::CDM_WORLD);
+//    }
+//}
 
-    if (AEditorPlayer* Player = GetEditorPlayer())
-    {
-        Player->SetCoordMode(ECoordMode::CDM_WORLD);
-    }
-}
-
-FWorldContext& UEditorEngine::GetEditorWorldContext(/*bool bEnsureIsGWorld*/)
+FWorldContext* UEditorEngine::GetEditorWorldContext(/*bool bEnsureIsGWorld*/)
 {
     for (FWorldContext* WorldContext : WorldList)
     {
         if (WorldContext->WorldType == EWorldType::Editor)
         {
-            return *WorldContext;
+            return WorldContext;
         }
     }
-    return CreateNewWorldContext(EWorldType::Editor);
+
+    return nullptr;
 }
 
 FWorldContext* UEditorEngine::GetPIEWorldContext(/*int32 WorldPIEInstance*/)
@@ -432,4 +447,16 @@ void UEditorEngine::HoverComponent(USceneComponent* InComponent)
 AEditorPlayer* UEditorEngine::GetEditorPlayer() const
 {
     return EditorPlayer;
+}
+
+FWorldContext* UEditorEngine::CreateNewWorldContext(UWorld* InWorld, EWorldType InWorldType, EPreviewTypeBitFlag InPreviewType)
+{
+    FWorldContext* NewWorldContext = new FWorldContext;
+    NewWorldContext->WorldType = InWorldType;
+    NewWorldContext->PreviewType = InPreviewType;
+    NewWorldContext->SetCurrentWorld(InWorld);
+
+    WorldList.Add(NewWorldContext);
+
+    return NewWorldContext;
 }

@@ -23,11 +23,6 @@ public:
     virtual void Tick(float DeltaTime) override;
     void Release() override;
 
-    UWorld* EditorWorld = nullptr;
-    UWorld* PIEWorld = nullptr;
-    USkeletalViewerWorld* SkeletalMeshViewerWorld = nullptr;
-    
-
     void StartPIE();
     void BindEssentialObjects();
     void EndPIE();
@@ -36,7 +31,7 @@ public:
     void EndSkeletalMeshViewer();
 
     // 주석은 UE에서 사용하던 매개변수.
-    FWorldContext& GetEditorWorldContext(/*bool bEnsureIsGWorld = false*/);
+    FWorldContext* GetEditorWorldContext(/*bool bEnsureIsGWorld = false*/);
     FWorldContext* GetPIEWorldContext(/*int32 WorldPIEInstance = 0*/);
 
 public:
@@ -81,6 +76,12 @@ private:
 
     SLevelEditor* LevelEditor;
     UnrealEd* UnrealEditor;
+
+public:
+    FWorldContext* CreateNewWorldContext(UWorld* InWorld, EWorldType InWorldType, EPreviewTypeBitFlag InPreviewType = EPreviewTypeBitFlag::None);
+
+    FWorldContext* EditorWorldContext = nullptr;
+    FWorldContext* PIEWorldContext = nullptr;
 };
 
 

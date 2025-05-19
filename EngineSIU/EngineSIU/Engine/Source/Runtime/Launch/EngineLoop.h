@@ -28,15 +28,16 @@ public:
     int32 Init(HINSTANCE hInstance);
     void Render() const;
     void Tick();
-    void Exit();
+    void Exit() const;
 
     void GetClientSize(uint32& OutWidth, uint32& OutHeight) const;
 
 private:
-    void WindowInit(HINSTANCE hInstance);
-    static LRESULT CALLBACK AppWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+    HWND CreateEngineWnd(const HINSTANCE hInstance, WCHAR WindowClass[], WCHAR Title[]);
+    void DestroyEngineWnd(HWND AppWnd, HINSTANCE hInstance, WCHAR WindowClass[]);
+    void UpdateUI(HWND AppWnd) const;
 
-    void UpdateUI();
+    static LRESULT CALLBACK AppWndProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 public:
     static FGraphicsDevice GraphicDevice;
@@ -46,19 +47,19 @@ public:
     static uint32 TotalAllocationBytes;
     static uint32 TotalAllocationCount;
 
-    HWND AppWnd;
-
     FGPUTimingManager GPUTimingManager;
     FEngineProfiler EngineProfiler;
 
+    HWND GetMainWnd() const { return MainWnd; }
     FSlateAppMessageHandler* GetAppMessageHandler() const { return AppMessageHandler.get(); }
-private:
-    UImGuiManager* UIManager;
 
+private:
+    TArray<HWND> AppWnds;
+    HWND MainWnd;
     std::unique_ptr<FSlateAppMessageHandler> AppMessageHandler;
+
     FDXDBufferManager* BufferManager; //TODO: UEngine으로 옮겨야함.
 
     bool bIsExit = false;
-    // @todo Option으로 선택 가능하도록
     int32 TargetFPS = 999;
 };
