@@ -209,7 +209,7 @@ void FParticleEmitterInstance::Init()
 			    InstancePayloadSize = SpriteTemplate->ReqInstanceBytes;
 	    }
     
-	    memset(InstanceData,0, InstancePayloadSize);
+	    memset(InstanceData, 0, InstancePayloadSize);
     
 	    for (UParticleModule* ParticleModule : SpriteTemplate->ModulesNeedingInstanceData)
 	    {
@@ -934,8 +934,10 @@ float FParticleEmitterInstance::Spawn(float DeltaTime)
                 }
             }*/
 
-            const FVector InitialLocation = EmitterToSimulation.GetOrigin();
-
+            //const FVector InitialLocation = EmitterToSimulation.GetOrigin();
+            // [TEMP] SUPER HARD CODED WHERE IS THE COUNT OUT SETTING
+            Number = 5;
+            FVector InitialLocation(0, 0, 0);
             // Spawn particles.
             SpawnParticles(Number, StartTime, Increment, InitialLocation, FVector::ZeroVector, EventPayload);
 

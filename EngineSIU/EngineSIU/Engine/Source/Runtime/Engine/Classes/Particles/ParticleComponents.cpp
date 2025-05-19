@@ -300,6 +300,8 @@ int32	UParticleLODLevel::CalculateMaxActiveParticleCount()
 UParticleEmitter::UParticleEmitter()
     : bDisabledLODsKeepEmitterAlive(false)
     , QualityLevelSpawnRateScale(1.0f)
+    , ReqInstanceBytes(0)
+    , ParticleSize(sizeof(FBaseParticle))
     , DetailModeBitmask(0xFFFF) //PDM_DefaultValue
 {
     // Structure to hold one-time initialization
@@ -316,10 +318,6 @@ UParticleEmitter::UParticleEmitter()
     EmitterName = ConstructorStatics.NAME_Particle_Emitter;
     ConvertedModules = true;
     PeakActiveParticles = 0;
-#if WITH_EDITORONLY_DATA
-    EmitterEditorColor = FColor(0, 150, 150, 255);
-#endif // WITH_EDITORONLY_DATA
-
 }
 
 FParticleEmitterInstance* UParticleEmitter::CreateInstance(UParticleSystemComponent* InComponent)
@@ -430,12 +428,16 @@ int32 UParticleEmitter::CreateLODLevel(int32 LODLevel, bool bGenerateModuleData)
 	if (LODLevels.Num() == 0)
 	{
 		//LODLevels.InsertZeroed(0, 1);
-		LODLevels[0] = CreatedLODLevel;
+		LODLevels.Add(CreatedLODLevel);
 		CreatedLODLevel->Level	= 0;
 	}
 	else
 	{
 		//LODLevels.InsertZeroed(LODLevel, 1);
+        if (LODLevels.Num() < LODLevel) 
+        {
+            LODLevels.Reserve(LODLevel + 1);
+        }
 		LODLevels[LODLevel] = CreatedLODLevel;
 		CreatedLODLevel->Level = LODLevel;
 	}
