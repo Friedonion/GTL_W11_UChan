@@ -7,7 +7,6 @@ AParticleSystemActor::AParticleSystemActor()
     // [TEMP] For test
     SetActorTickInEditor(true);
     ParticleSystemComponent = AddComponent<UParticleSystemComponent>();
-    UCubeComp* PositionIndicator = AddComponent<UCubeComp>();
 }
 
 void AParticleSystemActor::Tick(float DeltaTime)
