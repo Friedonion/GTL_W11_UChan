@@ -1684,6 +1684,8 @@
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleComponents.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModules_Spawn.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModules.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Renderer\ParticleRenderPass.cpp" />
+    <ClCompile Include="Shaders\ParticleVertexShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="EngineSIU.natvis" />
@@ -1695,6 +1697,9 @@
     <FxCompile Include="Shaders\DepthOnlyVS.hlsl" />
     <FxCompile Include="Shaders\LightPBR.hlsl" />
     <FxCompile Include="Shaders\PointLightCubemapGS.hlsl" />
+    <FxCompile Include="Shaders\ParticlePixelShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\SkeletalMeshComponent.h" />
@@ -1749,6 +1754,7 @@
     <ClInclude Include="Engine\Source\Runtime\Core\Templates\TemplateUtilities.h" />
     <ClInclude Include="Engine\Source\Runtime\Core\Templates\TypeUtilities.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Animation\AnimSoundNotify.h" />
+    <ClInclude Include="Engine\Source\Runtime\Renderer\ParticleRenderPass.h" />
     <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum.hpp" />
     <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_all.hpp" />
     <ClInclude Include="Engine\Source\ThirdParty\magic_enum\include\magic_enum\magic_enum_containers.hpp" />

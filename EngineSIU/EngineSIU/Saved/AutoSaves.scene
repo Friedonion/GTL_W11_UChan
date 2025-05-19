@@ -1,6 +1,7 @@
 {
     "Actors": [
         {
+
             "ActorClass": "ASkeletalMeshActor",
             "ActorID": "ASkeletalMeshActor_196",
             "ActorLabel": "OBJ_SKELETALMESH_196",
@@ -36,6 +37,7 @@
                         "RelativeLocation": "X=0.000 Y=0.000 Z=0.000",
                         "RelativeRotation": "Pitch=0.000 Yaw=0.000 Roll=0.000",
                         "RelativeScale3D": "X=1.000 Y=1.000 Z=1.000",
+
                         "bAutoActive": "true",
                         "bIsActive": "true",
                         "m_Type": ""
