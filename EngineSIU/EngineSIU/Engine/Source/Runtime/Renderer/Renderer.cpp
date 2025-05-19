@@ -20,8 +20,7 @@
 #include "DepthPrePass.h"
 #include "TileLightCullingPass.h"
 
-#include "MeshParticleRenderPass.h"
-#include "ParticleRenderPass.h"
+#include "UnifiedParticleRenderPass.h"
 
 #include "CompositingPass.h"
 #include "LightHeatMapRenderPass.h"
@@ -67,8 +66,7 @@ void FRenderer::Initialize(FGraphicsDevice* InGraphics, FDXDBufferManager* InBuf
     TileLightCullingPass = AddRenderPass<FTileLightCullingPass>();
     LightHeatMapRenderPass = AddRenderPass<FLightHeatMapRenderPass>();
 
-    ParticleRenderPass = AddRenderPass<FParticleRenderPass>();
-    MeshParticleRenderPass = AddRenderPass<FMeshParticleRenderPass>();
+    UnifiedParticleRenderPass = AddRenderPass<FUnifiedParticleRenderPass>();
     
     CompositingPass = AddRenderPass<FCompositingPass>();
     PostProcessCompositingPass = AddRenderPass<FPostProcessCompositingPass>();
@@ -385,8 +383,7 @@ void FRenderer::Render(const std::shared_ptr<FEditorViewportClient>& Viewport)
 
     RenderWorldScene(Viewport);
 
-    ParticleRenderPass->Render(Viewport);
-    MeshParticleRenderPass->Render(Viewport);
+    UnifiedParticleRenderPass->Render(Viewport);
 
     RenderPostProcess(Viewport);
     RenderEditorOverlay(Viewport);
