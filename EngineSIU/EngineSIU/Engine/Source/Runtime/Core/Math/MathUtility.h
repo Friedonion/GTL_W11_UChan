@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <cmath>
 #include <concepts>
 #include <numbers>
@@ -635,5 +635,11 @@ struct FMath
     static FORCEINLINE double Fractional(double Value)
     {
         return Value - TruncToDouble(Value);
+    }
+    static FORCEINLINE int RandRange(int Min, int Max)
+    {
+        static thread_local std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<int> dist(Min, Max);
+        return dist(rng);
     }
 };

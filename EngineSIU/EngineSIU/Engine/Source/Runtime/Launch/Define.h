@@ -455,6 +455,14 @@ struct FSubUVConstant
     FVector2D uvScale;
 };
 
+
+struct FParticleConstant
+{
+    int SubImageCountX;
+    int SubImageCountY;
+    FVector2D  Padding; 
+};
+
 struct FLitUnlitConstants
 {
     int bIsLit; // 1 = Lit, 0 = Unlit 

@@ -16,6 +16,7 @@
 #include "Serialization/MemoryArchive.h"
 #include "UObject/ObjectFactory.h"
 
+
 bool UAssetManager::IsInitialized()
 {
     return GEngine && GEngine->AssetManager;

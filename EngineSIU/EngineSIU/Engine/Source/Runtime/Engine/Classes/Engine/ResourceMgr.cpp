@@ -35,7 +35,7 @@ void FResourceManager::Initialize(FRenderer* Renderer, FGraphicsDevice* Device)
     LoadTextureFromFile(Device->Device, L"Assets/Texture/UUID_Font.png");
     LoadTextureFromFile(Device->Device, L"Assets/Texture/Wooden Crate_Crate_BaseColor.png");
     LoadTextureFromFile(Device->Device, L"Assets/Texture/spotLight.png");
-
+    LoadTextureFromFile(Device->Device, L"Assets/Texture/Fire001.bmp");
     LoadTextureFromFile(Device->Device, L"Assets/Editor/Icon/S_Actor.PNG");
     LoadTextureFromFile(Device->Device, L"Assets/Editor/Icon/S_LightSpot.PNG");
     LoadTextureFromFile(Device->Device, L"Assets/Editor/Icon/S_LightPoint.PNG");
