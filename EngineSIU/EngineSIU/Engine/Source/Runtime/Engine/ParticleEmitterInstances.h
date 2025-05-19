@@ -691,3 +691,44 @@ struct FParticleEmitterBuildInfo
     /** Default constructor. */
     FParticleEmitterBuildInfo();
 };
+
+struct FParticleSpriteEmitterInstance : public FParticleEmitterInstance
+{
+    /** Constructor	*/
+    FParticleSpriteEmitterInstance();
+
+    /** Destructor	*/
+    virtual ~FParticleSpriteEmitterInstance();
+
+    /**
+     *	Retrieves the dynamic data for the emitter
+     */
+    //virtual FDynamicEmitterDataBase* GetDynamicData(bool bSelected, ERHIFeatureLevel::Type InFeatureLevel) override;
+
+    /**
+     *	Retrieves replay data for the emitter
+     *
+     *	@return	The replay data, or NULL on failure
+     */
+    //virtual FDynamicEmitterReplayDataBase* GetReplayData() override;
+
+    /**
+     *	Retrieve the allocated size of this instance.
+     *
+     *	@param	OutNum			The size of this instance
+     *	@param	OutMax			The maximum size of this instance
+     */
+    //virtual void GetAllocatedSize(int32& OutNum, int32& OutMax) override;
+
+protected:
+
+    /**
+     * Captures dynamic replay data for this particle system.
+     *
+     * @param	OutData		[Out] Data will be copied here
+     *
+     * @return Returns true if successful
+     */
+    //virtual bool FillReplayData(FDynamicEmitterReplayDataBase& OutData) override;
+
+};

@@ -20,7 +20,10 @@ public:
     TArray<UMaterial*> EmitterMaterials;
     UParticleSystem* Template;
 
+
     TArray<FDynamicEmitterDataBase*> EmitterRenderData;
+
+    virtual int32 GetLODLevel();
 
     virtual void TickComponent(float DeltaTime) override;
 
@@ -36,6 +39,8 @@ public:
     FRandomStream RandomStream;
 
 private:
+    int32 LODLevel;
+
     float DeltaTimeTick;
 
     int32 TotalActiveParticles;

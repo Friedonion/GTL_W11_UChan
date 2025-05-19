@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -345,7 +345,6 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\GameFramework\SpringArmComponent.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Level.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModules_Color.cpp" />
-    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\EmitterTest.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Location\ParticleModules_Location.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleComponents.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModules.cpp" />
@@ -419,6 +418,7 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClCompile Include="Shaders\ParticleVertexShader.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Actors\ParticleSystemActor.cpp" />
     <ClCompile Include="SoundManager.cpp" />
     <None Include="Shaders\CompositingShader.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -697,7 +697,6 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Level.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModuleColor.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModuleColorBase.h" />
-    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\EmitterTest.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Lifetime\ParticleModuleLifetime.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Lifetime\ParticleModuleLifetimeBase.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Lifetime\ParticleModuleLifetime_Seeded.h" />
@@ -707,6 +706,7 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleLODLevel.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModule.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModuleRequired.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleSpriteEmitter.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleSystem.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleSystemRender.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Size\ParticleModuleSizeBase.h" />
@@ -841,6 +841,7 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClInclude Include="LuaScripts\LuaScriptFileUtils.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\ParticleEmitterInstances.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\ParticleSystemComponent.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Actors\ParticleSystemActor.h" />
     <ClInclude Include="SoundManager.h" />
     <None Include="Shaders\EditorShaderConstants.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

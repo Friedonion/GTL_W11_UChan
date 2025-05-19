@@ -1,8 +1,12 @@
 #include "ParticleSystemComponent.h"
 
+#include "UObject/ObjectFactory.h"
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleEmitter.h"
+#include "Particles/ParticleSpriteEmitter.h"
 #include "Particles/ParticleLODLevel.h"
+#include "Particles/Spawn/ParticleModuleSpawn.h"
+
 #include "Engine/ParticleEmitterInstances.h"
 #include "UObject/ObjectFactory.h"
 
@@ -12,11 +16,40 @@ UParticleSystemComponent::UParticleSystemComponent()
     , bSuppressSpawning(false)
     , bNeedsFinalize(false)
 {
-    Template = FObjectFactory::ConstructObject<UParticleSystem>(this);
+    // 템플릿 만들기 테스트
+    // 일단 여기에 다 때려넣고 테스트 함
+    Template = FObjectFactory::ConstructObject<UParticleSystem>(nullptr);
+
+    UParticleSpriteEmitter* SampleEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
+    SampleEmitter->CreateLODLevel(0);
+
+    UParticleModuleSpawn* SampleSpawnModule = FObjectFactory::ConstructObject<UParticleModuleSpawn>(nullptr);
+
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSpawnModule);
+
+    Template->Emitters.Add(SampleEmitter);
+    
+    FParticleEmitterInstance* SampleInstance = SampleEmitter->CreateInstance(this);
+    EmitterInstances.Add(SampleInstance);
+
+    bSuppressSpawning = false;
+
+    DeltaTimeTick = 0.016f;
+
+    TotalActiveParticles = 0;
+
+    TimeSinceLastTick = 0;
+
+    bNeedsFinalize = false;
 }
 
 UParticleSystemComponent::~UParticleSystemComponent()
 {
+}
+
+int32 UParticleSystemComponent::GetLODLevel()
+{
+    return LODLevel;
 }
 
 // [Particle Sequece] 01 - ComponentTick 
@@ -58,6 +91,7 @@ void UParticleSystemComponent::TickComponent(float DeltaTime)
     TotalActiveParticles = 0;
     bNeedsFinalize = true;
 
+    Template->UpdateAllModuleLists();
     // Emitter Update
     ComputeTickComponent_Concurrent();
     // 현재 역할 없음

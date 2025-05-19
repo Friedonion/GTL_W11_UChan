@@ -347,8 +347,8 @@ struct FDynamicEmitterDataBase
     }
 
     /** Custom new/delete with recycling */
-    void* operator new(size_t Size);
-    void operator delete(void* RawMemory, size_t Size);
+    //void* operator new(size_t Size);
+    //void operator delete(void* RawMemory, size_t Size);
 
     // Proxy관련 내용 전부 제거 하도록 함, 원 함수 선언만 표시 목적을 위해 남겨 둠
     // DirectX로 직접 데이터를 전달하여 그리도록 하는 새로운 메서드를 만드는 것이 현재 단계에서 나을 듯
