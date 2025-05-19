@@ -19,6 +19,7 @@ UParticleModuleLocation::UParticleModuleLocation()
 	bSpawnModule = true;
 	bSupported3DDrawMode = true;
 	DistributeOverNPoints = 0.0f;
+    InitializeDefaults();
 }
 
 void UParticleModuleLocation::InitializeDefaults()

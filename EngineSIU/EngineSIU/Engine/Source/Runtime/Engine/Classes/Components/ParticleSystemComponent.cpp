@@ -6,8 +6,10 @@
 #include "Particles/ParticleSpriteEmitter.h"
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/Spawn/ParticleModuleSpawn.h"
+#include "Particles/ParticleModuleRequired.h"
 
 #include "Engine/ParticleEmitterInstances.h"
+#include "Particles/Lifetime/ParticleModuleLifetime.h"
 #include "UObject/ObjectFactory.h"
 
 UParticleSystemComponent::UParticleSystemComponent()
@@ -23,15 +25,20 @@ UParticleSystemComponent::UParticleSystemComponent()
     UParticleSpriteEmitter* SampleEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
     SampleEmitter->CreateLODLevel(0);
 
+    UParticleModuleRequired* SampleRequiredModule = FObjectFactory::ConstructObject<UParticleModuleRequired>(nullptr);
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleRequiredModule);
+    
     UParticleModuleSpawn* SampleSpawnModule = FObjectFactory::ConstructObject<UParticleModuleSpawn>(nullptr);
-
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSpawnModule);
 
+    UParticleModuleLifetime* SampleLifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleLifetimeModule);
+    
     Template->Emitters.Add(SampleEmitter);
     
     FParticleEmitterInstance* SampleInstance = SampleEmitter->CreateInstance(this);
     EmitterInstances.Add(SampleInstance);
-
+    
     bSuppressSpawning = false;
 
     DeltaTimeTick = 0.016f;

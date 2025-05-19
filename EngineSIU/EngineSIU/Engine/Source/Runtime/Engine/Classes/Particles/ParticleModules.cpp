@@ -101,6 +101,7 @@ UParticleModuleRequired::UParticleModuleRequired()
     bSupportLargeWorldCoordinates = true;
     UVFlippingMode = EParticleUVFlipMode::None;
     AlphaThreshold = 0.1f;
+    InitializeDefaults();
 }
 
 void UParticleModuleRequired::InitializeDefaults()
@@ -155,6 +156,7 @@ UParticleModuleLifetime::UParticleModuleLifetime()
     : Super()
 {
     bSpawnModule = true;
+    InitializeDefaults();
 }
 
 void UParticleModuleLifetime::InitializeDefaults()
@@ -163,7 +165,7 @@ void UParticleModuleLifetime::InitializeDefaults()
     // {
     //     Lifetime.Distribution = NewObject<UDistributionFloatUniform>(this, TEXT("DistributionLifetime"));
     // }
-    Lifetime = 1.0f;
+    Lifetime = 10.0f;
 }
 
 void UParticleModuleLifetime::CompileModule( struct FParticleEmitterBuildInfo& EmitterInfo )

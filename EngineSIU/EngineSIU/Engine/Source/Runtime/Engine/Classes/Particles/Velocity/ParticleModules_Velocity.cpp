@@ -20,6 +20,7 @@ UParticleModuleVelocityBase::UParticleModuleVelocityBase()
 UParticleModuleVelocity::UParticleModuleVelocity()
 {
 	bSpawnModule = true;
+    InitializeDefaults();
 }
 
 void UParticleModuleVelocity::InitializeDefaults()

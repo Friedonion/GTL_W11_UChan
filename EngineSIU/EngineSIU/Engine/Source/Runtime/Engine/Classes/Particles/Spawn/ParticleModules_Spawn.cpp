@@ -16,12 +16,15 @@ UParticleModuleSpawn::UParticleModuleSpawn()
     bProcessSpawnRate = true;
     LODDuplicate = false;
     bApplyGlobalSpawnRateScale = true;
+    InitializeDefaults();
 }
 
 void UParticleModuleSpawn::InitializeDefaults()
 {
     // Initialize Values
     Rate = 10.f;
+    RateScale = 1.f;
+    BurstScale = 1.f;
 }
 
 bool UParticleModuleSpawn::GetSpawnAmount(FParticleEmitterInstance* Owner,
