@@ -345,7 +345,6 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\GameFramework\SpringArmComponent.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Level.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModules_Color.cpp" />
-    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\EmitterTest.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Location\ParticleModules_Location.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleComponents.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModules.cpp" />
@@ -694,7 +693,6 @@ xcopy /y /d "$(SolutionDir)$(ProjectName)\Engine\Source\ThirdParty\FBX\lib\x64\$
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Level.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModuleColor.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModuleColorBase.h" />
-    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\EmitterTest.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Lifetime\ParticleModuleLifetime.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Lifetime\ParticleModuleLifetimeBase.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Lifetime\ParticleModuleLifetime_Seeded.h" />

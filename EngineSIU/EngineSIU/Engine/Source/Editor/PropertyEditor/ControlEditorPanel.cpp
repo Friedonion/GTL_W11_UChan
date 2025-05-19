@@ -50,7 +50,6 @@
 
 #include "Components/ParticleSystemComponent.h"
 #include "Engine/Classes/Engine/AssetManager.h"
-#include "Particles/EmitterTest.h"
 
 ControlEditorPanel::ControlEditorPanel()
 {
@@ -505,12 +504,6 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
                 {
                     SpawnedActor = World->SpawnActor<AParticleSystemActor>();
                     SpawnedActor->SetActorLabel(TEXT("OBJ_PARTICLESYSTEM"));
-                }
-                case OBJ_PARTICLE:
-                {
-                    SpawnedActor = World->SpawnActor<AEmitterTest>();
-                    SpawnedActor->SetActorTickInEditor(true);
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_PARTICLE"));
                 }
                 case OBJ_CAMERA:
                 case OBJ_PLAYER:
