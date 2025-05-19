@@ -35,6 +35,9 @@ public:
     /** Stream of random values to use with this component */
     FRandomStream RandomStream;
 
+    /** This is created at start up and then added to each emitter */
+    float EmitterDelay;
+
 private:
     float DeltaTimeTick;
 

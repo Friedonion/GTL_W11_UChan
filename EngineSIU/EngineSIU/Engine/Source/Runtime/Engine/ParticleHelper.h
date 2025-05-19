@@ -383,7 +383,7 @@ struct FDynamicSpriteEmitterReplayDataBase
     FVector							NormalsSphereCenter;
     FVector							NormalsCylinderDirection;
     float							InvDeltaSeconds;
-    FVector						LWCTile;
+    // FVector						LWCTile;
     int32							MaxDrawCount;
     int32							OrbitModuleOffset;
     int32							DynamicParameterDataOffset;
@@ -395,7 +395,7 @@ struct FDynamicSpriteEmitterReplayDataBase
     int32							SubImages_Vertical;
     bool						bUseLocalSpace;
     bool						bLockAxis;
-    uint8						ScreenAlignment;
+    //uint8						ScreenAlignment;
     uint8						LockAxisFlag;
     uint8						EmitterRenderMode;
     uint8						EmitterNormalsMode;

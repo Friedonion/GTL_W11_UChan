@@ -395,7 +395,7 @@ public:
      *
      *	@return	bool		true if GetDynamicData should continue, false if it should return NULL
      */
-    virtual bool IsDynamicDataRequired(UParticleLODLevel* CurrentLODLevel);
+    virtual bool IsDynamicDataRequired(UParticleLODLevel* InCurrentLODLevel);
 
     /**
      *	Retrieves the dynamic data for the emitter
