@@ -690,6 +690,7 @@ void FParticleEmitterInstance::SpawnParticles(int32 Count, float StartTime, floa
             }
         };
 
+    SpawnInternal(true);
     // 한쪽중에 고르면 될듯
     /*if (SpriteTemplate->bUseLegacySpawningBehavior)
     {
