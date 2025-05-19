@@ -18,7 +18,7 @@
 #include "Engine/Asset/StaticMeshAsset.h"
 #include "Components/StaticMeshComponent.h"
 
-FUnifiedParticleRenderPass::FUnifiedParticleRenderPass()
+FParticleRenderPass::FParticleRenderPass()
     : BufferManager(nullptr)
     , Graphics(nullptr)
     , ShaderManager(nullptr)
@@ -32,7 +32,7 @@ FUnifiedParticleRenderPass::FUnifiedParticleRenderPass()
 {
 }
 
-FUnifiedParticleRenderPass::~FUnifiedParticleRenderPass()
+FParticleRenderPass::~FParticleRenderPass()
 {
     if (BlendState) BlendState->Release();
     if (DepthState) DepthState->Release();
@@ -40,7 +40,7 @@ FUnifiedParticleRenderPass::~FUnifiedParticleRenderPass()
     if (SpriteInstanceBuffer) SpriteInstanceBuffer->Release();
 }
 
-void FUnifiedParticleRenderPass::Initialize(FDXDBufferManager* InBufferManager, FGraphicsDevice* InGraphics, FDXDShaderManager* InShaderManager)
+void FParticleRenderPass::Initialize(FDXDBufferManager* InBufferManager, FGraphicsDevice* InGraphics, FDXDShaderManager* InShaderManager)
 {
     BufferManager = InBufferManager;
     Graphics = InGraphics;
@@ -59,7 +59,7 @@ void FUnifiedParticleRenderPass::Initialize(FDXDBufferManager* InBufferManager, 
     CreateSpriteInstanceBuffer();
 }
 
-void FUnifiedParticleRenderPass::PrepareRenderArr()
+void FParticleRenderPass::PrepareRenderArr()
 {
     // 각 타입별 파티클 준비
     if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
@@ -73,13 +73,13 @@ void FUnifiedParticleRenderPass::PrepareRenderArr()
     }
 }
 
-void FUnifiedParticleRenderPass::ClearRenderArr()
+void FParticleRenderPass::ClearRenderArr()
 {
     MeshInstanceData.Empty();
     SpriteInstanceData.Empty();
 }
 
-void FUnifiedParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& Viewport)
+void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& Viewport)
 {
     FViewportResource* ViewportResource = Viewport->GetViewportResource();
     const FRenderTargetRHI* RenderTargetRHI = ViewportResource->GetRenderTarget(EResourceType::ERT_Scene);
@@ -117,7 +117,7 @@ void FUnifiedParticleRenderPass::Render(const std::shared_ptr<FEditorViewportCli
     Graphics->DeviceContext->PSSetSamplers(0, 1, NullSamplers);
 }
 
-void FUnifiedParticleRenderPass::SetParticleTypeActive(EParticleSystemType Type, bool bActive)
+void FParticleRenderPass::SetParticleTypeActive(EParticleSystemType Type, bool bActive)
 {
     uint32 TypeBit = 1 << static_cast<uint32>(Type);
     
@@ -131,13 +131,13 @@ void FUnifiedParticleRenderPass::SetParticleTypeActive(EParticleSystemType Type,
     }
 }
 
-void FUnifiedParticleRenderPass::SetupPipeline()
+void FParticleRenderPass::SetupPipeline()
 {
     Graphics->DeviceContext->OMSetBlendState(BlendState, nullptr, 0xFFFFFFFF);
     Graphics->DeviceContext->OMSetDepthStencilState(DepthState, 0);
 }
 
-void FUnifiedParticleRenderPass::CreateBlendState()
+void FParticleRenderPass::CreateBlendState()
 {
     D3D11_BLEND_DESC desc = {};
     desc.RenderTarget[0].BlendEnable = TRUE;
@@ -152,7 +152,7 @@ void FUnifiedParticleRenderPass::CreateBlendState()
     Graphics->Device->CreateBlendState(&desc, &BlendState);
 }
 
-void FUnifiedParticleRenderPass::CreateDepthState()
+void FParticleRenderPass::CreateDepthState()
 {
     D3D11_DEPTH_STENCIL_DESC desc = {};
     desc.DepthEnable = TRUE;
@@ -162,7 +162,7 @@ void FUnifiedParticleRenderPass::CreateDepthState()
     Graphics->Device->CreateDepthStencilState(&desc, &DepthState);
 }
 
-void FUnifiedParticleRenderPass::LoadMeshes()
+void FParticleRenderPass::LoadMeshes()
 {
     // 기존 메쉬 데이터 초기화
     MeshArray.Empty();
@@ -200,12 +200,12 @@ void FUnifiedParticleRenderPass::LoadMeshes()
     }
 }
 
-void FUnifiedParticleRenderPass::LoadTexture()
+void FParticleRenderPass::LoadTexture()
 {
     ParticleTexture = FEngineLoop::ResourceManager.GetTexture(L"Assets/Texture/T_Explosion_SubUV.png");
 }
 
-void FUnifiedParticleRenderPass::CreateMeshInstanceBuffer()
+void FParticleRenderPass::CreateMeshInstanceBuffer()
 {
     D3D11_BUFFER_DESC desc = {};
     desc.Usage = D3D11_USAGE_DYNAMIC;
@@ -215,7 +215,7 @@ void FUnifiedParticleRenderPass::CreateMeshInstanceBuffer()
     Graphics->Device->CreateBuffer(&desc, nullptr, &MeshInstanceBuffer);
 }
 
-void FUnifiedParticleRenderPass::CreateSpriteInstanceBuffer()
+void FParticleRenderPass::CreateSpriteInstanceBuffer()
 {
     D3D11_BUFFER_DESC desc = {};
     desc.Usage = D3D11_USAGE_DYNAMIC;
@@ -225,7 +225,7 @@ void FUnifiedParticleRenderPass::CreateSpriteInstanceBuffer()
     Graphics->Device->CreateBuffer(&desc, nullptr, &SpriteInstanceBuffer);
 }
 
-void FUnifiedParticleRenderPass::UpdateMeshInstanceBuffer()
+void FParticleRenderPass::UpdateMeshInstanceBuffer()
 {
     if (MeshInstanceData.Num() == 0)
         return;
@@ -238,7 +238,7 @@ void FUnifiedParticleRenderPass::UpdateMeshInstanceBuffer()
     }
 }
 
-void FUnifiedParticleRenderPass::UpdateSpriteInstanceBuffer()
+void FParticleRenderPass::UpdateSpriteInstanceBuffer()
 {
     if (SpriteInstanceData.Num() == 0)
         return;
@@ -251,7 +251,7 @@ void FUnifiedParticleRenderPass::UpdateSpriteInstanceBuffer()
     }
 }
 
-void FUnifiedParticleRenderPass::PrepareMeshParticles()
+void FParticleRenderPass::PrepareMeshParticles()
 {
     LoadMeshes();
     if (MeshArray.Num() == 0)
@@ -305,7 +305,7 @@ void FUnifiedParticleRenderPass::PrepareMeshParticles()
     UpdateMeshInstanceBuffer();
 }
 
-void FUnifiedParticleRenderPass::PrepareSpriteParticles()
+void FParticleRenderPass::PrepareSpriteParticles()
 {
     std::mt19937 rng(std::random_device{}());
     std::uniform_real_distribution<float> dist(-100.0f, 100.0f);
@@ -329,7 +329,7 @@ void FUnifiedParticleRenderPass::PrepareSpriteParticles()
     UpdateSpriteInstanceBuffer();
 }
 
-void FUnifiedParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport)
+void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport)
 {
     if (MeshArray.Num() == 0 || MeshInstanceData.Num() == 0)
         return;
@@ -457,7 +457,7 @@ void FUnifiedParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEdit
     }
 }
 
-void FUnifiedParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport)
+void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport)
 {
     LoadTexture();
     if (!ParticleTexture || SpriteInstanceData.Num() == 0)

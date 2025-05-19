@@ -66,7 +66,7 @@ void FRenderer::Initialize(FGraphicsDevice* InGraphics, FDXDBufferManager* InBuf
     TileLightCullingPass = AddRenderPass<FTileLightCullingPass>();
     LightHeatMapRenderPass = AddRenderPass<FLightHeatMapRenderPass>();
 
-    UnifiedParticleRenderPass = AddRenderPass<FUnifiedParticleRenderPass>();
+    UnifiedParticleRenderPass = AddRenderPass<FParticleRenderPass>();
     
     CompositingPass = AddRenderPass<FCompositingPass>();
     PostProcessCompositingPass = AddRenderPass<FPostProcessCompositingPass>();

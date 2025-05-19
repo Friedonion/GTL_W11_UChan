@@ -47,7 +47,7 @@ class FDepthPrePass;
 class FTileLightCullingPass;
 class FGPUTimingManager;
 
-class FUnifiedParticleRenderPass;
+class FParticleRenderPass;
 
 class FRenderer
 {
@@ -105,7 +105,7 @@ public:
     FSkeletalMeshRenderPass* SkeletalMeshRenderPass = nullptr;
     FWorldBillboardRenderPass* WorldBillboardRenderPass = nullptr;
 
-    FUnifiedParticleRenderPass* UnifiedParticleRenderPass = nullptr;
+    FParticleRenderPass* UnifiedParticleRenderPass = nullptr;
     
     FEditorBillboardRenderPass* EditorBillboardRenderPass = nullptr;
     FGizmoRenderPass* GizmoRenderPass = nullptr;

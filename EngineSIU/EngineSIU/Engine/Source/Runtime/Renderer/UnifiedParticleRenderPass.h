@@ -41,11 +41,11 @@ struct FSpriteParticleInstanceData
     int SubImageIndex;       // 서브 이미지 인덱스
 };
 
-class FUnifiedParticleRenderPass : public IRenderPass
+class FParticleRenderPass : public IRenderPass
 {
 public:
-    FUnifiedParticleRenderPass();
-    virtual ~FUnifiedParticleRenderPass();
+    FParticleRenderPass();
+    virtual ~FParticleRenderPass();
 
     // IRenderPass 인터페이스 구현
     virtual void Initialize(FDXDBufferManager* InBufferManager, FGraphicsDevice* InGraphics, FDXDShaderManager* InShaderManager) override;
