@@ -573,9 +573,10 @@ struct FParticleEmitterBuildInfo
 
     ///** The color scale of a particle over time. */
     //FComposableVectorDistribution ColorScale;
+    FVector ColorScale;
     ///** The alpha scale of a particle over time. */
     //FComposableFloatDistribution AlphaScale;
-
+    float AlphaScale;
     ///** An additional color scale for allowing parameters to be used for ColorOverLife modules. */
     //FRawDistributionVector DynamicColor;
     ///** An additional alpha scale for allowing parameters to be used for ColorOverLife modules. */

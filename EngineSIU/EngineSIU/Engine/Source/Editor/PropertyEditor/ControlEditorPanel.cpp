@@ -45,7 +45,10 @@
 #include "Contents/Actors/TriggerBox.h"
 #include "Renderer/CompositingPass.h"
 #include <Engine/FbxLoader.h>
+
+#include "Components/ParticleSystemComponent.h"
 #include "Engine/Classes/Engine/AssetManager.h"
+#include "Particles/EmitterTest.h"
 
 ControlEditorPanel::ControlEditorPanel()
 {
@@ -338,7 +341,7 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
             { .Label= "SpotLight", .OBJ= OBJ_SPOTLIGHT },
             { .Label= "DirectionalLight", .OBJ= OBJ_DIRECTIONALLGIHT },
             { .Label= "AmbientLight", .OBJ= OBJ_AMBIENTLIGHT },
-            { .Label= "Particle",  .OBJ= OBJ_PARTICLE },
+            // { .Label= "Particle",  .OBJ= OBJ_PARTICLE },
             { .Label= "Text",      .OBJ= OBJ_TEXT },
             { .Label= "Fireball",  .OBJ = OBJ_FIREBALL},
             { .Label= "Fog",       .OBJ= OBJ_FOG },
@@ -352,6 +355,7 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
             {.Label = "TriggerBox", .OBJ = OBJ_TRIGGERBOX},
             {.Label = "SkeletalMeshActor", .OBJ = OBJ_SKELETALMESH},
             {.Label = "SequencerPlayer", .OBJ = OBJ_SEQUENCERPLAYER},
+            {.Label = "Particle", .OBJ = OBJ_PARTICLE},
         };
 
         for (const auto& primitive : primitives)
@@ -402,18 +406,18 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
                     LightActor->SetActorLabel(TEXT("OBJ_AMBIENTLIGHT"));
                     break;
                 }
-                case OBJ_PARTICLE:
-                {
-                    SpawnedActor = World->SpawnActor<AActor>();
-                    SpawnedActor->SetActorLabel(TEXT("OBJ_PARTICLE"));
-                    UParticleSubUVComponent* ParticleComponent = SpawnedActor->AddComponent<UParticleSubUVComponent>();
-                    ParticleComponent->SetTexture(L"Assets/Texture/T_Explosion_SubUV.png");
-                    ParticleComponent->SetRowColumnCount(6, 6);
-                    ParticleComponent->SetRelativeScale3D(FVector(10.0f, 10.0f, 1.0f));
-                    ParticleComponent->Activate();
-                    SpawnedActor->SetActorTickInEditor(true);
-                    break;
-                }
+                // case OBJ_PARTICLE:
+                // {
+                //     SpawnedActor = World->SpawnActor<AActor>();
+                //     SpawnedActor->SetActorLabel(TEXT("OBJ_PARTICLE"));
+                //     UParticleSubUVComponent* ParticleComponent = SpawnedActor->AddComponent<UParticleSubUVComponent>();
+                //     ParticleComponent->SetTexture(L"Assets/Texture/T_Explosion_SubUV.png");
+                //     ParticleComponent->SetRowColumnCount(6, 6);
+                //     ParticleComponent->SetRelativeScale3D(FVector(10.0f, 10.0f, 1.0f));
+                //     ParticleComponent->Activate();
+                //     SpawnedActor->SetActorTickInEditor(true);
+                //     break;
+                // }
                 case OBJ_TEXT:
                 {
                     SpawnedActor = World->SpawnActor<AActor>();
@@ -493,6 +497,12 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
                 {
                     SpawnedActor = World->SpawnActor<ASequencerPlayer>();
                     SpawnedActor->SetActorLabel(TEXT("OBJ_SEQUENCERPLAYER"));
+                }
+                case OBJ_PARTICLE:
+                {
+                    SpawnedActor = World->SpawnActor<AEmitterTest>();
+                    SpawnedActor->SetActorTickInEditor(true);
+                    SpawnedActor->SetActorLabel(TEXT("OBJ_PARTICLE"));
                 }
                 case OBJ_CAMERA:
                 case OBJ_PLAYER:

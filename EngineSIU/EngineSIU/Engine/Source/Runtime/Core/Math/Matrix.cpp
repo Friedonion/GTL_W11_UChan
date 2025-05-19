@@ -538,3 +538,9 @@ bool FMatrix::Equals(const FMatrix& Other, float Tolerance) const
 
     return true;
 }
+
+FVector FMatrix::InverseTransformVector(const FVector& V) const
+{
+    FMatrix Inverse = FMatrix::Inverse(*this);
+    return FMatrix::TransformVector(V, Inverse);
+}
