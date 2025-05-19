@@ -26,7 +26,7 @@ public:
     UWorld* EditorWorld = nullptr;
     UWorld* PIEWorld = nullptr;
     USkeletalViewerWorld* SkeletalMeshViewerWorld = nullptr;
-    
+    UWorld* ParticleSystemViewerWorld = nullptr;
 
     void StartPIE();
     void BindEssentialObjects();
@@ -34,6 +34,9 @@ public:
 
     void StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAsset* AnimAsset);
     void EndSkeletalMeshViewer();
+
+    void StartParticleSystemViewer();
+    void EndParticleSystemViewer();
 
     // 주석은 UE에서 사용하던 매개변수.
     FWorldContext& GetEditorWorldContext(/*bool bEnsureIsGWorld = false*/);

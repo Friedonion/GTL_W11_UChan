@@ -81,13 +81,17 @@ void PropertyEditorPanel::Render()
                 PanelPosX = (Width) * 0.8f + 4.0f;
                 PanelPosY = (Height) * 0.3f + 10.0f;
             }
-            if (GetPreviewType() == EPreviewTypeBitFlag::ParticleSystem)
+            else if (GetPreviewType() == EPreviewTypeBitFlag::ParticleSystem)
             {
                 PanelWidth = (Width) * 0.3f;
                 PanelHeight = (Height) * 0.35f;
 
                 PanelPosX = 0.f;
                 PanelPosY = Height * 0.65f;
+            }
+            else
+            {
+                return;
             }
         }
     }
@@ -117,7 +121,6 @@ void PropertyEditorPanel::Render()
         TargetComponent = SelectedActor->GetRootComponent();
     }
 
-    /*
     if (TargetComponent != nullptr)
     {
         AEditorPlayer* Player = Engine->GetEditorPlayer();
@@ -201,7 +204,7 @@ void PropertyEditorPanel::Render()
     {
         RenderForSpringArmComponent(SpringArmComponent);
     }
-    */
+
     if (SelectedActor)
     {
         ImGui::Separator();

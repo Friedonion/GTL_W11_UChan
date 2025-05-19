@@ -34,7 +34,7 @@ public:
     FWorldContext* GetWorldContextFromWorld(const UWorld* InWorld);
     FWorldContext* GetWorldContextFromHandle(FName WorldContextHandle);
 
-    FWorldContext& CreateNewWorldContext(EWorldType InWorldType);
+    FWorldContext& CreateNewWorldContext(EWorldType InWorldType, EPreviewTypeBitFlag InPreviewType = EPreviewTypeBitFlag::None);
     
     void LoadLevel(const FString& FileName) const;
     void SaveLevel(const FString& FileName) const;

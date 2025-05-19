@@ -12,6 +12,7 @@ void UnrealEd::Initialize()
     /* Main Editor */
     auto ControlPanel = std::make_shared<ControlEditorPanel>();
     ControlPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE | EWorldTypeBitFlag::EditorPreview);
+    ControlPanel->SetPreviewType(EPreviewTypeBitFlag::AnimSequence | EPreviewTypeBitFlag::ParticleSystem);
     Panels["ControlPanel"] = ControlPanel;
     
     auto OutlinerPanel = std::make_shared<OutlinerEditorPanel>();
@@ -84,8 +85,8 @@ void UnrealEd::Render() const
         {
             if (currentMask == EWorldTypeBitFlag::EditorPreview)
             {
-                // @todo PreviewType을 알 수 있는 방법 추가하기
-                if (HasFlag(Panel.Value->GetPreviewType(), EPreviewTypeBitFlag::AnimSequence))
+                auto WorldContext = GEngine->GetWorldContextFromWorld(GEngine->ActiveWorld);
+                if (HasFlag(Panel.Value->GetPreviewType(), WorldContext->PreviewType))
                 {
                     Panel.Value->Render();
                 }
