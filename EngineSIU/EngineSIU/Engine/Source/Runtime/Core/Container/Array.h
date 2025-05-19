@@ -61,6 +61,8 @@ public:
     void Init(const T& Element, SizeType Number);
     SizeType Add(const T& Item);
     SizeType Add(T&& Item);
+    SizeType AddZeroed();
+    SizeType AddZeroed(SizeType Number);
     SizeType AddUnique(const T& Item);
 
     template <typename... Args>
@@ -315,6 +317,26 @@ template <typename T, typename AllocatorType>
 typename TArray<T, AllocatorType>::SizeType TArray<T, AllocatorType>::Add(T&& Item)
 {
     return Emplace(std::move(Item));
+}
+
+
+template <typename T, typename AllocatorType>
+typename TArray<T, AllocatorType>::SizeType TArray<T, AllocatorType>::AddZeroed()
+{
+    const SizeType Index = Num();
+    Add(T{});  // 기본 생성된 요소 추가
+    return Index;
+}
+
+template <typename T, typename AllocatorType>
+typename TArray<T, AllocatorType>::SizeType TArray<T, AllocatorType>::AddZeroed(SizeType Number)
+{
+    const SizeType Index = Num();
+    for(SizeType i = 0; i < Number; ++i)
+    {
+        Add(T{});  // 기본 생성된 요소 추가
+    }
+    return Index;
 }
 
 template <typename T, typename AllocatorType>
