@@ -100,7 +100,7 @@ class UParticleSystem : public UObject
 {
     DECLARE_CLASS(UParticleSystem, UObject)
 public:
-    UParticleSystem() = default;
+    UParticleSystem();
     ~UParticleSystem() = default;
 
     /** Max number of components of this system to keep resident in the world component pool. */
@@ -330,17 +330,17 @@ public:
     /**
      * Set the time to delay spawning the particle system
      */
-    //void SetDelay(float InDelay);
+    void SetDelay(float InDelay);
 
     /** Return the currently set LOD method											*/
-    //virtual enum ParticleSystemLODMethod GetCurrentLODMethod();
+    virtual enum ParticleSystemLODMethod GetCurrentLODMethod();
 
     /**
      *	Return the number of LOD levels for this particle system
      *
      *	@return	The number of LOD levels in the particle system
      */
-    //virtual int32 GetLODLevelCount();
+    virtual int32 GetLODLevelCount();
 
     /**
      *	Return the distance for the given LOD level
@@ -350,14 +350,14 @@ public:
      *	@return	-1.0f			If the index is invalid
      *			Distance		The distance set for the LOD level
      */
-    //virtual float GetLODDistance(int32 LODLevelIndex);
+    virtual float GetLODDistance(int32 LODLevelIndex);
 
     /**
      *	Set the LOD method
      *
      *	@param	InMethod		The desired method
      */
-    //virtual void SetCurrentLODMethod(ParticleSystemLODMethod InMethod);
+    virtual void SetCurrentLODMethod(ParticleSystemLODMethod InMethod);
 
     /**
      *	Set the distance for the given LOD index
@@ -368,19 +368,19 @@ public:
      *	@return	true			If successful
      *			false			Invalid LODLevelIndex
      */
-    //virtual bool SetLODDistance(int32 LODLevelIndex, float InDistance);
+    virtual bool SetLODDistance(int32 LODLevelIndex, float InDistance);
 
     /**
      * Builds all emitters in the particle system.
      */
-    //void BuildEmitters();
+    void BuildEmitters();
 
     /**
     Returns true if this system contains an emitter of the pasesd type.
     @ param TypeData - The emitter type to check for. Must be a child class of UParticleModuleTypeDataBase
     */
     //UFUNCTION(BlueprintCallable, Category = "Particle System")
-    //bool ContainsEmitterType(UClass* TypeData);
+    bool ContainsEmitterType(UClass* TypeData);
 
     /** Returns true if the particle system is looping (contains one or more looping emitters) */
     bool IsLooping() const { return bAnyEmitterLoopsForever; }

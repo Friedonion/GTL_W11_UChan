@@ -36,6 +36,62 @@ void FParticleDataContainer::Free()
 }
 
 /*-----------------------------------------------------------------------------
+    Information compiled from modules to build runtime emitter data.
+-----------------------------------------------------------------------------*/
+
+FParticleEmitterBuildInfo::FParticleEmitterBuildInfo()
+    : RequiredModule(NULL)
+    , SpawnModule(NULL)
+    , SpawnPerUnitModule(NULL)
+    , MaxSize(1.0f, 1.0f)
+    , SizeScaleBySpeed(FVector2D::ZeroVector)
+    , MaxSizeScaleBySpeed(1.0f, 1.0f)
+    , bEnableCollision(false)
+    // , CollisionResponse(EParticleCollisionResponse::Bounce)
+    // , CollisionMode(EParticleCollisionMode::SceneDepth)
+    , CollisionRadiusScale(1.0f)
+    , CollisionRadiusBias(0.0f)
+    , CollisionRandomSpread(0.0f)
+    , CollisionRandomDistribution(1.0f)
+    , Friction(0.0f)
+    , PointAttractorPosition(FVector::ZeroVector)
+    , PointAttractorRadius(0.0f)
+    , GlobalVectorFieldScale(0.0f)
+    , GlobalVectorFieldTightness(-1)
+    , LocalVectorField(NULL)
+    , LocalVectorFieldTransform(FTransform::Identity)
+    , LocalVectorFieldIntensity(0.0f)
+    , LocalVectorFieldTightness(0.0f)
+    , LocalVectorFieldMinInitialRotation(FVector::ZeroVector)
+    , LocalVectorFieldMaxInitialRotation(FVector::ZeroVector)
+    , LocalVectorFieldRotationRate(FVector::ZeroVector)
+    , ConstantAcceleration(0.0f)
+    , MaxLifetime(1.0f)
+    , MaxRotationRate(1.0f)
+    , EstimatedMaxActiveParticleCount(0)
+    // , ScreenAlignment(PSA_Square)
+    , PivotOffset(-0.5,-0.5)
+    , bLocalVectorFieldIgnoreComponentTransform(false)
+    , bLocalVectorFieldTileX(false)
+    , bLocalVectorFieldTileY(false)
+    , bLocalVectorFieldTileZ(false)
+    , bLocalVectorFieldUseFixDT(false)
+    , bUseVelocityForMotionBlur(0)
+    , bRemoveHMDRoll(0)
+    , MinFacingCameraBlendDistance(0.0f)
+    , MaxFacingCameraBlendDistance(0.0f)
+{
+//     DragScale.InitializeWithConstant(1.0f);
+//     VectorFieldScale.InitializeWithConstant(1.0f);
+//     VectorFieldScaleOverLife.InitializeWithConstant(1.0f);
+// #if WITH_EDITOR
+//     DynamicColorScale.Initialize();
+//     DynamicAlphaScale.Initialize();
+// #endif
+}
+
+
+/*-----------------------------------------------------------------------------
     FParticleEmitterInstance
 -----------------------------------------------------------------------------*/
 // Only update the PeakActiveParticles if the frame rate is 20 or better
@@ -311,11 +367,79 @@ UWorld* FParticleEmitterInstance::GetWorld() const
 
 void FParticleEmitterInstance::UpdateTransforms()
 {
+    //QUICK_SCOPE_CYCLE_COUNTER(STAT_EmitterInstance_UpdateTransforms);
+
+    //check(SpriteTemplate != NULL);
+
+    UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
+    FMatrix ComponentToWorld = Component != NULL ?
+        Component->GetComponentTransform().ToMatrixNoScale() : FMatrix::Identity;
+    FMatrix EmitterToComponent = FMatrix::CreateRotationMatrix(LODLevel->RequiredModule->EmitterRotation) + FMatrix::CreateTranslationMatrix(LODLevel->RequiredModule->EmitterOrigin);
+
+    if (LODLevel->RequiredModule->bUseLocalSpace)
+    {
+        EmitterToSimulation = EmitterToComponent;
+        SimulationToWorld = ComponentToWorld;
+#if ENABLE_NAN_DIAGNOSTIC
+        if (SimulationToWorld.ContainsNaN())
+        {
+            logOrEnsureNanError(TEXT("FParticleEmitterInstance::UpdateTransforms() - SimulationToWorld contains NaN!"));
+            SimulationToWorld = FMatrix::Identity;
+        }
+#endif
+    }
+    else
+    {
+        EmitterToSimulation = EmitterToComponent * ComponentToWorld;
+        SimulationToWorld = FMatrix::Identity;
+    }
 }
 
 bool FParticleEmitterInstance::Resize(int32 NewMaxActiveParticles, bool bSetMaxActiveCount)
 {
-    return true;
+//SCOPE_CYCLE_COUNTER(STAT_ParticleEmitterInstance_Resize);
+    
+	if (NewMaxActiveParticles > MaxActiveParticles)
+	{
+		// Alloc (or realloc) the data array
+		// Allocations > 16 byte are always 16 byte aligned so ParticleData can be used with SSE.
+		// NOTE: We don't have to zero the memory here... It gets zeroed when grabbed later.
+
+		{
+			ParticleData = (uint8*)realloc(ParticleData, ParticleStride * NewMaxActiveParticles);
+			//check(ParticleData);
+
+			// Allocate memory for indices.
+			if (ParticleIndices == NULL)
+			{
+				// Make sure that we clear all when it is the first alloc
+				MaxActiveParticles = 0;
+			}
+			ParticleIndices	= (uint16*)realloc(ParticleIndices, sizeof(uint16) * (NewMaxActiveParticles + 1));
+		}
+
+		// Fill in default 1:1 mapping.
+		for (int32 i=MaxActiveParticles; i<NewMaxActiveParticles; i++)
+		{
+			ParticleIndices[i] = i;
+		}
+
+		// Set the max count
+		MaxActiveParticles = NewMaxActiveParticles;
+	}
+
+	// Set the PeakActiveParticles
+	if (bSetMaxActiveCount)
+	{
+		UParticleLODLevel* LODLevel	= SpriteTemplate->GetLODLevel(0);
+		//check(LODLevel);
+		if (MaxActiveParticles > LODLevel->PeakActiveParticles)
+		{
+			LODLevel->PeakActiveParticles = MaxActiveParticles;
+		}
+	}
+
+	return true;
 }
 
 // [Particle Sequece] 03 - ParticleEmitterInstance 업데이트, 파티클 Pool관리 및 ParticleModule update
@@ -329,7 +453,7 @@ void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
     UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
 
     // Handle EmitterTime setup, looping, etc.
-    //float EmitterDelay = Tick_EmitterTimeSetup(DeltaTime, LODLevel);
+    float EmitterDelay = Tick_EmitterTimeSetup(DeltaTime, LODLevel);
 
     if (bEnabled)
     {
@@ -349,17 +473,17 @@ void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
         // PostUpdate (beams only)
         Tick_ModulePostUpdate(DeltaTime, LODLevel);
 
-        //if (ActiveParticles > 0)
-        //{
+        if (ActiveParticles > 0)
+        {
             // Update the orbit data...
             // UpdateOrbitData(DeltaTime);
             // Calculate bounding box and simulate velocity.
             //UpdateBoundingBox(DeltaTime);
-        //}
+        }
 
-        //Tick_ModuleFinalUpdate(DeltaTime, LODLevel);
+        Tick_ModuleFinalUpdate(DeltaTime, LODLevel);
 
-        //CheckEmitterFinished();
+        CheckEmitterFinished();
 
         // Invalidate the contents of the vertex/index buffer.
         IsRenderDataDirty = 1;
@@ -370,7 +494,7 @@ void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
     }
 
     // 'Reset' the emitter time so that the delay functions correctly
-    //EmitterTime += EmitterDelay;
+    EmitterTime += EmitterDelay;
 
     // Store the last delta time.
     LastDeltaTime = DeltaTime;
@@ -388,15 +512,15 @@ void FParticleEmitterInstance::CheckEmitterFinished()
     //
     if (this->ActiveParticles == 0)
     {
-        //UParticleModuleSpawn* SpawnModule = LODLevel->SpawnModule;
+        UParticleModuleSpawn* SpawnModule = LODLevel->SpawnModule;
         
-        //if (!SpawnModule) return;
+        if (!SpawnModule) return;
 
         FParticleBurst* LastBurst = nullptr;
-        /*if (SpawnModule->BurstList.Num())
+        if (SpawnModule->BurstList.Num())
         {
             LastBurst = &SpawnModule->BurstList.Last();
-        }*/
+        }
 
         if (!LastBurst || LastBurst->Time < this->EmitterTime)
         {
@@ -404,21 +528,109 @@ void FParticleEmitterInstance::CheckEmitterFinished()
             
             if (!RequiredModule) return;
 
-            /*if (HasCompleted() ||
+            if (HasCompleted() ||
                 (SpawnModule->GetMaximumSpawnRate() == 0
                     && RequiredModule->EmitterDuration == 0
                     && RequiredModule->EmitterLoops == 0)
                 )
             {
                 bEmitterIsDone = true;
-            }*/
+            }
         }
     }
 }
 
-float FParticleEmitterInstance::Tick_EmitterTimeSetup(float DeltaTime, UParticleLODLevel* CurrentLODLevel)
+float FParticleEmitterInstance::Tick_EmitterTimeSetup(float DeltaTime, UParticleLODLevel* InCurrentLODLevel)
 {
-    return 0.f;
+// Make sure we don't try and do any interpolation on the first frame we are attached (OldLocation is not valid in this circumstance)
+	if (Component->bJustRegistered)
+	{
+		Location	= Component->GetComponentLocation();
+		OldLocation	= Location;
+	}
+	else
+	{
+		// Keep track of location for world- space interpolation and other effects.
+		OldLocation	= Location;
+		Location	= Component->GetComponentLocation();
+	}
+
+	UpdateTransforms();
+	SecondsSinceCreation += DeltaTime;
+
+	// Update time within emitter loop.
+	bool bLooped = false;
+	if (InCurrentLODLevel->RequiredModule->bUseLegacyEmitterTime == false)
+	{
+		EmitterTime += DeltaTime;
+		bLooped = (EmitterDuration > 0.0f) && (EmitterTime >= EmitterDuration);
+	}
+	else
+	{
+		EmitterTime = SecondsSinceCreation;
+		if (EmitterDuration > DBL_EPSILON)
+		{
+			EmitterTime = FMath::Fmod(SecondsSinceCreation, EmitterDuration);
+			bLooped = ((SecondsSinceCreation - (EmitterDuration * LoopCount)) >= EmitterDuration);
+		}
+	}
+
+	// Get the emitter delay time
+	float EmitterDelay = CurrentDelay;
+
+	// Determine if the emitter has looped
+	if (bLooped)
+	{
+		LoopCount++;
+		ResetBurstList();
+	    
+		if (InCurrentLODLevel->RequiredModule->bUseLegacyEmitterTime == false)
+		{
+			EmitterTime -= EmitterDuration;
+		}
+
+		if ((InCurrentLODLevel->RequiredModule->bDurationRecalcEachLoop == true)
+			|| ((InCurrentLODLevel->RequiredModule->bDelayFirstLoopOnly == true) && (LoopCount == 1))
+			)
+		{
+			SetupEmitterDuration();
+		}
+
+		if (bRequiresLoopNotification == true)
+		{
+			for (int32 ModuleIdx = -3; ModuleIdx < InCurrentLODLevel->Modules.Num(); ModuleIdx++)
+			{
+				int32 ModuleFetchIdx;
+				switch (ModuleIdx)
+				{
+				case -3:	ModuleFetchIdx = INDEX_REQUIREDMODULE;	break;
+				case -2:	ModuleFetchIdx = INDEX_SPAWNMODULE;		break;
+				case -1:	ModuleFetchIdx = INDEX_TYPEDATAMODULE;	break;
+				default:	ModuleFetchIdx = ModuleIdx;				break;
+				}
+
+				UParticleModule* Module = InCurrentLODLevel->GetModuleAtIndex(ModuleFetchIdx);
+				if (Module != NULL)
+				{
+					if (Module->RequiresLoopingNotification() == true)
+					{
+						Module->EmitterLoopingNotify(this);
+					}
+				}
+			}
+		}
+	}
+
+	// Don't delay unless required
+	if ((InCurrentLODLevel->RequiredModule->bDelayFirstLoopOnly == true) && (LoopCount > 0))
+	{
+		EmitterDelay = 0;
+	}
+
+	// 'Reset' the emitter time so that the modules function correctly
+	EmitterTime -= EmitterDelay;
+
+	return EmitterDelay;
 }
 
 float FParticleEmitterInstance::Tick_SpawnParticles(float DeltaTime, UParticleLODLevel* InCurrentLODLevel, bool bSuppressSpawning, bool bFirstTime)
@@ -1511,9 +1723,112 @@ FParticleSpriteEmitterInstance::~FParticleSpriteEmitterInstance()
 {
 }
 
+/**
+ *	Retrieves the dynamic data for the emitter
+ *	
+ *	@param	bSelected					Whether the emitter is selected in the editor
+ *  @param InFeatureLevel				The relevant shader feature level.
+ *
+ *	@return	FDynamicEmitterDataBase*	The dynamic data, or NULL if it shouldn't be rendered
+ */
+FDynamicEmitterDataBase* FParticleSpriteEmitterInstance::GetDynamicData(bool bSelected)
+{
+    QUICK_SCOPE_CYCLE_COUNTER(STAT_ParticleSpriteEmitterInstance_GetDynamicData);
+
+    // It is valid for the LOD level to be NULL here!
+    UParticleLODLevel* LODLevel = SpriteTemplate->GetCurrentLODLevel(this);
+    if (IsDynamicDataRequired(LODLevel) == false || !bEnabled)
+    {
+        return NULL;
+    }
+
+    // Allocate the dynamic data
+    FDynamicSpriteEmitterData* NewEmitterData = new FDynamicSpriteEmitterData(LODLevel->RequiredModule);
+    {
+        // INC_DWORD_STAT(STAT_DynamicEmitterCount);
+        // INC_DWORD_STAT(STAT_DynamicSpriteCount);
+        // INC_DWORD_STAT_BY(STAT_DynamicEmitterMem, sizeof(FDynamicSpriteEmitterData));
+    }
+
+    // Now fill in the source data
+    if( !FillReplayData( NewEmitterData->Source ) )
+    {
+        delete NewEmitterData;
+        return NULL;
+    }
+
+    // Setup dynamic render data.  Only call this AFTER filling in source data for the emitter.
+    NewEmitterData->Init( bSelected );
+
+    return NewEmitterData;
+}
+
+/**
+ *	Retrieves replay data for the emitter
+ *
+ *	@return	The replay data, or NULL on failure
+ */
+FDynamicEmitterReplayDataBase* FParticleSpriteEmitterInstance::GetReplayData()
+{
+    if (ActiveParticles <= 0 || !bEnabled)
+    {
+        return NULL;
+    }
+
+    FDynamicEmitterReplayDataBase* NewEmitterReplayData = new FDynamicSpriteEmitterReplayData();
+    //check( NewEmitterReplayData != NULL );
+
+    if( !FillReplayData( *NewEmitterReplayData ) )
+    {
+        delete NewEmitterReplayData;
+        return NULL;
+    }
+
+    return NewEmitterReplayData;
+}
+
+/**
+ * Captures dynamic replay data for this particle system.
+ *
+ * @param	OutData		[Out] Data will be copied here
+ *
+ * @return Returns true if successful
+ */
+bool FParticleSpriteEmitterInstance::FillReplayData( FDynamicEmitterReplayDataBase& OutData )
+{
+    QUICK_SCOPE_CYCLE_COUNTER(STAT_ParticleSpriteEmitterInstance_FillReplayData);
+
+    if (ActiveParticles <= 0)
+    {
+        return false;
+    }
+
+    // Call parent implementation first to fill in common particle source data
+    if( !FParticleEmitterInstance::FillReplayData( OutData ) )
+    {
+        return false;
+    }
+
+    OutData.eEmitterType = DET_Sprite;
+
+    FDynamicSpriteEmitterReplayData* NewReplayData =
+        static_cast< FDynamicSpriteEmitterReplayData* >( &OutData );
+
+    // Get the material instance. If there is none, or the material isn't flagged for use with particle systems, use the DefaultMaterial.
+    NewReplayData->Material = GetCurrentMaterial();
+
+    return true;
+}
+
 UMaterial* FParticleEmitterInstance::GetCurrentMaterial()
 {
-    return nullptr;
+    UMaterial* RenderMaterial = CurrentMaterial;
+    if ((RenderMaterial == NULL))
+    {
+        //RenderMaterial = UMaterial::GetDefaultMaterial(MD_Surface);
+    }
+    CurrentMaterial = RenderMaterial;
+    return RenderMaterial;
 }
 
 /*-----------------------------------------------------------------------------
