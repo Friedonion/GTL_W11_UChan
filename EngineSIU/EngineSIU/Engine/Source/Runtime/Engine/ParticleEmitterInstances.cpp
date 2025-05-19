@@ -3,8 +3,128 @@
 #include "Particles/ParticleSystem.h"
 #include "Particles/Spawn/ParticleModuleSpawnBase.h"
 #include "Components/ParticleSystemComponent.h"
+#include "Components/Light/PointLightComponent.h"
 #include "Particles/ParticleModuleRequired.h"
 #include "Userinterface/Console.h"
+
+void FParticleDataContainer::Alloc(int32 InParticleDataNumBytes, int32 InParticleIndicesNumShorts)
+{
+    // check(InParticleDataNumBytes > 0 && ParticleIndicesNumShorts >= 0
+    //     && InParticleDataNumBytes % sizeof(uint16) == 0); // we assume that the particle storage has reasonable alignment below
+    ParticleDataNumBytes = InParticleDataNumBytes;
+    ParticleIndicesNumShorts = InParticleIndicesNumShorts;
+
+    MemBlockSize = ParticleDataNumBytes + ParticleIndicesNumShorts * sizeof(uint16);
+
+    // ParticleData = (uint8*)FastParticleSmallBlockAlloc(MemBlockSize);
+    ParticleIndices = (uint16*)(ParticleData + ParticleDataNumBytes);
+}
+
+void FParticleDataContainer::Free()
+{
+    if (ParticleData)
+    {
+        // check(MemBlockSize > 0);
+        // FastParticleSmallBlockFree(ParticleData, MemBlockSize);
+    }
+    MemBlockSize = 0;
+    ParticleDataNumBytes = 0;
+    ParticleIndicesNumShorts = 0;
+    ParticleData = nullptr;
+    ParticleIndices = nullptr;
+}
+
+/*-----------------------------------------------------------------------------
+    FParticleEmitterInstance
+-----------------------------------------------------------------------------*/
+// Only update the PeakActiveParticles if the frame rate is 20 or better
+const float FParticleEmitterInstance::PeakActiveParticleUpdateDelta = 0.05f;
+
+FParticleEmitterInstance::FParticleEmitterInstance() :
+      SpriteTemplate(NULL)
+    , Component(NULL)
+    , CurrentLODLevel(NULL)
+    , CurrentLODLevelIndex(0)
+    , TypeDataOffset(0)
+    , TypeDataInstanceOffset(-1)
+    , SubUVDataOffset(0)
+    , DynamicParameterDataOffset(0)
+    , LightDataOffset(0)
+    , LightVolumetricScatteringIntensity(0)
+    , OrbitModuleOffset(0)
+    , CameraPayloadOffset(0)
+    , PayloadOffset(0)
+    , bEnabled(1)
+    , bKillOnDeactivate(0)
+    , bKillOnCompleted(0)
+    , bHaltSpawning(0)
+    , bHaltSpawningExternal(0)
+    , bRequiresLoopNotification(0)
+    , bIgnoreComponentScale(0)
+    , bIsBeam(0)
+    , bAxisLockEnabled(0)
+    , bFakeBurstsWhenSpawningSupressed(0)
+    , LockAxisFlags(EPAL_NONE)
+    , SortMode(PSORTMODE_None)
+    , ParticleData(NULL)
+    , ParticleIndices(NULL)
+    , InstanceData(NULL)
+    , InstancePayloadSize(0)
+    , ParticleSize(0)
+    , ParticleStride(0)
+    , ActiveParticles(0)
+    , ParticleCounter(0)
+    , MaxActiveParticles(0)
+    , SpawnFraction(0.0f)
+    , SecondsSinceCreation(0.0f)
+    , EmitterTime(0.0f)
+    , LoopCount(0)
+    , IsRenderDataDirty(0)
+    , EmitterDuration(0.0f)
+    , TrianglesToRender(0)
+    , MaxVertexIndex(0)
+    , CurrentMaterial(NULL)
+    , PositionOffsetThisTick(0)
+    , PivotOffset(-0.5f,-0.5f)
+{
+}
+
+FParticleEmitterInstance::~FParticleEmitterInstance()
+{
+    for (int32 i = 0; i < HighQualityLights.Num(); ++i)
+    {
+        UPointLightComponent* PointLightComponent = HighQualityLights[i];
+        {
+            PointLightComponent->DestroyComponent(false);
+        }
+    }
+    HighQualityLights.SetNum(0);
+
+    delete ParticleData;
+    delete ParticleIndices;
+    delete InstanceData;
+    BurstFired.Empty();
+}
+
+void FParticleEmitterInstance::InitParameters(UParticleEmitter* InTemplate, UParticleSystemComponent* InComponent)
+{
+    SpriteTemplate = InTemplate;
+    Component = InComponent;
+    SetupEmitterDuration();
+}
+
+void FParticleEmitterInstance::Init()
+{
+}
+
+UWorld* FParticleEmitterInstance::GetWorld() const
+{
+    return Component->GetWorld();
+}
+
+void FParticleEmitterInstance::UpdateTransforms()
+{
+}
 
 bool FParticleEmitterInstance::Resize(int32 NewMaxActiveParticles, bool bSetMaxActiveCount)
 {
@@ -72,270 +192,6 @@ void FParticleEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
     PositionOffsetThisTick = FVector::ZeroVector;
 }
 
-void FParticleEmitterInstance::ApplyWorldOffset(FVector InOffset, bool bWorldShift)
-{
-}
-
-void FParticleEmitterInstance::Tick_MaterialOverrides(int32 EmitterIndex)
-{
-    UParticleLODLevel* LODLevel = SpriteTemplate->GetCurrentLODLevel(this);
-    bool bOverridden = false;
-    if (LODLevel && LODLevel->RequiredModule && Component && Component->Template)
-    {
-        TArray<FName>& NamedOverrides = LODLevel->RequiredModule->NamedMaterialOverrides;
-        TArray<FNamedEmitterMaterial>& Slots = Component->Template->NamedMaterialSlots;
-        //TArray<UMaterialInterface*>& EmitterMaterials = Component->EmitterMaterials;
-        if (NamedOverrides.Num() > 0)
-        {
-            //If we have named material overrides then get it's index into the emitter materials array.
-            //Only check for [0] in in the named overrides as most emitter types only need one material. Mesh emitters might use more but they override this function.		
-            for (int32 CheckIdx = 0; CheckIdx < Slots.Num(); ++CheckIdx)
-            {
-                if (NamedOverrides[0] == Slots[CheckIdx].Name)
-                {
-                    //Default to the default material for that slot.
-                    CurrentMaterial = Slots[CheckIdx].Material;
-                    //if (EmitterMaterials.IsValidIndex(CheckIdx) && nullptr != EmitterMaterials[CheckIdx])
-                    //{
-                    //    //This material has been overridden externally, e.g. from a BP so use that one.
-                    //    CurrentMaterial = EmitterMaterials[CheckIdx];
-                    //}
-
-                    bOverridden = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    if (bOverridden == false && Component)
-    {
-        /*if (Component->EmitterMaterials.IsValidIndex(EmitterIndex))
-        {
-            if (Component->EmitterMaterials[EmitterIndex])
-            {
-                CurrentMaterial = Component->EmitterMaterials[EmitterIndex];
-            }
-        }*/
-    }
-}
-
-void FParticleEmitterInstance::KillParticles()
-{
-    if (ActiveParticles > 0)
-    {
-        UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
-        /*FParticleEventInstancePayload* EventPayload = NULL;
-        if (LODLevel->EventGenerator)
-        {
-            EventPayload = (FParticleEventInstancePayload*)GetModuleInstanceData(LODLevel->EventGenerator);
-            if (EventPayload && (EventPayload->bDeathEventsPresent == false))
-            {
-                EventPayload = NULL;
-            }
-        }*/
-
-        bool bFoundCorruptIndices = false;
-        // Loop over the active particles... If their RelativeTime is > 1.0f (indicating they are dead),
-        // move them to the 'end' of the active particle list.
-        for (int32 i = ActiveParticles - 1; i >= 0; i--)
-        {
-            const int32	CurrentIndex = ParticleIndices[i];
-            if (CurrentIndex < MaxActiveParticles)
-            {
-                const uint8* ParticleBase = ParticleData + CurrentIndex * ParticleStride;
-                FBaseParticle& Particle = *((FBaseParticle*)ParticleBase);
-
-                if (Particle.RelativeTime > 1.0f)
-                {
-                    /*if (EventPayload)
-                    {
-                        LODLevel->EventGenerator->HandleParticleKilled(this, EventPayload, &Particle);
-                    }*/
-                    // Move it to the 'back' of the list
-                    ParticleIndices[i] = ParticleIndices[ActiveParticles - 1];
-                    ParticleIndices[ActiveParticles - 1] = CurrentIndex;
-                    ActiveParticles--;
-                }
-            }
-            else
-            {
-                bFoundCorruptIndices = true;
-            }
-        }
-
-        if (bFoundCorruptIndices)
-        {
-            UE_LOG(ELogLevel::Error, TEXT("Detected corrupted particle indices."));
-            //FixupParticleIndices();
-        }
-    }
-}
-
-void FParticleEmitterInstance::KillParticle(int32 Index)
-{
-}
-
-void FParticleEmitterInstance::KillParticlesForced(bool bFireEvents)
-{
-}
-
-FBaseParticle* FParticleEmitterInstance::GetParticle(int32 Index)
-{
-    return nullptr;
-}
-
-FBaseParticle* FParticleEmitterInstance::GetParticleDirect(int32 InDirectIndex)
-{
-    return nullptr;
-}
-
-void FParticleEmitterInstance::SetupEmitterDuration()
-{
-}
-
-bool FParticleEmitterInstance::IsDynamicDataRequired(UParticleLODLevel* CurrentLODLevel)
-{
-    return true;
-}
-
-void FParticleEmitterInstance::ProcessParticleEvents(float DeltaTime, bool bSuppressSpawning)
-{
-}
-
-void FParticleEmitterInstance::ResetParticleParameters(float DeltaTime)
-{
-    UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
-    UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
-    
-    if (!HighestLODLevel) return;
-
-    for (int32 ParticleIndex = 0; ParticleIndex < ActiveParticles; ParticleIndex++)
-    {
-        DECLARE_PARTICLE(Particle, ParticleData + ParticleStride * ParticleIndices[ParticleIndex]);
-        Particle.Velocity = Particle.BaseVelocity;
-        Particle.Size = GetParticleBaseSize(Particle);
-        Particle.RotationRate = Particle.BaseRotationRate;
-        Particle.Color = Particle.BaseColor;
-
-        bool bJustSpawned = (Particle.Flags & STATE_Particle_JustSpawned) != 0;
-
-        //Don't update position for newly spawned particles. They already have a partial update applied during spawn.
-        bool bSkipUpdate = bJustSpawned;
-
-        Particle.RelativeTime += bSkipUpdate ? 0.0f : Particle.OneOverMaxLifetime * DeltaTime;
-
-        /*if (CameraPayloadOffset > 0)
-        {
-            int32 CurrentOffset = CameraPayloadOffset;
-            const uint8* ParticleBase = (const uint8*)&Particle;
-            PARTICLE_ELEMENT(FCameraOffsetParticlePayload, CameraOffsetPayload);
-            CameraOffsetPayload.Offset = CameraOffsetPayload.BaseOffset;
-        }*/
-    }
-}
-
-void FParticleEmitterInstance::ParticlePrefetch()
-{
-}
-
-void FParticleEmitterInstance::InitParameters(UParticleEmitter* InTemplate, UParticleSystemComponent* InComponent)
-{
-    SpriteTemplate = InTemplate;
-    Component = InComponent;
-    SetupEmitterDuration();
-}
-
-void FParticleEmitterInstance::Init()
-{
-}
-
-void FParticleEmitterInstance::Tick_ModuleUpdate(float DeltaTime, UParticleLODLevel* InCurrentLODLevel)
-{
-    UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
-    
-    if (!HighestLODLevel) return;
-
-    for (int32 ModuleIndex = 0; ModuleIndex < InCurrentLODLevel->UpdateModules.Num(); ModuleIndex++)
-    {
-        UParticleModule* CurrentModule = InCurrentLODLevel->UpdateModules[ModuleIndex];
-        if (CurrentModule && CurrentModule->bEnabled && CurrentModule->bUpdateModule)
-        {
-            // 하위 클래스에서 구현된 각각의 ParticleModule Update 함수 호출
-            CurrentModule->Update(this, GetModuleDataOffset(HighestLODLevel->UpdateModules[ModuleIndex]), DeltaTime);
-        }
-    }
-}
-
-void FParticleEmitterInstance::Tick_ModulePostUpdate(float DeltaTime, UParticleLODLevel* CurrentLODLevel)
-{
-}
-
-float FParticleEmitterInstance::Tick_SpawnParticles(float DeltaTime, UParticleLODLevel* InCurrentLODLevel, bool bSuppressSpawning, bool bFirstTime)
-{
-    if (!bHaltSpawning && !bHaltSpawningExternal && !bSuppressSpawning && (EmitterTime >= 0.0f))
-    {
-        // If emitter is not done - spawn at current rate.
-        // If EmitterLoops is 0, then we loop forever, so always spawn.
-        if ((InCurrentLODLevel->RequiredModule->EmitterLoops == 0) ||
-            (LoopCount < InCurrentLODLevel->RequiredModule->EmitterLoops) ||
-            (SecondsSinceCreation < (EmitterDuration * InCurrentLODLevel->RequiredModule->EmitterLoops)) ||
-            bFirstTime)
-        {
-            bFirstTime = false;
-            SpawnFraction = Spawn(DeltaTime);
-        }
-    }
-    else if (bFakeBurstsWhenSpawningSupressed)
-    {
-        FakeBursts();
-    }
-
-    return SpawnFraction;
-}
-
-void FParticleEmitterInstance::Tick_ModuleFinalUpdate(float DeltaTime, UParticleLODLevel* InCurrentLODLevel)
-{
-    /*UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
-    
-    if (!HighestLODLevel) return;
-
-    for (int32 ModuleIndex = 0; ModuleIndex < InCurrentLODLevel->UpdateModules.Num(); ModuleIndex++)
-    {
-        UParticleModule* CurrentModule = InCurrentLODLevel->UpdateModules[ModuleIndex];
-        if (CurrentModule && CurrentModule->bEnabled && CurrentModule->bFinalUpdateModule)
-        {
-            CurrentModule->FinalUpdate(this, GetModuleDataOffset(HighestLODLevel->UpdateModules[ModuleIndex]), DeltaTime);
-        }
-    }
-
-    if (InCurrentLODLevel->TypeDataModule && InCurrentLODLevel->TypeDataModule->bEnabled && InCurrentLODLevel->TypeDataModule->bFinalUpdateModule)
-    {
-        InCurrentLODLevel->TypeDataModule->FinalUpdate(this, GetModuleDataOffset(HighestLODLevel->TypeDataModule), DeltaTime);
-    }*/
-}
-
-void FParticleEmitterInstance::SetCurrentLODIndex(int32 InLODIndex, bool bInFullyProcess)
-{
-}
-
-void FParticleEmitterInstance::Rewind()
-{
-}
-
-void FParticleEmitterInstance::UpdateBoundingBox(float DeltaTime)
-{
-}
-
-void FParticleEmitterInstance::ForceUpdateBoundingBox()
-{
-}
-
-uint32 FParticleEmitterInstance::RequiredBytes()
-{
-    return 0;
-}
-
 void FParticleEmitterInstance::CheckEmitterFinished()
 {
     // Grab the current LOD level
@@ -373,107 +229,98 @@ void FParticleEmitterInstance::CheckEmitterFinished()
     }
 }
 
-/*-----------------------------------------------------------------------------
-    FParticleEmitterInstance
------------------------------------------------------------------------------*/
-// Only update the PeakActiveParticles if the frame rate is 20 or better
-const float FParticleEmitterInstance::PeakActiveParticleUpdateDelta = 0.05f;
-
-FParticleEmitterInstance::FParticleEmitterInstance() :
-      SpriteTemplate(NULL)
-    , Component(NULL)
-    , CurrentLODLevel(NULL)
-    , CurrentLODLevelIndex(0)
-    , TypeDataOffset(0)
-    , TypeDataInstanceOffset(-1)
-    , SubUVDataOffset(0)
-    , DynamicParameterDataOffset(0)
-    , LightDataOffset(0)
-    , LightVolumetricScatteringIntensity(0)
-    , OrbitModuleOffset(0)
-    , CameraPayloadOffset(0)
-    , PayloadOffset(0)
-    , bEnabled(1)
-    , bKillOnDeactivate(0)
-    , bKillOnCompleted(0)
-    , bHaltSpawning(0)
-    , bHaltSpawningExternal(0)
-    , bRequiresLoopNotification(0)
-    , bIgnoreComponentScale(0)
-    , bIsBeam(0)
-    , bAxisLockEnabled(0)
-    , bFakeBurstsWhenSpawningSupressed(0)
-    , LockAxisFlags(EPAL_NONE)
-    , SortMode(PSORTMODE_None)
-    , ParticleData(NULL)
-    , ParticleIndices(NULL)
-    , InstanceData(NULL)
-    , InstancePayloadSize(0)
-    , ParticleSize(0)
-    , ParticleStride(0)
-    , ActiveParticles(0)
-    , ParticleCounter(0)
-    , MaxActiveParticles(0)
-    , SpawnFraction(0.0f)
-    , SecondsSinceCreation(0.0f)
-    , EmitterTime(0.0f)
-    , LoopCount(0)
-    , IsRenderDataDirty(0)
-    , EmitterDuration(0.0f)
-    , TrianglesToRender(0)
-    , MaxVertexIndex(0)
-    , CurrentMaterial(NULL)
-    , PositionOffsetThisTick(0)
-    , PivotOffset(-0.5f,-0.5f)
-{
-}
-
-FParticleEmitterInstance::~FParticleEmitterInstance()
-{
-}
-
-bool FParticleEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase& OutData)
-{
-    return true;
-}
-
-UParticleLODLevel* FParticleEmitterInstance::GetCurrentLODLevelChecked()
-{
-    if (SpriteTemplate == NULL) return nullptr;
-    UParticleLODLevel* LODLevel = SpriteTemplate->GetCurrentLODLevel(this);
-    if (LODLevel == NULL) return nullptr;
-    if (LODLevel->RequiredModule == NULL) return nullptr;
-    return LODLevel;
-}
-
-void FParticleEmitterInstance::FakeBursts()
-{
-    UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
-    //if (LODLevel->SpawnModule->BurstList.Num() > 0)
-    //{
-    //    // For each burst in the list
-    //    for (int32 BurstIdx = 0; BurstIdx < LODLevel->SpawnModule->BurstList.Num(); BurstIdx++)
-    //    {
-    //        FParticleBurst* BurstEntry = &(LODLevel->SpawnModule->BurstList[BurstIdx]);
-    //        // If it hasn't been fired
-    //        if (LODLevel->Level < BurstFired.Num())
-    //        {
-    //            FLODBurstFired& LocalBurstFired = BurstFired[LODLevel->Level];
-    //            if (BurstIdx < LocalBurstFired.Fired.Num())
-    //            {
-    //                if (EmitterTime >= BurstEntry->Time)
-    //                {
-    //                    LocalBurstFired.Fired[BurstIdx] = true;
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-}
-
 float FParticleEmitterInstance::Tick_EmitterTimeSetup(float DeltaTime, UParticleLODLevel* CurrentLODLevel)
 {
     return 0.f;
+}
+
+float FParticleEmitterInstance::Tick_SpawnParticles(float DeltaTime, UParticleLODLevel* InCurrentLODLevel, bool bSuppressSpawning, bool bFirstTime)
+{
+    if (!bHaltSpawning && !bHaltSpawningExternal && !bSuppressSpawning && (EmitterTime >= 0.0f))
+    {
+        // If emitter is not done - spawn at current rate.
+        // If EmitterLoops is 0, then we loop forever, so always spawn.
+        if ((InCurrentLODLevel->RequiredModule->EmitterLoops == 0) ||
+            (LoopCount < InCurrentLODLevel->RequiredModule->EmitterLoops) ||
+            (SecondsSinceCreation < (EmitterDuration * InCurrentLODLevel->RequiredModule->EmitterLoops)) ||
+            bFirstTime)
+        {
+            bFirstTime = false;
+            SpawnFraction = Spawn(DeltaTime);
+        }
+    }
+    else if (bFakeBurstsWhenSpawningSupressed)
+    {
+        FakeBursts();
+    }
+
+    return SpawnFraction;
+}
+void FParticleEmitterInstance::Tick_ModuleUpdate(float DeltaTime, UParticleLODLevel* InCurrentLODLevel)
+{
+    UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
+    
+    if (!HighestLODLevel) return;
+
+    for (int32 ModuleIndex = 0; ModuleIndex < InCurrentLODLevel->UpdateModules.Num(); ModuleIndex++)
+    {
+        UParticleModule* CurrentModule = InCurrentLODLevel->UpdateModules[ModuleIndex];
+        if (CurrentModule && CurrentModule->bEnabled && CurrentModule->bUpdateModule)
+        {
+            // 하위 클래스에서 구현된 각각의 ParticleModule Update 함수 호출
+            CurrentModule->Update(this, GetModuleDataOffset(HighestLODLevel->UpdateModules[ModuleIndex]), DeltaTime);
+        }
+    }
+}
+
+void FParticleEmitterInstance::Tick_ModulePostUpdate(float DeltaTime, UParticleLODLevel* CurrentLODLevel)
+{
+}
+
+void FParticleEmitterInstance::Tick_ModuleFinalUpdate(float DeltaTime, UParticleLODLevel* InCurrentLODLevel)
+{
+    /*UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
+    
+    if (!HighestLODLevel) return;
+
+    for (int32 ModuleIndex = 0; ModuleIndex < InCurrentLODLevel->UpdateModules.Num(); ModuleIndex++)
+    {
+        UParticleModule* CurrentModule = InCurrentLODLevel->UpdateModules[ModuleIndex];
+        if (CurrentModule && CurrentModule->bEnabled && CurrentModule->bFinalUpdateModule)
+        {
+            CurrentModule->FinalUpdate(this, GetModuleDataOffset(HighestLODLevel->UpdateModules[ModuleIndex]), DeltaTime);
+        }
+    }
+
+    if (InCurrentLODLevel->TypeDataModule && InCurrentLODLevel->TypeDataModule->bEnabled && InCurrentLODLevel->TypeDataModule->bFinalUpdateModule)
+    {
+        InCurrentLODLevel->TypeDataModule->FinalUpdate(this, GetModuleDataOffset(HighestLODLevel->TypeDataModule), DeltaTime);
+    }*/
+}
+void FParticleEmitterInstance::SetCurrentLODIndex(int32 InLODIndex, bool bInFullyProcess)
+{
+}
+
+void FParticleEmitterInstance::Rewind()
+{
+}
+
+FBoundingBox FParticleEmitterInstance::GetBoundingBox()
+{
+    return ParticleBoundingBox;
+}
+
+void FParticleEmitterInstance::UpdateBoundingBox(float DeltaTime)
+{
+}
+
+void FParticleEmitterInstance::ForceUpdateBoundingBox()
+{
+}
+
+uint32 FParticleEmitterInstance::RequiredBytes()
+{
+    return 0;
 }
 
 uint32 FParticleEmitterInstance::GetModuleDataOffset(UParticleModule* Module)
@@ -482,6 +329,11 @@ uint32 FParticleEmitterInstance::GetModuleDataOffset(UParticleModule* Module)
 
     uint32* Offset = SpriteTemplate->ModuleOffsetMap.Find(Module);
     return (Offset != nullptr) ? *Offset : 0;
+}
+
+uint8* FParticleEmitterInstance::GetModuleInstanceData(UParticleModule* Module)
+{
+    return nullptr;
 }
 
 /** Get pointer to emitter instance random seed payload data for a particular module */
@@ -510,6 +362,7 @@ uint32 FParticleEmitterInstance::CalculateParticleStride(uint32 ParticleSize)
     return 0;
 }
 
+
 void FParticleEmitterInstance::ResetBurstList()
 {
 }
@@ -517,6 +370,42 @@ void FParticleEmitterInstance::ResetBurstList()
 float FParticleEmitterInstance::GetCurrentBurstRateOffset(float& DeltaTime, int32& Burst)
 {
     return 0.f;
+}
+
+void FParticleEmitterInstance::ResetParticleParameters(float DeltaTime)
+{
+    UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
+    UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
+    
+    if (!HighestLODLevel) return;
+
+    for (int32 ParticleIndex = 0; ParticleIndex < ActiveParticles; ParticleIndex++)
+    {
+        DECLARE_PARTICLE(Particle, ParticleData + ParticleStride * ParticleIndices[ParticleIndex]);
+        Particle.Velocity = Particle.BaseVelocity;
+        Particle.Size = GetParticleBaseSize(Particle);
+        Particle.RotationRate = Particle.BaseRotationRate;
+        Particle.Color = Particle.BaseColor;
+
+        bool bJustSpawned = (Particle.Flags & STATE_Particle_JustSpawned) != 0;
+
+        //Don't update position for newly spawned particles. They already have a partial update applied during spawn.
+        bool bSkipUpdate = bJustSpawned;
+
+        Particle.RelativeTime += bSkipUpdate ? 0.0f : Particle.OneOverMaxLifetime * DeltaTime;
+
+        /*if (CameraPayloadOffset > 0)
+        {
+            int32 CurrentOffset = CameraPayloadOffset;
+            const uint8* ParticleBase = (const uint8*)&Particle;
+            PARTICLE_ELEMENT(FCameraOffsetParticlePayload, CameraOffsetPayload);
+            CameraOffsetPayload.Offset = CameraOffsetPayload.BaseOffset;
+        }*/
+    }
+}
+
+void FParticleEmitterInstance::ParticlePrefetch()
+{
 }
 
 float FParticleEmitterInstance::Spawn(float DeltaTime)
@@ -662,6 +551,50 @@ float FParticleEmitterInstance::Spawn(float DeltaTime)
     return SpawnFraction;
 }
 
+/**
+* Fixup particle indices to only have valid entries.
+*/
+void FParticleEmitterInstance::FixupParticleIndices()
+{
+    // // Something is wrong and particle data are be invalid. Try to fix-up things.
+    // TBitArray<> UsedIndices(false, MaxActiveParticles);
+    //
+    // for (int32 i = 0; i < ActiveParticles; ++i)
+    // {
+    //     const uint16 UsedIndex = ParticleIndices[i];
+    //     if (UsedIndex < MaxActiveParticles && UsedIndices[UsedIndex] == 0)
+    //     {
+    //         UsedIndices[UsedIndex] = 1;
+    //     }
+    //     else
+    //     {
+    //         if (i != ActiveParticles - 1)
+    //         {
+    //             // Remove this bad or duplicated index
+    //             ParticleIndices[i] = ParticleIndices[ActiveParticles - 1];
+    //         }
+    //         // Decrease particle count.
+    //         --ActiveParticles;
+    //
+    //         // Retry the new index.
+    //         --i;
+    //     }
+    // }
+    //
+    // for (int32 i = ActiveParticles; i < MaxActiveParticles; ++i)
+    // {
+    //     const int32 FreeIndex = UsedIndices.FindAndSetFirstZeroBit();
+    //     if (ensure(FreeIndex != INDEX_NONE))
+    //     {
+    //         ParticleIndices[i] =  (uint16)FreeIndex;
+    //     }
+    //     else // Can't really handle that.
+    //     {
+    //         ParticleIndices[i] = (uint16)i;
+    //     }
+    // }
+}
+
 void FParticleEmitterInstance::SpawnParticles(int32 Count, float StartTime, float Increment, const FVector& InitialLocation, const FVector& InitialVelocity, struct FParticleEventInstancePayload* EventPayload)
 {
     UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
@@ -768,6 +701,15 @@ void FParticleEmitterInstance::SpawnParticles(int32 Count, float StartTime, floa
     }*/
 }
 
+UParticleLODLevel* FParticleEmitterInstance::GetCurrentLODLevelChecked()
+{
+    if (SpriteTemplate == NULL) return nullptr;
+    UParticleLODLevel* LODLevel = SpriteTemplate->GetCurrentLODLevel(this);
+    if (LODLevel == NULL) return nullptr;
+    if (LODLevel->RequiredModule == NULL) return nullptr;
+    return LODLevel;
+}
+
 void FParticleEmitterInstance::ForceSpawn(float DeltaTime, int32 InSpawnCount, int32 InBurstCount, FVector& InLocation, FVector& InVelocity)
 {
 }
@@ -776,43 +718,240 @@ void FParticleEmitterInstance::PreSpawn(FBaseParticle* Particle, const FVector& 
 {
 }
 
-void FParticleEmitterInstance::PostSpawn(FBaseParticle* Particle, float InterpolationPercentage, float SpawnTime)
-{
-}
-
 bool FParticleEmitterInstance::HasCompleted()
 {
     return true;
 }
 
-void FParticleDataContainer::Alloc(int32 InParticleDataNumBytes, int32 InParticleIndicesNumShorts)
+void FParticleEmitterInstance::PostSpawn(FBaseParticle* Particle, float InterpolationPercentage, float SpawnTime)
 {
-    // check(InParticleDataNumBytes > 0 && ParticleIndicesNumShorts >= 0
-    //     && InParticleDataNumBytes % sizeof(uint16) == 0); // we assume that the particle storage has reasonable alignment below
-    ParticleDataNumBytes = InParticleDataNumBytes;
-    ParticleIndicesNumShorts = InParticleIndicesNumShorts;
-
-    MemBlockSize = ParticleDataNumBytes + ParticleIndicesNumShorts * sizeof(uint16);
-
-    // ParticleData = (uint8*)FastParticleSmallBlockAlloc(MemBlockSize);
-    ParticleIndices = (uint16*)(ParticleData + ParticleDataNumBytes);
 }
 
-void FParticleDataContainer::Free()
+void FParticleEmitterInstance::KillParticles()
 {
-    if (ParticleData)
+    if (ActiveParticles > 0)
     {
-        // check(MemBlockSize > 0);
-        // FastParticleSmallBlockFree(ParticleData, MemBlockSize);
+        UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
+        /*FParticleEventInstancePayload* EventPayload = NULL;
+        if (LODLevel->EventGenerator)
+        {
+            EventPayload = (FParticleEventInstancePayload*)GetModuleInstanceData(LODLevel->EventGenerator);
+            if (EventPayload && (EventPayload->bDeathEventsPresent == false))
+            {
+                EventPayload = NULL;
+            }
+        }*/
+
+        bool bFoundCorruptIndices = false;
+        // Loop over the active particles... If their RelativeTime is > 1.0f (indicating they are dead),
+        // move them to the 'end' of the active particle list.
+        for (int32 i = ActiveParticles - 1; i >= 0; i--)
+        {
+            const int32	CurrentIndex = ParticleIndices[i];
+            if (CurrentIndex < MaxActiveParticles)
+            {
+                const uint8* ParticleBase = ParticleData + CurrentIndex * ParticleStride;
+                FBaseParticle& Particle = *((FBaseParticle*)ParticleBase);
+
+                if (Particle.RelativeTime > 1.0f)
+                {
+                    /*if (EventPayload)
+                    {
+                        LODLevel->EventGenerator->HandleParticleKilled(this, EventPayload, &Particle);
+                    }*/
+                    // Move it to the 'back' of the list
+                    ParticleIndices[i] = ParticleIndices[ActiveParticles - 1];
+                    ParticleIndices[ActiveParticles - 1] = CurrentIndex;
+                    ActiveParticles--;
+                }
+            }
+            else
+            {
+                bFoundCorruptIndices = true;
+            }
+        }
+
+        if (bFoundCorruptIndices)
+        {
+            UE_LOG(ELogLevel::Error, TEXT("Detected corrupted particle indices."));
+            //FixupParticleIndices();
+        }
     }
-    MemBlockSize = 0;
-    ParticleDataNumBytes = 0;
-    ParticleIndicesNumShorts = 0;
-    ParticleData = nullptr;
-    ParticleIndices = nullptr;
 }
 
+void FParticleEmitterInstance::KillParticle(int32 Index)
+{
+}
 
+void FParticleEmitterInstance::FakeBursts()
+{
+    UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
+    //if (LODLevel->SpawnModule->BurstList.Num() > 0)
+    //{
+    //    // For each burst in the list
+    //    for (int32 BurstIdx = 0; BurstIdx < LODLevel->SpawnModule->BurstList.Num(); BurstIdx++)
+    //    {
+    //        FParticleBurst* BurstEntry = &(LODLevel->SpawnModule->BurstList[BurstIdx]);
+    //        // If it hasn't been fired
+    //        if (LODLevel->Level < BurstFired.Num())
+    //        {
+    //            FLODBurstFired& LocalBurstFired = BurstFired[LODLevel->Level];
+    //            if (BurstIdx < LocalBurstFired.Fired.Num())
+    //            {
+    //                if (EmitterTime >= BurstEntry->Time)
+    //                {
+    //                    LocalBurstFired.Fired[BurstIdx] = true;
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
+}
+
+void FParticleEmitterInstance::KillParticlesForced(bool bFireEvents)
+{
+}
+
+FBaseParticle* FParticleEmitterInstance::GetParticle(int32 Index)
+{
+    // See if the index is valid. If not, return NULL
+    if ((Index >= ActiveParticles) || (Index < 0))
+    {
+        return NULL;
+    }
+
+    // Grab and return the particle
+    DECLARE_PARTICLE_PTR(Particle, ParticleData + ParticleStride * ParticleIndices[Index]);
+    return Particle;
+}
+
+FBaseParticle* FParticleEmitterInstance::GetParticleDirect(int32 InDirectIndex)
+{
+    if ((ActiveParticles > 0) && (InDirectIndex < MaxActiveParticles))
+    {
+        DECLARE_PARTICLE_PTR(Particle, ParticleData + ParticleStride * InDirectIndex);
+        return Particle;
+    }
+    return NULL;
+}
+
+void FParticleEmitterInstance::SetupEmitterDuration()
+{
+}
+
+bool FParticleEmitterInstance::IsDynamicDataRequired(UParticleLODLevel* CurrentLODLevel)
+{
+    return true;
+}
+
+void FParticleEmitterInstance::ProcessParticleEvents(float DeltaTime, bool bSuppressSpawning)
+{
+}
+
+bool FParticleEmitterInstance::FillReplayData(FDynamicEmitterReplayDataBase& OutData)
+{
+    return true;
+}
+
+void FParticleEmitterInstance::ApplyWorldOffset(FVector InOffset, bool bWorldShift)
+{
+}
+
+void FParticleEmitterInstance::Tick_MaterialOverrides(int32 EmitterIndex)
+{
+    UParticleLODLevel* LODLevel = SpriteTemplate->GetCurrentLODLevel(this);
+    bool bOverridden = false;
+    if (LODLevel && LODLevel->RequiredModule && Component && Component->Template)
+    {
+        TArray<FName>& NamedOverrides = LODLevel->RequiredModule->NamedMaterialOverrides;
+        TArray<FNamedEmitterMaterial>& Slots = Component->Template->NamedMaterialSlots;
+        //TArray<UMaterialInterface*>& EmitterMaterials = Component->EmitterMaterials;
+        if (NamedOverrides.Num() > 0)
+        {
+            //If we have named material overrides then get it's index into the emitter materials array.
+            //Only check for [0] in in the named overrides as most emitter types only need one material. Mesh emitters might use more but they override this function.		
+            for (int32 CheckIdx = 0; CheckIdx < Slots.Num(); ++CheckIdx)
+            {
+                if (NamedOverrides[0] == Slots[CheckIdx].Name)
+                {
+                    //Default to the default material for that slot.
+                    CurrentMaterial = Slots[CheckIdx].Material;
+                    //if (EmitterMaterials.IsValidIndex(CheckIdx) && nullptr != EmitterMaterials[CheckIdx])
+                    //{
+                    //    //This material has been overridden externally, e.g. from a BP so use that one.
+                    //    CurrentMaterial = EmitterMaterials[CheckIdx];
+                    //}
+
+                    bOverridden = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (bOverridden == false && Component)
+    {
+        /*if (Component->EmitterMaterials.IsValidIndex(EmitterIndex))
+        {
+            if (Component->EmitterMaterials[EmitterIndex])
+            {
+                CurrentMaterial = Component->EmitterMaterials[EmitterIndex];
+            }
+        }*/
+    }
+}
+
+bool FParticleEmitterInstance::UseLocalSpace()
+{
+    return false;
+}
+
+void FParticleEmitterInstance::GetScreenAlignmentAndScale(int32& OutScreenAlign, FVector& OutScale)
+{
+}
+
+/*-----------------------------------------------------------------------------
+    ParticleSpriteEmitterInstance
+-----------------------------------------------------------------------------*/
+/**
+ *	ParticleSpriteEmitterInstance
+ *	The structure for a standard sprite emitter instance.
+ */
+/** Constructor	*/
+FParticleSpriteEmitterInstance::FParticleSpriteEmitterInstance() :
+    FParticleEmitterInstance()
+{
+}
+
+/** Destructor	*/
+FParticleSpriteEmitterInstance::~FParticleSpriteEmitterInstance()
+{
+}
+
+UMaterial* FParticleEmitterInstance::GetCurrentMaterial()
+{
+    return nullptr;
+}
+
+/*-----------------------------------------------------------------------------
+    ParticleMeshEmitterInstance
+-----------------------------------------------------------------------------*/
+/**
+ *	Structure for mesh emitter instances
+ */
+
+/** Constructor	*/
+
+
+
+
+
+
+FDynamicEmitterDataBase::FDynamicEmitterDataBase(const UParticleModuleRequired* RequiredModule)
+    : bSelected(false)
+    , EmitterIndex(INDEX_NONE)
+{
+}
 
 FDynamicSpriteEmitterReplayDataBase::FDynamicSpriteEmitterReplayDataBase()
     : //Material(nullptr)
@@ -851,21 +990,4 @@ FDynamicSpriteEmitterReplayDataBase::~FDynamicSpriteEmitterReplayDataBase()
 void FDynamicSpriteEmitterReplayDataBase::Serialize(FArchive& Ar)
 {
     FDynamicEmitterReplayDataBase::Serialize(Ar);
-}
-
-FDynamicEmitterDataBase::FDynamicEmitterDataBase(const UParticleModuleRequired* RequiredModule)
-    : bSelected(false)
-    , EmitterIndex(INDEX_NONE)
-{
-    
-}
-
-FParticleSpriteEmitterInstance::FParticleSpriteEmitterInstance() :
-    FParticleEmitterInstance()
-{
-}
-
-/** Destructor	*/
-FParticleSpriteEmitterInstance::~FParticleSpriteEmitterInstance()
-{
 }

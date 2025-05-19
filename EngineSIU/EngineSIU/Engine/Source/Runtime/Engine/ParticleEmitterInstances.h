@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Define.h"
 #include "Container/Array.h"
 #include "Core/Math/Vector.h"
 #include "Math/Matrix.h"
@@ -131,7 +132,7 @@ public:
     /** The previous location of the instance.							*/
     FVector OldLocation;
     /** The bounding box for the particles.								*/
-    //FBox ParticleBoundingBox;
+    FBoundingBox ParticleBoundingBox;
     /** The BurstFire information.										*/
     TArray<struct FLODBurstFired> BurstFired;
     /** The number of loops completed by the instance.					*/
@@ -238,7 +239,7 @@ public:
     virtual void SetCurrentLODIndex(int32 InLODIndex, bool bInFullyProcess);
 
     virtual void Rewind();
-    //virtual FBox GetBoundingBox();
+    virtual FBoundingBox GetBoundingBox();
     virtual void UpdateBoundingBox(float DeltaTime);
     virtual void ForceUpdateBoundingBox();
     virtual uint32 RequiredBytes();
@@ -265,7 +266,7 @@ public:
      *	@return	float			The leftover fraction of spawning
      */
     virtual float Spawn(float DeltaTime);
-
+ 
     /**
      * Spawn the indicated number of particles.
      *
@@ -343,10 +344,10 @@ public:
     }
 
     /** Get the offset of the orbit payload. */
-    int32 GetOrbitPayloadOffset();
+    //int32 GetOrbitPayloadOffset();
 
     /** Get the position of the particle taking orbit in to account. */
-    FVector GetParticleLocationWithOrbitOffset(FBaseParticle* Particle);
+    //FVector GetParticleLocationWithOrbitOffset(FBaseParticle* Particle);
 
     virtual FBaseParticle* GetParticle(int32 Index);
     /**

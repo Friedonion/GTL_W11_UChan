@@ -41,6 +41,8 @@ UParticleSystemComponent::UParticleSystemComponent()
     TimeSinceLastTick = 0;
 
     bNeedsFinalize = false;
+
+    Template->UpdateAllModuleLists();
 }
 
 UParticleSystemComponent::~UParticleSystemComponent()
@@ -91,7 +93,6 @@ void UParticleSystemComponent::TickComponent(float DeltaTime)
     TotalActiveParticles = 0;
     bNeedsFinalize = true;
 
-    Template->UpdateAllModuleLists();
     // Emitter Update
     ComputeTickComponent_Concurrent();
     // 현재 역할 없음
