@@ -79,7 +79,7 @@ public:
     //~ End UObject Interface
 
     // @todo document
-    //virtual void	UpdateModuleLists();
+    virtual void UpdateModuleLists();
 
     // @todo document
     //virtual bool	GenerateFromLODLevel(UParticleLODLevel* SourceLODLevel, float Percentage, bool bGenerateModuleData = true);

@@ -34,6 +34,8 @@
 #include "Actors/CubeActor.h"
 #include "Actors/SphereActor.h"
 #include "Actors/CapsuleActor.h"
+#include "Actors/ParticleSystemActor.h"
+
 #include "Animation/SkeletalMeshActor.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -355,7 +357,7 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
             {.Label = "TriggerBox", .OBJ = OBJ_TRIGGERBOX},
             {.Label = "SkeletalMeshActor", .OBJ = OBJ_SKELETALMESH},
             {.Label = "SequencerPlayer", .OBJ = OBJ_SEQUENCERPLAYER},
-            {.Label = "Particle", .OBJ = OBJ_PARTICLE},
+            {.Label = "ParticleSystem", .OBJ = OBJ_PARTICLESYSTEM},
         };
 
         for (const auto& primitive : primitives)
@@ -497,6 +499,12 @@ void ControlEditorPanel::CreateModifyButton(const ImVec2 ButtonSize, ImFont* Ico
                 {
                     SpawnedActor = World->SpawnActor<ASequencerPlayer>();
                     SpawnedActor->SetActorLabel(TEXT("OBJ_SEQUENCERPLAYER"));
+                    break;
+                }
+                case OBJ_PARTICLESYSTEM:
+                {
+                    SpawnedActor = World->SpawnActor<AParticleSystemActor>();
+                    SpawnedActor->SetActorLabel(TEXT("OBJ_PARTICLESYSTEM"));
                 }
                 case OBJ_PARTICLE:
                 {

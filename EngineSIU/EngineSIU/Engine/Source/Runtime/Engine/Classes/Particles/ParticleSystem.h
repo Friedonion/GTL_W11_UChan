@@ -100,7 +100,7 @@ class UParticleSystem : public UObject
 {
     DECLARE_CLASS(UParticleSystem, UObject)
 public:
-    UParticleSystem() = default;
+    UParticleSystem();
     ~UParticleSystem() = default;
 
     /** Max number of components of this system to keep resident in the world component pool. */
@@ -331,6 +331,8 @@ public:
      * Set the time to delay spawning the particle system
      */
     //void SetDelay(float InDelay);
+
+    void UpdateAllModuleLists();
 
     /** Return the currently set LOD method											*/
     //virtual enum ParticleSystemLODMethod GetCurrentLODMethod();
