@@ -1,4 +1,4 @@
-﻿#include "ParticleEmitterInstances.h"
+#include "ParticleEmitterInstances.h"
 #include "ParticleModuleVelocity.h"
 #include "Components/ParticleSystemComponent.h"
 #include "Particles/ParticleEmitter.h"
@@ -34,7 +34,8 @@ void UParticleModuleVelocity::InitializeDefaults()
 	// {
 	// 	StartVelocityRadial.Distribution = NewObject<UDistributionFloatUniform>(this, TEXT("DistributionStartVelocityRadial"));
 	// }
-    StartVelocity = FVector(0.0f, 0.0f, 0.0f);
+    // [TEMP] 임시 초기 속도 설정
+    StartVelocity = FVector(0.0f, 0.0f, 1.0f);
     StartVelocityRadial = 0.0f;
 }
 

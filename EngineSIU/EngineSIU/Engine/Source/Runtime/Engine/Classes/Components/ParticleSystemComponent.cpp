@@ -7,6 +7,9 @@
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/Spawn/ParticleModuleSpawn.h"
 #include "Particles/ParticleModuleRequired.h"
+#include "Particles/Size/ParticleModuleSizeScaleBySpeed.h"
+#include "Particles/Color/ParticleModuleColor.h"
+#include "Particles/Velocity/ParticleModuleVelocity.h"
 
 #include "Engine/ParticleEmitterInstances.h"
 #include "Particles/Lifetime/ParticleModuleLifetime.h"
@@ -34,6 +37,15 @@ UParticleSystemComponent::UParticleSystemComponent()
     UParticleModuleLifetime* SampleLifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleLifetimeModule);
     
+	UParticleModuleSizeScaleBySpeed* SampleSizeModule = FObjectFactory::ConstructObject<UParticleModuleSizeScaleBySpeed>(nullptr);
+	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSizeModule);
+
+	UParticleModuleColor* SampleColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorModule);
+
+	UParticleModuleVelocity* SampleVelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleVelocityModule);
+
     Template->Emitters.Add(SampleEmitter);
     
     FParticleEmitterInstance* SampleInstance = SampleEmitter->CreateInstance(this);

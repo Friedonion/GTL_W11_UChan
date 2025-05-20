@@ -1,4 +1,4 @@
-﻿#include "ParticleEmitterInstances.h"
+#include "ParticleEmitterInstances.h"
 #include "ParticleModuleColor.h"
 
 UParticleModuleColorBase::UParticleModuleColorBase()
@@ -16,7 +16,7 @@ UParticleModuleColorBase::UParticleModuleColorBase()
 UParticleModuleColor::UParticleModuleColor()
 {
 	bSpawnModule = true;
-	bUpdateModule = false;
+	bUpdateModule = true;
 	bCurvesAsColor = true;
 	bClampAlpha = true;
 }

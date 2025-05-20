@@ -145,7 +145,7 @@ inline void Particle_SetColorFromVector(const FVector& InColorVec, const float I
 
 struct FBaseParticle
 {
-    // 48 bytes
+    // 24 bytes
     FVector		OldLocation;			// Last frame's location, used for collision
     FVector		Location;				// Current location
 
@@ -171,11 +171,9 @@ struct FBaseParticle
     // 16 bytes
     FLinearColor	BaseColor;				// Base color of the particle
 
-    // 16 bytes
+    // 8 bytes
     float			RelativeTime;			// Relative time, range is 0 (==spawn) to 1 (==death)
     float			OneOverMaxLifetime;		// Reciprocal of lifetime
-    float			Placeholder0;
-    float			Placeholder1;
 };
 
 struct FParticleRandomSeedInstancePayload

@@ -10,7 +10,7 @@ class UParticleModuleSizeScaleBySpeed : public UParticleModuleSizeBase
 {
     DECLARE_CLASS(UParticleModuleSizeScaleBySpeed, UParticleModuleSizeBase)
 public:
-    UParticleModuleSizeScaleBySpeed() = default;
+    UParticleModuleSizeScaleBySpeed();
     ~UParticleModuleSizeScaleBySpeed() = default;
     
     /** By how much speed affects the size of the particle in each dimension. */
