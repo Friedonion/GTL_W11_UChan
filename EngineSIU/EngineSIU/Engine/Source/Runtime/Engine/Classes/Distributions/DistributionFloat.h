@@ -14,7 +14,8 @@ class UDistributionFloat : public UDistribution
 {
     DECLARE_CLASS(UDistributionFloat, UDistribution)
 public:
-    float Constant;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, Constant)
 
     /** Set internally when the distribution is updated so that that FRawDistribution can know to update itself*/
     uint8 bIsDirty : 1;
@@ -37,7 +38,7 @@ public:
     /**
      * Return the operation used at runtime to calculate the final value
      */
-    virtual ERawDistributionOperation GetOperation() const { return RDO_None; }
+    virtual ERawDistributionOperation GetOperation() const { return ERawDistributionOperation::RDO_None; }
 
     /**
      *  Returns the lock axes flag used at runtime to swizzle random stream values. Not used for distributions derived from UDistributionFloat.
@@ -76,22 +77,26 @@ public:
 //USTRUCT()
 struct FRawDistributionFloat : public FRawDistribution
 {
+    DECLARE_STRUCT_WITH_SUPER(FRawDistributionFloat, FRawDistribution)
     //GENERATED_USTRUCT_BODY()
 private:
     //UPROPERTY()
-    float MinValue;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, MinValue)
 
     //UPROPERTY()
-    float MaxValue;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, MaxValue)
 
 public:
     //UPROPERTY(EditAnywhere, export, noclear, Category = RawDistributionFloat)
-    UDistributionFloat* Distribution;
+    UPROPERTY_WITH_FLAGS
+    (VisibleAnywhere, UDistributionFloat*, Distribution)
 
     FRawDistributionFloat()
         : MinValue(0)
         , MaxValue(0)
-        , Distribution(NULL)
+        , Distribution(nullptr)
     {
     }
 

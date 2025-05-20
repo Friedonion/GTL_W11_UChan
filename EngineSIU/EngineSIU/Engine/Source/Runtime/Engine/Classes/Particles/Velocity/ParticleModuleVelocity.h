@@ -20,9 +20,8 @@ class UParticleModuleVelocity : public UParticleModuleVelocityBase
      *	Value is retrieved using the EmitterTime of the emitter.
      */
     //UPROPERTY(EditAnywhere, Category=Velocity)
-    FRawDistributionVector StartVelocity;
     UPROPERTY_WITH_FLAGS
-    (EditAnywhere, FVector, StartVelocity)
+    (EditAnywhere, FRawDistributionVector, StartVelocity)
 
     /** 
      *	The velocity to apply to a particle along its radial direction.

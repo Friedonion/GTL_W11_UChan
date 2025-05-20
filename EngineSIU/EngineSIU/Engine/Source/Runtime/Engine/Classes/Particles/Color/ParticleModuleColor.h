@@ -19,15 +19,13 @@ class UParticleModuleColor : public UParticleModuleColorBase
 
     /** Initial color for a particle as a function of Emitter time. */
     //UPROPERTY(EditAnywhere, Category = Color, meta = (TreatAsColor))
-    FRawDistributionVector StartColor;
     UPROPERTY_WITH_FLAGS
-    (EditAnywhere, FVector, StartColor)
+    (EditAnywhere, FRawDistributionVector, StartColor)
     
     /** Initial alpha for a particle as a function of Emitter time. */
     //UPROPERTY(EditAnywhere, Category=Color)
-    FRawDistributionFloat StartAlpha;
     UPROPERTY_WITH_FLAGS
-    (EditAnywhere, float, StartAlpha)
+    (EditAnywhere, FRawDistributionFloat, StartAlpha)
 
     /** If true, the alpha value will be clamped to the [0..1] range. */
     //UPROPERTY(EditAnywhere, Category=Color)
