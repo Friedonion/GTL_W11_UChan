@@ -374,7 +374,7 @@ void FParticleEmitterInstance::UpdateTransforms()
     UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
     FMatrix ComponentToWorld = Component != NULL ?
         Component->GetComponentTransform().ToMatrixNoScale() : FMatrix::Identity;
-    FMatrix EmitterToComponent = FMatrix::CreateRotationMatrix(LODLevel->RequiredModule->EmitterRotation) + FMatrix::CreateTranslationMatrix(LODLevel->RequiredModule->EmitterOrigin);
+    FMatrix EmitterToComponent = FMatrix::CreateRotationMatrix(LODLevel->RequiredModule->EmitterRotation) * FMatrix::CreateTranslationMatrix(LODLevel->RequiredModule->EmitterOrigin);
 
     if (LODLevel->RequiredModule->bUseLocalSpace)
     {
