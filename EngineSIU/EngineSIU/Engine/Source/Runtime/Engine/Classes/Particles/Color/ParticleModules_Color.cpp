@@ -19,6 +19,8 @@ UParticleModuleColor::UParticleModuleColor()
 	bUpdateModule = true;
 	bCurvesAsColor = true;
 	bClampAlpha = true;
+
+    InitializeDefaults();
 }
 
 void UParticleModuleColor::InitializeDefaults() 
@@ -34,7 +36,7 @@ void UParticleModuleColor::InitializeDefaults()
 	// 	DistributionStartAlpha->Constant = 1.0f;
 	// 	StartAlpha.Distribution = DistributionStartAlpha;
 	// }
-    StartColor = FVector(1.0f, 1.0f, 1.0f);
+    StartColor = FVector(1.0f, 0.0f, 0.0f);
     StartAlpha = 1.0f;
 }
 

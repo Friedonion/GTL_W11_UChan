@@ -14,7 +14,7 @@ UParticleModuleSizeBase::UParticleModuleSizeBase()
 UParticleModuleSize::UParticleModuleSize()
 {
     bSpawnModule = true;
-    bUpdateModule = false;
+    bUpdateModule = true;
     InitializeDefaults();
 }
 
