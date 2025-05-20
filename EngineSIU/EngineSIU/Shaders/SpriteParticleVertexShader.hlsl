@@ -18,6 +18,7 @@ struct VS_INPUT
     float4 World3 : WORLD3;
     float4 Color : COLOR;
     uint SubImageIndex : SUBIMAGE_INDEX;
+    float Distance : DISTANCE;
 };
 
 
