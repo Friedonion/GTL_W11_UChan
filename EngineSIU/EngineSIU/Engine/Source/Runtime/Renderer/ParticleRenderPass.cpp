@@ -1,4 +1,3 @@
-
 #include "ParticleRenderPass.h"
 #include "Engine/EditorEngine.h"
 #include "D3D11RHI/DXDShaderManager.h"
@@ -16,13 +15,19 @@
 #include "Container/Pair.h"
 #include "Engine/Asset/StaticMeshAsset.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/ParticleSystemComponent.h"
+#include "Engine/ParticleEmitterInstances.h"
+#include "Editor/LevelEditor/SLevelEditor.h"
+#include "ParticleHelper.h"
 
 FParticleRenderPass::FParticleRenderPass()
     : BufferManager(nullptr)
     , Graphics(nullptr)
     , ShaderManager(nullptr)
-    , BlendState(nullptr)
-    , DepthState(nullptr)
+    , OpaqueBlendState(nullptr)
+    , TransparentBlendState(nullptr)
+    , OpaqueDepthState(nullptr)
+    , TransparentDepthState(nullptr)
     , MeshInstanceBuffer(nullptr)
     , SpriteInstanceBuffer(nullptr)
     , SubImageCountX(6)
@@ -33,8 +38,10 @@ FParticleRenderPass::FParticleRenderPass()
 
 FParticleRenderPass::~FParticleRenderPass()
 {
-    if (BlendState) BlendState->Release();
-    if (DepthState) DepthState->Release();
+    if (OpaqueBlendState) OpaqueBlendState->Release();
+    if (TransparentBlendState) TransparentBlendState->Release();
+    if (OpaqueDepthState) OpaqueDepthState->Release();
+    if (TransparentDepthState) TransparentDepthState->Release();
     if (MeshInstanceBuffer) MeshInstanceBuffer->Release();
     if (SpriteInstanceBuffer) SpriteInstanceBuffer->Release();
 }
@@ -46,8 +53,8 @@ void FParticleRenderPass::Initialize(FDXDBufferManager* InBufferManager, FGraphi
     ShaderManager = InShaderManager;
 
     // 공통 상태 생성
-    CreateBlendState();
-    CreateDepthState();
+    CreateBlendStates();
+    CreateDepthStates();
 
     // 메쉬 파티클 초기화
     LoadMeshes();
@@ -60,6 +67,21 @@ void FParticleRenderPass::Initialize(FDXDBufferManager* InBufferManager, FGraphi
 
 void FParticleRenderPass::PrepareRenderArr()
 {
+    // TObjectRange를 사용하여 월드의 모든 파티클 시스템 컴포넌트 수집
+    ParticleSystemComponents.Empty();
+    
+    for (const auto Iter : TObjectRange<UParticleSystemComponent>())
+    {
+        // 현재 활성 월드에 있는 컴포넌트만 추가
+        if (Iter->GetWorld() == GEngine->ActiveWorld)
+        {
+            if (Iter->GetOwner() && !Iter->GetOwner()->IsHidden())
+            {
+                ParticleSystemComponents.Add(Iter);
+            }
+        }
+    }
+
     // 각 타입별 파티클 준비
     if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
     {
@@ -70,12 +92,18 @@ void FParticleRenderPass::PrepareRenderArr()
     {
         PrepareSpriteParticles();
     }
+    
+    // 반투명 파티클 정렬 (카메라와의 거리에 따라)
+    SortParticlesByDistance(TransparentMeshInstanceData);
+    SortParticlesByDistance(TransparentSpriteInstanceData);
 }
 
 void FParticleRenderPass::ClearRenderArr()
 {
-    MeshInstanceData.Empty();
-    SpriteInstanceData.Empty();
+    OpaqueMeshInstanceData.Empty();
+    TransparentMeshInstanceData.Empty();
+    OpaqueSpriteInstanceData.Empty();
+    TransparentSpriteInstanceData.Empty();
 }
 
 void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& Viewport)
@@ -87,21 +115,29 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
     Graphics->DeviceContext->OMSetRenderTargets(1, &RenderTargetRHI->RTV, DepthStencilRHI->DSV);
     Graphics->DeviceContext->RSSetViewports(1, &ViewportResource->GetD3DViewport());
 
-    SetupPipeline();
-
-    // 깊이 기반으로 렌더링 순서를 정하여 알파 블렌딩이 올바르게 작동하도록 함
-    // Z값이 작은(카메라에 가까운) 파티클이 나중에 렌더링되어야 함
+    // 1. 먼저 불투명 파티클 렌더링 (깊이 쓰기 활성화)
     
-    // 메쉬 파티클 렌더링
-    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && MeshInstanceData.Num() > 0)
+    // 불투명 메쉬 파티클 렌더링
+    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && OpaqueMeshInstanceData.Num() > 0)
     {
-        RenderMeshParticles(Viewport);
+        RenderMeshParticles(Viewport, false);
     }
 
-    // 스프라이트 파티클 렌더링
-    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && SpriteInstanceData.Num() > 0)
+    // 불투명 스프라이트 파티클 렌더링
+    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && OpaqueSpriteInstanceData.Num() > 0)
     {
-        RenderSpriteParticles(Viewport);
+        RenderSpriteParticles(Viewport, false);
+    }
+
+    
+    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && TransparentMeshInstanceData.Num() > 0)
+    {
+        RenderMeshParticles(Viewport, true);
+    }
+
+    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && TransparentSpriteInstanceData.Num() > 0)
+    {
+        RenderSpriteParticles(Viewport, true);
     }
 
     // 렌더 타겟 및 상태 해제
@@ -130,35 +166,56 @@ void FParticleRenderPass::SetParticleTypeActive(EParticleSystemType Type, bool b
     }
 }
 
-void FParticleRenderPass::SetupPipeline()
+void FParticleRenderPass::SetupPipeline(bool bIsTransparent)
 {
-    Graphics->DeviceContext->OMSetBlendState(BlendState, nullptr, 0xFFFFFFFF);
-    Graphics->DeviceContext->OMSetDepthStencilState(DepthState, 0);
+    if (bIsTransparent)
+    {
+        Graphics->DeviceContext->OMSetBlendState(TransparentBlendState, nullptr, 0xFFFFFFFF);
+        Graphics->DeviceContext->OMSetDepthStencilState(TransparentDepthState, 0);
+    }
+    else
+    {
+        Graphics->DeviceContext->OMSetBlendState(OpaqueBlendState, nullptr, 0xFFFFFFFF);
+        Graphics->DeviceContext->OMSetDepthStencilState(OpaqueDepthState, 0);
+    }
 }
 
-void FParticleRenderPass::CreateBlendState()
+void FParticleRenderPass::CreateBlendStates()
 {
-    D3D11_BLEND_DESC desc = {};
-    desc.RenderTarget[0].BlendEnable = TRUE;
-    desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-    desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-    desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-    desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-    desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-    desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
-    Graphics->Device->CreateBlendState(&desc, &BlendState);
+    // 불투명 객체용 블렌드 상태
+    D3D11_BLEND_DESC opaqueDesc = {};
+    opaqueDesc.RenderTarget[0].BlendEnable = FALSE;
+    opaqueDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    Graphics->Device->CreateBlendState(&opaqueDesc, &OpaqueBlendState);
+    
+    // 반투명 객체용 블렌드 상태
+    D3D11_BLEND_DESC transparentDesc = {};
+    transparentDesc.RenderTarget[0].BlendEnable = TRUE;
+    transparentDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+    transparentDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+    transparentDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+    transparentDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+    transparentDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+    transparentDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+    transparentDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    Graphics->Device->CreateBlendState(&transparentDesc, &TransparentBlendState);
 }
 
-void FParticleRenderPass::CreateDepthState()
+void FParticleRenderPass::CreateDepthStates()
 {
-    D3D11_DEPTH_STENCIL_DESC desc = {};
-    desc.DepthEnable = TRUE;
-    desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;  // 알파 블렌딩을 위해 깊이 쓰기 비활성화
-    desc.DepthFunc = D3D11_COMPARISON_LESS;
-
-    Graphics->Device->CreateDepthStencilState(&desc, &DepthState);
+    // 불투명 객체용 깊이 상태 (깊이 쓰기 활성화)
+    D3D11_DEPTH_STENCIL_DESC opaqueDesc = {};
+    opaqueDesc.DepthEnable = TRUE;
+    opaqueDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;  // 깊이 쓰기 활성화
+    opaqueDesc.DepthFunc = D3D11_COMPARISON_LESS;
+    Graphics->Device->CreateDepthStencilState(&opaqueDesc, &OpaqueDepthState);
+    
+    // 반투명 객체용 깊이 상태 (깊이 쓰기 비활성화)
+    D3D11_DEPTH_STENCIL_DESC transparentDesc = {};
+    transparentDesc.DepthEnable = TRUE;
+    transparentDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;  // 깊이 쓰기 비활성화
+    transparentDesc.DepthFunc = D3D11_COMPARISON_LESS;
+    Graphics->Device->CreateDepthStencilState(&transparentDesc, &TransparentDepthState);
 }
 
 void FParticleRenderPass::LoadMeshes()
@@ -226,26 +283,36 @@ void FParticleRenderPass::CreateSpriteInstanceBuffer()
 
 void FParticleRenderPass::UpdateMeshInstanceBuffer()
 {
-    if (MeshInstanceData.Num() == 0)
+    // 불투명 및 반투명 메쉬 인스턴스 데이터 합치기
+    TArray<FMeshParticleInstanceData> CombinedData;
+    CombinedData.Append(OpaqueMeshInstanceData);
+    CombinedData.Append(TransparentMeshInstanceData);
+    
+    if (CombinedData.Num() == 0)
         return;
         
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     if (SUCCEEDED(Graphics->DeviceContext->Map(MeshInstanceBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
     {
-        memcpy(mapped.pData, MeshInstanceData.GetData(), sizeof(FMeshParticleInstanceData) * MeshInstanceData.Num());
+        memcpy(mapped.pData, CombinedData.GetData(), sizeof(FMeshParticleInstanceData) * CombinedData.Num());
         Graphics->DeviceContext->Unmap(MeshInstanceBuffer, 0);
     }
 }
 
 void FParticleRenderPass::UpdateSpriteInstanceBuffer()
 {
-    if (SpriteInstanceData.Num() == 0)
+    // 불투명 및 반투명 스프라이트 인스턴스 데이터 합치기
+    TArray<FSpriteParticleInstanceData> CombinedData;
+    CombinedData.Append(OpaqueSpriteInstanceData);
+    CombinedData.Append(TransparentSpriteInstanceData);
+    
+    if (CombinedData.Num() == 0)
         return;
         
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     if (SUCCEEDED(Graphics->DeviceContext->Map(SpriteInstanceBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
     {
-        memcpy(mapped.pData, SpriteInstanceData.GetData(), sizeof(FSpriteParticleInstanceData) * SpriteInstanceData.Num());
+        memcpy(mapped.pData, CombinedData.GetData(), sizeof(FSpriteParticleInstanceData) * CombinedData.Num());
         Graphics->DeviceContext->Unmap(SpriteInstanceBuffer, 0);
     }
 }
@@ -253,52 +320,56 @@ void FParticleRenderPass::UpdateSpriteInstanceBuffer()
 void FParticleRenderPass::PrepareMeshParticles()
 {
     LoadMeshes();
-    if (MeshArray.Num() == 0)
+    if (MeshArray.Num() == 0 || ParticleSystemComponents.Num() == 0)
         return;
         
-    std::mt19937 rng(std::random_device{}());
-    std::uniform_real_distribution<float> rotDist(0.0f, 2.0f * 3.14159f);
-    std::uniform_real_distribution<float> scaleDist(0.5f, 2.0f);
-    std::uniform_int_distribution<int> meshDist(0, MeshArray.Num() - 1);
-
-    // 스프라이트 파티클 시스템처럼 더 많은 파티클 생성
-    const int ParticleCount = 0; 
-    MeshInstanceData.SetNum(ParticleCount);
+    // 파티클 시스템 컴포넌트에서 데이터 수집
+    OpaqueMeshInstanceData.Empty();
+    TransparentMeshInstanceData.Empty();
     
-    // 원점 주변에 랜덤하게 배치 (-100 ~ 100 범위)
-    std::uniform_real_distribution<float> posDist(-100.0f, 100.0f);
-    
-    for (int i = 0; i < ParticleCount; ++i)
+    // 뷰포트 클라이언트를 통해 카메라 위치 가져오기
+    FVector CameraLocation = FVector::ZeroVector;
+    if (GEngine)
     {
-        // 원점 주변에 랜덤 위치 생성
-        FVector Position = FVector(posDist(rng), posDist(rng), posDist(rng));
+        const std::shared_ptr<FEditorViewportClient> ViewportClient = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+        if (ViewportClient)
+        {
+            CameraLocation = ViewportClient->GetCameraLocation();
+        }
+    }
+    
+    // 수집된 모든 파티클 시스템 컴포넌트에서 데이터 수집
+    for (UParticleSystemComponent* Component : ParticleSystemComponents)
+    {
+        if (!Component)
+            continue;
+            
+        // 임시 데이터 컨테이너
+        TArray<FMeshParticleInstanceData> tempMeshData;
+        TArray<FSpriteParticleInstanceData> tempSpriteData; // 사용하지 않지만 GatherParticleInstanceData 함수의 인자로 필요
         
-        // 랜덤 회전 생성
-        float Pitch = rotDist(rng);
-        float Yaw = rotDist(rng);
-        float Roll = rotDist(rng);
+        // 메시 파티클만 수집합니다
+        GatherParticleInstanceData(Component, tempMeshData, tempSpriteData);
         
-        FRotator Rotator(FMath::RadiansToDegrees(Pitch), FMath::RadiansToDegrees(Yaw), FMath::RadiansToDegrees(Roll));
-        FMatrix RotationMatrix = FMatrix(FMatrix::CreateRotationMatrix(Rotator));
-        
-        // 랜덤 크기
-        float randomScale = scaleDist(rng) * 0.8f;
-        FVector Scale(randomScale, randomScale, randomScale);
-        
-        // 월드 변환 행렬 구성
-        FMatrix TranslationMatrix = FMatrix::CreateTranslationMatrix(Position);
-        
-        // 랜덤 메쉬 선택
-        int MeshIndex = meshDist(rng);
-        
-        // 인스턴스 데이터 설정
-        FMeshParticleInstanceData& Instance = MeshInstanceData[i];
-        FMatrix ScaleMatrix = FMatrix::CreateScaleMatrix(Scale);
-
-        // 셰이더에서 World 하나만 사용하도록 통합
-        Instance.World = ScaleMatrix * RotationMatrix * TranslationMatrix;
-        Instance.Color = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f); // 빨간색
-        Instance.MeshIndex = MeshIndex;
+        // 투명도에 따라 분류
+        for (const auto& Instance : tempMeshData)
+        {
+            // 파티클 위치 추출 (월드 행렬의 이동 벡터)
+            FVector ParticleLocation = FVector(Instance.World.M[3][0], Instance.World.M[3][1], Instance.World.M[3][2]);
+            
+            // 불투명/반투명 판단 및 분류
+            FMeshParticleInstanceData NewInstance = Instance;
+            NewInstance.DistanceToCamera = CalculateDistanceToCamera(ParticleLocation, CameraLocation);
+            
+            if (IsTransparent(Instance.Color))
+            {
+                TransparentMeshInstanceData.Add(NewInstance);
+            }
+            else
+            {
+                OpaqueMeshInstanceData.Add(NewInstance);
+            }
+        }
     }
     
     UpdateMeshInstanceBuffer();
@@ -306,32 +377,72 @@ void FParticleRenderPass::PrepareMeshParticles()
 
 void FParticleRenderPass::PrepareSpriteParticles()
 {
-    std::mt19937 rng(std::random_device{}());
-    std::uniform_real_distribution<float> dist(-100.0f, 100.0f);
-
-    const int ParticleCount = 0;
-    SpriteInstanceData.SetNum(ParticleCount);
-    
-    for (int i = 0; i < ParticleCount; ++i)
-    {
-        FVector Pos = FVector(dist(rng), dist(rng), dist(rng));
-        FMatrix World = FMatrix::CreateTranslationMatrix(Pos);
-
-        FSpriteParticleInstanceData& Inst = SpriteInstanceData[i];
-        Inst.World = World;
-        Inst.Color = FLinearColor(1.0f, 1.0f, 1.0f, 0.5f);
+    LoadTexture();
+    if (!ParticleTexture || ParticleSystemComponents.Num() == 0)
+        return;
         
-        int TotalFrames = SubImageCountX * SubImageCountY;
-        Inst.SubImageIndex = FMath::RandRange(0, TotalFrames - 1);
+    // 파티클 시스템 컴포넌트에서 데이터 수집
+    OpaqueSpriteInstanceData.Empty();
+    TransparentSpriteInstanceData.Empty();
+    
+    // 뷰포트 클라이언트를 통해 카메라 위치 가져오기
+    FVector CameraLocation = FVector::ZeroVector;
+    if (GEngine)
+    {
+        const std::shared_ptr<FEditorViewportClient> ViewportClient = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+        if (ViewportClient)
+        {
+            CameraLocation = ViewportClient->GetCameraLocation();
+        }
+    }
+    
+    // 수집된 모든 파티클 시스템 컴포넌트에서 데이터 수집
+    for (UParticleSystemComponent* Component : ParticleSystemComponents)
+    {
+        if (!Component)
+            continue;
+            
+        // 임시 데이터 컨테이너
+        TArray<FMeshParticleInstanceData> tempMeshData; // 사용하지 않지만 GatherParticleInstanceData 함수의 인자로 필요
+        TArray<FSpriteParticleInstanceData> tempSpriteData;
+        
+        // 스프라이트 파티클만 수집합니다
+        GatherParticleInstanceData(Component, tempMeshData, tempSpriteData);
+        
+        // 투명도에 따라 분류
+        for (const auto& Instance : tempSpriteData)
+        {
+            // 파티클 위치 추출 (월드 행렬의 이동 벡터)
+            FVector ParticleLocation = FVector(Instance.World.M[3][0], Instance.World.M[3][1], Instance.World.M[3][2]);
+            
+            // 불투명/반투명 판단 및 분류
+            FSpriteParticleInstanceData NewInstance = Instance;
+            NewInstance.DistanceToCamera = CalculateDistanceToCamera(ParticleLocation, CameraLocation);
+            
+            if (IsTransparent(Instance.Color))
+            {
+                TransparentSpriteInstanceData.Add(NewInstance);
+            }
+            else
+            {
+                OpaqueSpriteInstanceData.Add(NewInstance);
+            }
+        }
     }
     
     UpdateSpriteInstanceBuffer();
 }
 
-void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport)
+void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent)
 {
-    if (MeshArray.Num() == 0 || MeshInstanceData.Num() == 0)
+    // 렌더링할 파티클 데이터 선택
+    TArray<FMeshParticleInstanceData>& InstanceData = bIsTransparent ? TransparentMeshInstanceData : OpaqueMeshInstanceData;
+    
+    if (MeshArray.Num() == 0 || InstanceData.Num() == 0)
         return;
+        
+    // 투명도에 따른 렌더 상태 설정
+    SetupPipeline(bIsTransparent);
 
     // 인스턴스 버퍼 설정
     UINT instanceStride = sizeof(FMeshParticleInstanceData);
@@ -392,7 +503,7 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
         
         // 메쉬의 인스턴스만 필터링
         TArray<FMeshParticleInstanceData> FilteredInstances;
-        for (const auto& Instance : MeshInstanceData)
+        for (const auto& Instance : InstanceData)
         {
             if (Instance.MeshIndex == i)
             {
@@ -456,11 +567,18 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
     }
 }
 
-void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport)
+void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent)
 {
     LoadTexture();
-    if (!ParticleTexture || SpriteInstanceData.Num() == 0)
+    
+    // 렌더링할 파티클 데이터 선택
+    TArray<FSpriteParticleInstanceData>& InstanceData = bIsTransparent ? TransparentSpriteInstanceData : OpaqueSpriteInstanceData;
+    
+    if (!ParticleTexture || InstanceData.Num() == 0)
         return;
+        
+    // 투명도에 따른 렌더 상태 설정
+    SetupPipeline(bIsTransparent);
 
     FVertexInfo QuadVB;
     FIndexInfo QuadIB;
@@ -476,6 +594,15 @@ void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorVie
     UINT instanceStride = sizeof(FSpriteParticleInstanceData);
     UINT instanceOffset = 0;
     Graphics->DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    
+    // 인스턴스 버퍼 업데이트
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    if (SUCCEEDED(Graphics->DeviceContext->Map(SpriteInstanceBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+    {
+        memcpy(mapped.pData, InstanceData.GetData(), sizeof(FSpriteParticleInstanceData) * InstanceData.Num());
+        Graphics->DeviceContext->Unmap(SpriteInstanceBuffer, 0);
+    }
+    
     Graphics->DeviceContext->IASetVertexBuffers(1, 1, &SpriteInstanceBuffer, &instanceStride, &instanceOffset);
     Graphics->DeviceContext->IASetIndexBuffer(QuadIB.IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
@@ -497,5 +624,138 @@ void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorVie
     Graphics->DeviceContext->PSSetShaderResources(0, 1, &ParticleTexture->TextureSRV);
     Graphics->DeviceContext->PSSetSamplers(0, 1, &ParticleTexture->SamplerState);
     
-    Graphics->DeviceContext->DrawIndexedInstanced(QuadIB.NumIndices, SpriteInstanceData.Num(), 0, 0, 0);
+    Graphics->DeviceContext->DrawIndexedInstanced(QuadIB.NumIndices, InstanceData.Num(), 0, 0, 0);
+}
+
+bool FParticleRenderPass::GatherParticleInstanceData(UParticleSystemComponent* InComponent,
+                                                       TArray<FMeshParticleInstanceData>& OutMeshInstanceData,
+                                                       TArray<FSpriteParticleInstanceData>& OutSpriteInstanceData)
+{
+    if (!InComponent)
+        return false;
+
+    // 파티클 시스템 컴포넌트의 모든 이미터 인스턴스를 처리
+    for (FParticleEmitterInstance* EmitterInstance : InComponent->EmitterInstances)
+    {
+        if (!EmitterInstance || !EmitterInstance->ActiveParticles)
+            continue;
+
+        // 데이터를 적절한 출력 배열에 수집하도록 매개변수 전달
+        ProcessParticleEmitter(EmitterInstance, OutMeshInstanceData, OutSpriteInstanceData);
+    }
+
+    return OutMeshInstanceData.Num() > 0 || OutSpriteInstanceData.Num() > 0;
+}
+
+void FParticleRenderPass::ProcessParticleEmitter(FParticleEmitterInstance* EmitterInstance,
+                                                TArray<FMeshParticleInstanceData>& OutMeshInstanceData,
+                                                TArray<FSpriteParticleInstanceData>& OutSpriteInstanceData)
+{
+    if (!EmitterInstance)
+        return;
+
+    // 이미터 인스턴스에 활성화된 파티클이 없으면 건너뛰기
+    int32 ActiveParticles = EmitterInstance->ActiveParticles;
+    if (ActiveParticles <= 0)
+        return;
+
+    uint8* ParticleData = EmitterInstance->ParticleData;
+    uint32 ParticleStride = EmitterInstance->ParticleStride;
+    uint16* ParticleIndices = EmitterInstance->ParticleIndices;
+
+    // 이미터 타입에 따라 처리
+    bool bIsMesh = EmitterInstance->bIsBeam; // 간단한 예제로, 빔 타입인지 확인하여 메시 파티클로 처리
+
+    // 각 파티클 처리
+    for (int32 i = 0; i < ActiveParticles; i++)
+    {
+        int32 CurrentIndex = ParticleIndices[i];
+        FBaseParticle* Particle = (FBaseParticle*)(ParticleData + CurrentIndex * ParticleStride);
+        
+        if (!Particle)
+            continue;
+
+        // 파티클 변환 행렬 계산
+        FMatrix ParticleWorldMatrix = CalculateParticleTransform(Particle, bIsMesh);
+
+        if (bIsMesh)
+        {
+            // 메시 파티클 인스턴스 데이터 생성
+            FMeshParticleInstanceData MeshInstance;
+            MeshInstance.World = ParticleWorldMatrix;
+            MeshInstance.Color = Particle->Color;
+            MeshInstance.MeshIndex = 0; // 간단한 구현을 위해 첫 번째 메시 사용
+
+            // 수정: 멤버 변수 대신 출력 매개변수에 추가
+            OutMeshInstanceData.Add(MeshInstance);
+        }
+        else
+        {
+            // 스프라이트 파티클 인스턴스 데이터 생성
+            FSpriteParticleInstanceData SpriteInstance;
+            SpriteInstance.World = ParticleWorldMatrix;
+            SpriteInstance.Color = Particle->Color;
+            
+            // 간단한 구현을 위해 SubImageIndex를 상대적 시간을 기반으로 설정
+            int TotalFrames = SubImageCountX * SubImageCountY;
+            SpriteInstance.SubImageIndex = static_cast<int>(Particle->RelativeTime * TotalFrames) % TotalFrames;
+
+            // 수정: 멤버 변수 대신 출력 매개변수에 추가
+            OutSpriteInstanceData.Add(SpriteInstance);
+        }
+    }
+}
+
+FMatrix FParticleRenderPass::CalculateParticleTransform(const FBaseParticle* Particle, bool bIsMesh)
+{
+    if (!Particle)
+        return FMatrix::Identity;
+
+    // 파티클 위치, 크기, 회전을 기반으로 변환 행렬 계산
+    FVector Scale = Particle->Size;
+    
+    // 회전 행렬 계산
+    FRotator Rotator(0.0f, 0.0f, FMath::RadiansToDegrees(Particle->Rotation));
+    FMatrix RotationMatrix = FMatrix::CreateRotationMatrix(Rotator);
+    
+    // 위치 행렬 계산
+    FMatrix TranslationMatrix = FMatrix::CreateTranslationMatrix(Particle->Location);
+    
+    // 크기 행렬 계산
+    FMatrix ScaleMatrix = FMatrix::CreateScaleMatrix(Scale);
+
+    // 최종 변환 행렬 계산: Scale * Rotation * Translation
+    return ScaleMatrix * RotationMatrix * TranslationMatrix;
+}
+
+// 파티클의 투명도를 확인하는 함수
+bool FParticleRenderPass::IsTransparent(const FLinearColor& Color) const
+{
+    constexpr float AlphaThreshold = 0.99f;
+    return Color.A < AlphaThreshold;
+}
+
+// 파티클을 카메라와의 거리에 따라 정렬하는 함수 (메쉬 파티클)
+void FParticleRenderPass::SortParticlesByDistance(TArray<FMeshParticleInstanceData>& Particles)
+{
+    // 내림차순 정렬 (카메라에서 멀리 있는 파티클이 먼저 렌더링되도록)
+    Particles.Sort([](const FMeshParticleInstanceData& A, const FMeshParticleInstanceData& B) -> bool {
+        return A.DistanceToCamera > B.DistanceToCamera;
+    });
+}
+
+// 파티클을 카메라와의 거리에 따라 정렬하는 함수 (스프라이트 파티클)
+void FParticleRenderPass::SortParticlesByDistance(TArray<FSpriteParticleInstanceData>& Particles)
+{
+    // 내림차순 정렬 (카메라에서 멀리 있는 파티클이 먼저 렌더링되도록)
+    Particles.Sort([](const FSpriteParticleInstanceData& A, const FSpriteParticleInstanceData& B) -> bool {
+        return A.DistanceToCamera > B.DistanceToCamera;
+    });
+}
+
+// 파티클과 카메라 사이의 거리를 계산하는 함수
+float FParticleRenderPass::CalculateDistanceToCamera(const FVector& ParticleLocation, const FVector& CameraLocation)
+{
+    // 두 점 사이의 거리 계산
+    return FVector::Distance(ParticleLocation, CameraLocation);
 }
