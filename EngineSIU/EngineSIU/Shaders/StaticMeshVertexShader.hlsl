@@ -36,6 +36,12 @@ PS_INPUT_StaticMesh mainVS(VS_INPUT_StaticMesh Input)
     Output.WorldTangent = float4(WorldTangent, Input.Tangent.w);
     // End Tangent
     
+    
+    
+    
+    
+    
+    
     Output.UV = Input.UV;
     Output.MaterialIndex = Input.MaterialIndex;
 

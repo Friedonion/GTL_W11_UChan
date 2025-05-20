@@ -262,7 +262,7 @@ void FParticleRenderPass::PrepareMeshParticles()
     std::uniform_int_distribution<int> meshDist(0, MeshArray.Num() - 1);
 
     // 스프라이트 파티클 시스템처럼 더 많은 파티클 생성
-    const int ParticleCount = 5000; 
+    const int ParticleCount = 0; 
     MeshInstanceData.SetNum(ParticleCount);
     
     // 원점 주변에 랜덤하게 배치 (-100 ~ 100 범위)
@@ -309,7 +309,7 @@ void FParticleRenderPass::PrepareSpriteParticles()
     std::mt19937 rng(std::random_device{}());
     std::uniform_real_distribution<float> dist(-100.0f, 100.0f);
 
-    const int ParticleCount = 10000;
+    const int ParticleCount = 0;
     SpriteInstanceData.SetNum(ParticleCount);
     
     for (int i = 0; i < ParticleCount; ++i)
