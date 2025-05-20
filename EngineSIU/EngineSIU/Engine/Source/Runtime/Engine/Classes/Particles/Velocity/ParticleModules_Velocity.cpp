@@ -37,6 +37,7 @@ void UParticleModuleVelocity::InitializeDefaults()
 	// }
     // [TEMP] 임시 초기 속도 설정
     StartVelocity.Distribution = FObjectFactory::ConstructObject<UDistributionVector>(nullptr);
+    StartVelocity.Distribution->Constant = FVector(0.0f, 0.0f, 1.0f);
     StartVelocity.Op = ERawDistributionOperation::RDO_Random;
     StartVelocityRadial = 5.0f;
 }
@@ -86,7 +87,7 @@ void UParticleModuleVelocity::SpawnEx(FParticleEmitterInstance* Owner, int32 Off
 			Vel = FMatrix::TransformVector(Vel, Owner->EmitterToSimulation);
 		}
 		Vel *= OwnerScale;
-		Vel += FromOrigin * StartVelocityRadial; //.GetValue(Owner->EmitterTime, Owner->Component, InRandomStream) * OwnerScale;
+		//Vel += FromOrigin * StartVelocityRadial; //.GetValue(Owner->EmitterTime, Owner->Component, InRandomStream) * OwnerScale;
 		Particle.Velocity		+= Vel;
 		Particle.BaseVelocity	+= Vel;
 	}
