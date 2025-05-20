@@ -1,5 +1,6 @@
 #include "ParticleEmitterInstances.h"
 #include "ParticleModuleColor.h"
+#include "UObject/ObjectFactory.h"
 
 UParticleModuleColorBase::UParticleModuleColorBase()
 {
@@ -25,19 +26,22 @@ UParticleModuleColor::UParticleModuleColor()
 
 void UParticleModuleColor::InitializeDefaults() 
 {
-	// if (!StartColor.IsCreated())
-	// {
-	// 	StartColor.Distribution = NewObject<UDistributionVectorConstant>(this, TEXT("DistributionStartColor"));
-	// }
-	//
-	// if (!StartAlpha.IsCreated())
-	// {
-	// 	UDistributionFloatConstant* DistributionStartAlpha = NewObject<UDistributionFloatConstant>(this, TEXT("DistributionStartAlpha"));
-	// 	DistributionStartAlpha->Constant = 1.0f;
-	// 	StartAlpha.Distribution = DistributionStartAlpha;
-	// }
-    StartColor = FVector(1.0f, 0.0f, 0.0f);
-    StartAlpha = 1.0f;
+	 if (!StartColor.IsCreated())
+	 {
+	 	StartColor.Distribution = FObjectFactory::ConstructObject<UDistributionVector>(nullptr);
+        StartColor.Distribution->Constant = FVector(1.0f, 0.0f, 0.0f);
+        StartColor.Op = RDO_Random;
+	 }
+	
+	 if (!StartAlpha.IsCreated())
+	 {
+	 	UDistributionFloat* DistributionStartAlpha = FObjectFactory::ConstructObject<UDistributionFloat>(nullptr);
+	 	DistributionStartAlpha->Constant = 1.0f;
+        StartAlpha.Op = RDO_Random;
+	 	StartAlpha.Distribution = DistributionStartAlpha;
+	 }
+    //StartColor = FVector(1.0f, 0.0f, 0.0f);
+    //StartAlpha = 1.0f;
 }
 
 void UParticleModuleColor::CompileModule( FParticleEmitterBuildInfo& EmitterInfo )
@@ -47,8 +51,8 @@ void UParticleModuleColor::CompileModule( FParticleEmitterBuildInfo& EmitterInfo
 
 	// Use a self-contained random number stream for compiling the module, so it doesn't differ between cooks.
 	FRandomStream RandomStream(GetName().ToAnsiString().c_str());
-	InitialColor = StartColor; //.GetValue(0.0f, nullptr, 0, &RandomStream);
-	InitialAlpha = StartAlpha; //.GetValue(0.0f, nullptr, &RandomStream);
+	InitialColor = StartColor.GetValue(0.0f, 0, &RandomStream);
+	InitialAlpha = StartAlpha.GetValue(0.0f, &RandomStream);
 
 	EmitterInfo.ColorScale = InitialColor;
 	EmitterInfo.AlphaScale = InitialAlpha;
@@ -62,10 +66,11 @@ void UParticleModuleColor::Spawn(FParticleEmitterInstance* Owner, int32 Offset, 
 
 void UParticleModuleColor::SpawnEx(FParticleEmitterInstance* Owner, int32 Offset, float SpawnTime, struct FRandomStream* InRandomStream, FBaseParticle* ParticleBase)
 {
-	SPAWN_INIT
-	{
-		FVector ColorVec	= StartColor; //GetValue(Owner->EmitterTime, Owner->Component, 0, InRandomStream);
-		float	Alpha		= StartAlpha; //GetValue(Owner->EmitterTime, Owner->Component, InRandomStream);
+    SPAWN_INIT
+    {
+        FVector ColorVec	= StartColor.GetValue(Owner->EmitterTime, 0, InRandomStream);
+        //FVector ColorVec = FVector(0);
+        float	Alpha		= StartAlpha.GetValue(Owner->EmitterTime, InRandomStream);
 		Particle_SetColorFromVector(ColorVec, Alpha, Particle.Color);
 		Particle.BaseColor	= Particle.Color;
 	}

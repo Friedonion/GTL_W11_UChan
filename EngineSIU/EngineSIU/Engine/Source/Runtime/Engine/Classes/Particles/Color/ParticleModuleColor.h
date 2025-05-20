@@ -1,5 +1,7 @@
-﻿#pragma once
+#pragma once
 #include "ParticleModuleColorBase.h"
+#include "Distributions/DistributionFloat.h"
+#include "Distributions/DistributionVector.h"
 
 class UInterpCurveEdSetup;
 class UParticleEmitter;
@@ -17,13 +19,13 @@ class UParticleModuleColor : public UParticleModuleColorBase
 
     /** Initial color for a particle as a function of Emitter time. */
     //UPROPERTY(EditAnywhere, Category = Color, meta = (TreatAsColor))
-    //FRawDistributionVector StartColor;
-    FVector StartColor;
+    FRawDistributionVector StartColor;
+    //FVector StartColor;
     
     /** Initial alpha for a particle as a function of Emitter time. */
     //UPROPERTY(EditAnywhere, Category=Color)
-    //FRawDistributionFloat StartAlpha;
-    float StartAlpha;
+    FRawDistributionFloat StartAlpha;
+    //float StartAlpha;
 
     /** If true, the alpha value will be clamped to the [0..1] range. */
     //UPROPERTY(EditAnywhere, Category=Color)

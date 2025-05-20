@@ -14,9 +14,7 @@ class UDistributionFloat : public UDistribution
 {
     DECLARE_CLASS(UDistributionFloat, UDistribution)
 public:
-    /** Can this variable be baked out to a FRawDistribution? Should be true 99% of the time*/
-    //UPROPERTY(EditAnywhere, Category = Baked)
-    uint8 bCanBeBaked : 1;
+    float Constant;
 
     /** Set internally when the distribution is updated so that that FRawDistribution can know to update itself*/
     uint8 bIsDirty : 1;
@@ -30,7 +28,7 @@ public:
     virtual float GetFloatValue(float F = 0);
 
     UDistributionFloat()
-        : bCanBeBaked(true)
+        : Constant(0)
         , bIsDirty(true) // make sure the FRawDistribution is initialized
     {
     }
@@ -56,18 +54,7 @@ public:
     virtual uint32 InitializeRawEntry(float Time, float* Values) const;
 
     /** @todo document */
-    virtual float GetValue(float F = 0.f, UObject* Data = NULL, struct FRandomStream* InRandomStream = NULL) const;
-
-    /** @return true of this distribution can be baked into a FRawDistribution lookup table, otherwise false */
-    virtual bool CanBeBaked() const
-    {
-        return bCanBeBaked;
-    }
-
-    bool HasBakedSuccesfully() const
-    {
-        return bBakedDataSuccesfully;
-    }
+    virtual float GetValue(float F = 0.f, struct FRandomStream* InRandomStream = NULL) const;
 
     /**
      * Returns the number of values in the distribution. 1 for float.
@@ -119,29 +106,10 @@ public:
     /**
         * Get the value at the specified F
         */
-    float GetValue(float F = 0.0f, UObject* Data = NULL, struct FRandomStream* InRandomStream = NULL);
+    float GetValue(float F = 0.0f, struct FRandomStream* InRandomStream = NULL);
 
     /**
         * Get the min and max values
         */
     void GetOutRange(float& MinOut, float& MaxOut);
-
-    /**
-        * Is this distribution a uniform type? (ie, does it have two values per entry?)
-        */
-    inline bool IsUniform() { return LookupTable.SubEntryStride != 0; }
-
-    void InitLookupTable();
-
-    FORCEINLINE bool HasLookupTable(bool bInitializeIfNeeded = true)
-    {
-        return GDistributionType != 0 && !LookupTable.IsEmpty();
-    }
-
-    FORCEINLINE bool OkForParallel()
-    {
-        HasLookupTable(); // initialize if required
-        return true; // even if they stay distributions, this should probably be ok as long as nobody is changing them at runtime
-        //return !Distribution || HasLookupTable();
-    }
 };

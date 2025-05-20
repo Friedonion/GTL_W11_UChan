@@ -4,8 +4,6 @@
 #include "UObject/Object.h"
 #include "Distributions.h"
 
-extern uint32 GDistributionType;
-
 //UENUM()
 enum DistributionParamMode : int
 {

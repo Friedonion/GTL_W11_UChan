@@ -31,9 +31,7 @@ class UDistributionVector : public UDistribution
 {
     DECLARE_CLASS(UDistributionVector, UDistribution)
 public:
-    /** Can this variable be baked out to a FRawDistribution? Should be true 99% of the time*/
-    //UPROPERTY(EditAnywhere, Category = Baked)
-    uint8 bCanBeBaked : 1;
+    FVector Constant;
 
     /** Set internally when the distribution is updated so that that FRawDistribution can know to update itself*/
     //UPROPERTY()
@@ -48,7 +46,7 @@ public:
 
 
     UDistributionVector()
-        : bCanBeBaked(true)
+        : Constant(FVector::ZeroVector)
         , bIsDirty(true) // make sure the FRawDistribution is initialized
     {
     }
@@ -73,18 +71,7 @@ public:
      */
     virtual uint32 InitializeRawEntry(float Time, float* Values) const;
 
-    virtual FVector	GetValue(float F = 0.f, UObject* Data = NULL, int32 LastExtreme = 0, struct FRandomStream* InRandomStream = NULL) const;
-
-    /** @return true of this distribution can be baked into a FRawDistribution lookup table, otherwise false */
-    virtual bool CanBeBaked() const
-    {
-        return bCanBeBaked;
-    }
-
-    bool HasBakedSuccesfully() const
-    {
-        return bBakedDataSuccesfully;
-    }
+    virtual FVector	GetValue(float F = 0.f, int32 LastExtreme = 0, struct FRandomStream* InRandomStream = NULL) const;
 
     /**
      * Returns the number of values in the distribution. 3 for vector.
@@ -100,7 +87,6 @@ public:
     virtual bool NeedsLoadForEditorGame() const override;
     virtual void Serialize(FStructuredArchive::FRecord Record) override;*/
     /** End UObject interface */
-
 };
 
 
@@ -144,7 +130,7 @@ public:
     /**
     * Get the value at the specified F
     */
-    FVector GetValue(float F = 0.0f, UObject* Data = NULL, int32 LastExtreme = 0, struct FRandomStream* InRandomStream = NULL);
+    FVector GetValue(float F = 0.0f, int32 LastExtreme = 0, struct FRandomStream* InRandomStream = NULL);
 
     /**
     * Get the min and max values
@@ -155,23 +141,4 @@ public:
     * Get the min and max values
     */
     void GetRange(FVector& MinOut, FVector& MaxOut);
-
-    /**
-    * Is this distribution a uniform type? (ie, does it have two values per entry?)
-    */
-    inline bool IsUniform() { return LookupTable.SubEntryStride != 0; }
-
-    void InitLookupTable();
-
-    FORCEINLINE bool HasLookupTable(bool bInitializeIfNeeded = true)
-    {
-        return GDistributionType != 0 && !LookupTable.IsEmpty();
-    }
-
-    FORCEINLINE bool OkForParallel()
-    {
-        HasLookupTable(); // initialize if required
-        return true; // even if they stay distributions, this should probably be ok as long as nobody is changing them at runtime
-        //return !Distribution || HasLookupTable();
-    }
 };
