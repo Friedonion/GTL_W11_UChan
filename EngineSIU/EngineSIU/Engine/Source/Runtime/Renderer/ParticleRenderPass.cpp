@@ -329,9 +329,9 @@ void FParticleRenderPass::PrepareMeshParticles()
     
     // 뷰포트 클라이언트를 통해 카메라 위치 가져오기
     FVector CameraLocation = FVector::ZeroVector;
-    if (GEngine)
+    if (auto EditorEngine = Cast<UEditorEngine>(GEngine))
     {
-        const std::shared_ptr<FEditorViewportClient> ViewportClient = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+        const std::shared_ptr<FEditorViewportClient> ViewportClient = EditorEngine->GetLevelEditor()->GetActiveViewportClient();
         if (ViewportClient)
         {
             CameraLocation = ViewportClient->GetCameraLocation();
@@ -387,9 +387,9 @@ void FParticleRenderPass::PrepareSpriteParticles()
     
     // 뷰포트 클라이언트를 통해 카메라 위치 가져오기
     FVector CameraLocation = FVector::ZeroVector;
-    if (GEngine)
+    if (auto EditorEngine = Cast<UEditorEngine>(GEngine))
     {
-        const std::shared_ptr<FEditorViewportClient> ViewportClient = GEngineLoop.GetLevelEditor()->GetActiveViewportClient();
+        const std::shared_ptr<FEditorViewportClient> ViewportClient = EditorEngine->GetLevelEditor()->GetActiveViewportClient();
         if (ViewportClient)
         {
             CameraLocation = ViewportClient->GetCameraLocation();
