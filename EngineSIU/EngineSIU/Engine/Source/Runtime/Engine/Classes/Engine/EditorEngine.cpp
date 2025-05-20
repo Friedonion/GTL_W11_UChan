@@ -17,6 +17,7 @@
 #include "LevelEditor/SLevelEditor.h"
 #include "Editor/UnrealEd/EditorViewportClient.h"
 #include "UnrealEd/UnrealEd.h"
+#include "PropertyEditor/ParticleSystemEmittersPanel.h"
 
 extern FEngineLoop GEngineLoop;
 
@@ -341,6 +342,14 @@ void UEditorEngine::StartParticleSystemViewer()
 
     //ParticleActor->SetRootComponent(ParticleComponent);
     ParticleActor->SetActorLabel(TEXT("OBJ_PARTICLESYSTEM"));
+
+    auto EditorEngine = Cast<UEditorEngine>(GEngine);
+    auto UnrealEd = EditorEngine->GetUnrealEditor();
+    auto Panel = reinterpret_cast<ParticleSystemEmittersPanel*>(UnrealEd->GetEditorPanel("ParticleSystemEmittersPanel").get());
+    if (Panel)
+    {
+        Panel->SetParticleSystemComponent(ParticleActor->ParticleSystemComponent);
+    }
 
     ADirectionalLight* DirectionalLight = ParticleSystemViewerWorld->SpawnActor<ADirectionalLight>();
     DirectionalLight->SetActorRotation(FRotator(45.f, 45.f, 0.f));
