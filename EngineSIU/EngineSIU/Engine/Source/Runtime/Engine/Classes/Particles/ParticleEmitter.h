@@ -15,7 +15,7 @@ enum EDetailMode : int;
 //~=============================================================================
 //	Burst emissions
 //~=============================================================================
-enum EParticleBurstMethod : int
+enum class EParticleBurstMethod : int
 {
     EPBM_Instant,
     EPBM_Interpolated,
@@ -38,7 +38,7 @@ enum class EParticleSubUVInterpMethod : int
 //~=============================================================================
 //	Cascade-related
 //~=============================================================================
-enum EEmitterRenderMode : int
+enum class EEmitterRenderMode : int
 {
     ERM_Normal,
     ERM_Point,

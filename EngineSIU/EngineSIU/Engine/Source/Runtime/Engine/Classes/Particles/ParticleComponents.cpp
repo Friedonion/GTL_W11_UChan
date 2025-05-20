@@ -466,7 +466,7 @@ int32 UParticleEmitter::CreateLODLevel(int32 LODLevel, bool bGenerateModuleData)
 		RequiredModule->bKillOnCompleted		= false;
 		RequiredModule->EmitterDuration			= 1.0f;
 		RequiredModule->EmitterLoops			= 0;
-		RequiredModule->ParticleBurstMethod		= EPBM_Instant;
+		RequiredModule->ParticleBurstMethod		= EParticleBurstMethod::EPBM_Instant;
 #if WITH_EDITORONLY_DATA
 		RequiredModule->ModuleEditorColor		= FColor::MakeRandomColor();
 #endif // WITH_EDITORONLY_DATA

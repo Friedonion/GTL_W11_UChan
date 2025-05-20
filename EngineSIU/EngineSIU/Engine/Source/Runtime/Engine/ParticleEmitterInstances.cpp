@@ -1444,7 +1444,7 @@ void FParticleEmitterInstance::SetupEmitterDuration()
 bool FParticleEmitterInstance::IsDynamicDataRequired(UParticleLODLevel* InCurrentLODLevel)
 {
     if ((ActiveParticles <= 0) || 
-        (SpriteTemplate && (SpriteTemplate->EmitterRenderMode == ERM_None)))
+        (SpriteTemplate && (SpriteTemplate->EmitterRenderMode == EEmitterRenderMode::ERM_None)))
     {
         return false;
     }
@@ -1592,7 +1592,7 @@ bool FParticleEmitterInstance::FillReplayData( FDynamicEmitterReplayDataBase& Ou
 			(LODLevel->RequiredModule->bUseMaxDrawCount == true) ? LODLevel->RequiredModule->MaxDrawCount : -1;
 		//NewReplayData->ScreenAlignment	= LODLevel->RequiredModule->ScreenAlignment;
 		NewReplayData->bUseLocalSpace = LODLevel->RequiredModule->bUseLocalSpace;
-		NewReplayData->EmitterRenderMode = SpriteTemplate->EmitterRenderMode;
+		NewReplayData->EmitterRenderMode = (uint8)SpriteTemplate->EmitterRenderMode;
 		NewReplayData->DynamicParameterDataOffset = DynamicParameterDataOffset;
 		NewReplayData->LightDataOffset = LightDataOffset;
 		NewReplayData->LightVolumetricScatteringIntensity = LightVolumetricScatteringIntensity;
