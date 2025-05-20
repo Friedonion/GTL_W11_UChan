@@ -193,6 +193,7 @@ UParticleEmitter* ParticleSystemEmittersPanel::FindEmitterForModule(UParticleMod
     // 모듈을 찾지 못한 경우
     return nullptr;
 }
+
 void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem)
 {
     if (!ParticleSystem)
@@ -356,11 +357,11 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
     }
 }
     
-    void ParticleSystemEmittersPanel::RenderModules(UParticleEmitter* Emitter, int32 EmitterIndex)
+void ParticleSystemEmittersPanel::RenderModules(UParticleEmitter* Emitter, int32 EmitterIndex)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
     {
-        if (!Emitter || Emitter->LODLevels.Num() == 0)
-        {
-            return;
+        return;
     }
 
     // 현재 LOD 레벨 (단순화를 위해 LOD 0만 표시)
