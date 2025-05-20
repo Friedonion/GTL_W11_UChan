@@ -260,44 +260,36 @@ LRESULT CALLBACK FEngineLoop::AppWndProc(HWND hWnd, uint32 Msg, WPARAM wParam, L
 
     switch (Msg)
     {
-    case WM_CLOSE:
-        //const auto hInstance = reinterpret_cast<HINSTANCE>(GetWindowLongPtrW(hWnd, GWLP_HINSTANCE));
-        WCHAR ClassName[256];
-        GetClassNameW(hWnd, ClassName, sizeof(ClassName) / sizeof(WCHAR));
-        //GEngineLoop.DestroyEngineWindow(hWnd, hInstance, ClassName);
-        if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
-        {
-            //if (GEngineLoop.AppWindows.Num() == 0 || GEngineLoop.DefaultWindow == hWnd)
-            {
-                EditorEngine->GetLevelEditor()->SaveConfig();
-            }
-            //if (!EditorEngine->GetLevelEditor()->GetViewportClients(hWnd).IsEmpty())
-            //{
-            //    EditorEngine->RemoveWorld(EditorEngine->GetLevelEditor()->GetViewportClients(hWnd)[0]->World);
-            //}
-            //EditorEngine->GetLevelEditor()->RemoveViewportClients(hWnd);
-        }
-    /// Close -> Destroy When there is no more window
     case WM_DESTROY:
         PostQuitMessage(0);
+        if (const auto EditorEngine = Cast<UEditorEngine>(GEngine))
+        {
+            if (const auto LevelEditor = EditorEngine->GetLevelEditor())
+            {
+                LevelEditor->SaveConfig();
+            }
+        }
         break;
     case WM_SIZE:
         if (wParam != SIZE_MINIMIZED)
         {
-            if (UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine))
+            if (const auto EditorEngine = Cast<UEditorEngine>(GEngine))
             {
-                FEngineLoop::GraphicDevice.Resize(hWnd);
-                // FEngineLoop::Renderer.DepthPrePass->ResizeDepthStencil();
-                
-                uint32 ClientWidth = 0;
-                uint32 ClientHeight = 0;
-                GEngineLoop.GetClientSize(ClientWidth, ClientHeight);
-            
-                EditorEngine->GetLevelEditor()->ResizeEditor(ClientWidth, ClientHeight);
-                FEngineLoop::Renderer.TileLightCullingPass->ResizeViewBuffers(
-                  static_cast<uint32>(EditorEngine->GetLevelEditor()->GetActiveViewportClient()->GetD3DViewport().Width),
-                    static_cast<uint32>(EditorEngine->GetLevelEditor()->GetActiveViewportClient()->GetD3DViewport().Height)
-                );
+                if (const auto LevelEditor = EditorEngine->GetLevelEditor())
+                {
+                    FEngineLoop::GraphicDevice.Resize(hWnd);
+                    // FEngineLoop::Renderer.DepthPrePass->ResizeDepthStencil();
+
+                    uint32 ClientWidth = 0;
+                    uint32 ClientHeight = 0;
+                    GEngineLoop.GetClientSize(ClientWidth, ClientHeight);
+
+                    LevelEditor->ResizeEditor(ClientWidth, ClientHeight);
+                    FEngineLoop::Renderer.TileLightCullingPass->ResizeViewBuffers(
+                        static_cast<uint32>(LevelEditor->GetActiveViewportClient()->GetD3DViewport().Width),
+                        static_cast<uint32>(LevelEditor->GetActiveViewportClient()->GetD3DViewport().Height)
+                    );
+                }
             }
         }
         GEngineLoop.UpdateUI();
