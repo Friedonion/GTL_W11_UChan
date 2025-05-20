@@ -1,7 +1,11 @@
-﻿#pragma once
+#pragma once
 
 #include "ParticleModuleVelocityBase.h"
+#include "Distributions/DistributionFloat.h"
+#include "Distributions/DistributionVector.h"
 
+struct FRawDistributionFloat;
+struct FRawDistributionVector;
 struct FParticleEmitterInstance;
 
 class UParticleModuleVelocity : public UParticleModuleVelocityBase
@@ -16,8 +20,8 @@ class UParticleModuleVelocity : public UParticleModuleVelocityBase
      *	Value is retrieved using the EmitterTime of the emitter.
      */
     //UPROPERTY(EditAnywhere, Category=Velocity)
-    //struct FRawDistributionVector StartVelocity;
-    FVector StartVelocity;
+    FRawDistributionVector StartVelocity;
+    //FVector StartVelocity;
 
     /** 
      *	The velocity to apply to a particle along its radial direction.

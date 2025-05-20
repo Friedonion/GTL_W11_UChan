@@ -87,7 +87,9 @@ void FRawDistribution::GetValue3Extreme(float Time, float* InValue, int32 Extrem
 
 void FRawDistribution::GetValue1Random(float Time, float* InValue, struct FRandomStream* InRandomStream) const
 {
-    //float* Value = InValue;
+    float* Value = InValue;
+    float RandValue = DIST_GET_RANDOM_VALUE(InRandomStream);
+    Value[0] = RandValue;
     //const float* Entry1;
     //const float* Entry2;
     //float LerpAlpha = 0.0f;

@@ -4,6 +4,7 @@
 #include "Particles/ParticleEmitter.h"
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModuleRequired.h"
+#include "UObject/ObjectFactory.h"
 
 UParticleModuleVelocityBase::UParticleModuleVelocityBase()
 {
@@ -35,7 +36,8 @@ void UParticleModuleVelocity::InitializeDefaults()
 	// 	StartVelocityRadial.Distribution = NewObject<UDistributionFloatUniform>(this, TEXT("DistributionStartVelocityRadial"));
 	// }
     // [TEMP] 임시 초기 속도 설정
-    StartVelocity = FVector(0.f, 3.f, 0.f);
+    StartVelocity.Distribution = FObjectFactory::ConstructObject<UDistributionVector>(nullptr);
+    StartVelocity.Op = RDO_Random;
     StartVelocityRadial = 5.0f;
 }
 
@@ -57,7 +59,7 @@ void UParticleModuleVelocity::SpawnEx(FParticleEmitterInstance* Owner, int32 Off
 {
 	SPAWN_INIT
 	{
-		FVector Vel = StartVelocity; //.GetValue(Owner->EmitterTime, Owner->Component, 0, InRandomStream);
+		FVector Vel = StartVelocity.GetValue(Owner->EmitterTime, 0, InRandomStream);
 		FVector FromOrigin = (Particle.Location - Owner->EmitterToSimulation.GetOrigin()).GetSafeNormal();
 
 		FVector OwnerScale(1.0f);
