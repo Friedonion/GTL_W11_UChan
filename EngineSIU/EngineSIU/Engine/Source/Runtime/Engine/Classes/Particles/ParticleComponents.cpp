@@ -470,7 +470,7 @@ int32 UParticleEmitter::CreateLODLevel(int32 LODLevel, bool bGenerateModuleData)
 #if WITH_EDITORONLY_DATA
 		RequiredModule->ModuleEditorColor		= FColor::MakeRandomColor();
 #endif // WITH_EDITORONLY_DATA
-		RequiredModule->InterpolationMethod		= PSUVIM_None;
+		RequiredModule->InterpolationMethod		= EParticleSubUVInterpMethod::PSUVIM_None;
 		RequiredModule->SubImages_Horizontal	= 1;
 		RequiredModule->SubImages_Vertical		= 1;
 		RequiredModule->bScaleUV				= false;

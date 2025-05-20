@@ -86,7 +86,7 @@ enum EParticleSortMode : int
     PSORTMODE_MAX,
 };
 
-enum EEmitterNormalsMode : int
+enum class EEmitterNormalsMode : int
 {
     /** Default mode, normals are based on the camera facing geometry. */
     ENM_CameraFacing,

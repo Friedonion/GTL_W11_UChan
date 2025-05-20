@@ -25,7 +25,7 @@ enum EParticleBurstMethod : int
 //~=============================================================================
 //	SubUV-related
 //~=============================================================================
-enum EParticleSubUVInterpMethod : int
+enum class EParticleSubUVInterpMethod : int
 {
     PSUVIM_None ,
     PSUVIM_Linear,

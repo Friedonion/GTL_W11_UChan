@@ -1627,7 +1627,7 @@ bool FParticleEmitterInstance::FillReplayData( FDynamicEmitterReplayDataBase& Ou
 		// 	NewReplayData->OrbitModuleOffset = *LastOrbitOffset;
 		// }
 
-		NewReplayData->EmitterNormalsMode = LODLevel->RequiredModule->EmitterNormalsMode;
+		NewReplayData->EmitterNormalsMode = static_cast<uint8>(LODLevel->RequiredModule->EmitterNormalsMode);
 		NewReplayData->NormalsSphereCenter = (FVector)LODLevel->RequiredModule->NormalsSphereCenter;
 		NewReplayData->NormalsCylinderDirection = (FVector)LODLevel->RequiredModule->NormalsCylinderDirection;
 
