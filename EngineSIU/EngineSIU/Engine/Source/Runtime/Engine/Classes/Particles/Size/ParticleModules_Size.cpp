@@ -1,7 +1,65 @@
+#include "ParticleModuleSize.h"
 #include "Engine/ParticleHelper.h"
 #include "Engine/ParticleEmitterInstances.h"
 #include "Particles/Size/ParticleModuleSizeScaleBySpeed.h"
 
+UParticleModuleSizeBase::UParticleModuleSizeBase()
+{
+}
+
+/*-----------------------------------------------------------------------------
+    UParticleModuleSize implementation.
+-----------------------------------------------------------------------------*/
+
+UParticleModuleSize::UParticleModuleSize()
+{
+    bSpawnModule = true;
+    bUpdateModule = false;
+    InitializeDefaults();
+}
+
+void UParticleModuleSize::InitializeDefaults()
+{
+    // if (!StartSize.IsCreated())
+    // {
+    //     UDistributionVectorUniform* DistributionStartSize = NewObject<UDistributionVectorUniform>(this, TEXT("DistributionStartSize"));
+    //     DistributionStartSize->Min = FVector(1.0f, 1.0f, 1.0f);
+    //     DistributionStartSize->Max = FVector(1.0f, 1.0f, 1.0f);
+    //     StartSize.Distribution = DistributionStartSize;
+    // }
+    StartSize = FVector(1.0f, 1.0f, 1.0f);
+}
+
+void UParticleModuleSize::CompileModule( FParticleEmitterBuildInfo& EmitterInfo )
+{
+    // float MinSize = 0.0f;
+    // float MaxSize = 0.0f;
+    // StartSize.GetValue();
+    // StartSize.GetOutRange( MinSize, MaxSize );
+    // EmitterInfo.MaxSize.X *= MaxSize;
+    // EmitterInfo.MaxSize.Y *= MaxSize;
+    EmitterInfo.SpawnModules.Add( this );
+    EmitterInfo.SizeScale =  FVector( 1.0f, 1.0f, 1.0f );
+}
+
+void UParticleModuleSize::Spawn(FParticleEmitterInstance* Owner, int32 Offset, float SpawnTime, FBaseParticle* ParticleBase)
+{
+    SpawnEx(Owner, Offset, SpawnTime, &GetRandomStream(Owner), ParticleBase);
+}
+
+void UParticleModuleSize::SpawnEx(FParticleEmitterInstance* Owner, int32 Offset, float SpawnTime, struct FRandomStream* InRandomStream, FBaseParticle* ParticleBase)
+{
+    SPAWN_INIT;
+    FVector Size		 = StartSize; //.GetValue(Owner->EmitterTime, Owner->Component, 0, InRandomStream);
+    Particle.Size	+= Size;
+
+    //AdjustParticleBaseSizeForUVFlipping(Size, Owner->CurrentLODLevel->RequiredModule->UVFlippingMode, *InRandomStream);
+    Particle.BaseSize += Size;
+}
+
+/*------------------------------------------------------------------------------
+    Scale size by speed module.
+------------------------------------------------------------------------------*/
 UParticleModuleSizeScaleBySpeed::UParticleModuleSizeScaleBySpeed()
 {
     bSpawnModule = true;

@@ -591,6 +591,7 @@ struct FParticleEmitterBuildInfo
 
     ///** How to scale a particle's size over time. */
     //FComposableVectorDistribution SizeScale;
+    FVector SizeScale;
     /** The maximum size of a particle. */
     FVector2D MaxSize;
     /** How much to scale a particle's size based on its speed. */
