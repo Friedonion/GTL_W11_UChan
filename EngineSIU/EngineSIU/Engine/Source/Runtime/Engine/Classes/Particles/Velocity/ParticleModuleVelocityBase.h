@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Particles/ParticleModule.h"
 
@@ -14,10 +14,12 @@ class UParticleModuleVelocityBase : public UParticleModule
      *	NOTE: LocalSpace emitters that are moving will see strange results...
      */
     //UPROPERTY(EditAnywhere, Category=Velocity)
-    uint32 bInWorldSpace:1;
+    UPROPERTY
+    (EditAnywhere, uint8, bInWorldSpace, = 1)
 
     /** If true, then apply the particle system components scale to the velocity value. */
     //UPROPERTY(EditAnywhere, Category=Velocity)
-    uint32 bApplyOwnerScale:1;
+    UPROPERTY
+    (EditAnywhere, uint8, bApplyOwnerScale, = 1)
 
 };

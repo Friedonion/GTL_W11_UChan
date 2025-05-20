@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "ParticleModuleSizeBase.h"
 
 struct FParticleEmitterInstance;
@@ -17,7 +17,9 @@ class UParticleModuleSize : public UParticleModuleSizeBase
      */
     //UPROPERTY(EditAnywhere, Category=Size)
     //struct FRawDistributionVector StartSize;
-    FVector StartSize;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector, StartSize)
+
     /** Initializes the default values for this property */
     void InitializeDefaults();
 

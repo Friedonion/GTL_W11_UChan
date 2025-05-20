@@ -18,28 +18,35 @@ public:
     /** The rate at which to spawn particles. */
     //UPROPERTY(EditAnywhere, Category = Spawn)
     //struct FRawDistributionFloat Rate;
-    float Rate;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, Rate)
 
     /** The scalar to apply to the rate. */
     //UPROPERTY(EditAnywhere, Category = Spawn)
     //struct FRawDistributionFloat RateScale;
-    float RateScale;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, RateScale)
+
     /** The array of burst entries. */
     //UPROPERTY(EditAnywhere, export, noclear, Category = Burst)
-    TArray<FParticleBurst> BurstList;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, TArray<FParticleBurst>, BurstList)
 
     /** Scale all burst entries by this amount. */
     //UPROPERTY(EditAnywhere, Category = Burst)
     //struct FRawDistributionFloat BurstScale;
-    float BurstScale;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, BurstScale)
 
     /** The method to utilize when burst-emitting particles. */
     //UPROPERTY(EditAnywhere, Category = Burst)
-    EParticleBurstMethod ParticleBurstMethod;
+    UPROPERTY
+    (EditAnywhere, EParticleBurstMethod, ParticleBurstMethod, = EParticleBurstMethod::EPBM_Instant)
 
     /**	If true, the SpawnRate will be scaled by the global CVar r.EmitterSpawnRateScale */
     //UPROPERTY(EditAnywhere, Category = Spawn)
-    uint32 bApplyGlobalSpawnRateScale : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bApplyGlobalSpawnRateScale, = 1)
 
     /** Initializes the default values for this property */
     void InitializeDefaults();
