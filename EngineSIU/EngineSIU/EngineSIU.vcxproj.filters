@@ -1686,6 +1686,14 @@
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModules.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Renderer\ParticleRenderPass.cpp" />
     <ClCompile Include="Shaders\ParticleVertexShader.hlsl" />
+    <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\ScriptStruct.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\Struct.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModules_Color.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Location\ParticleModules_Location.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleSystemRender.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Velocity\ParticleModules_Velocity.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Distributions.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Actors\ParticleSystemActor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="EngineSIU.natvis" />
@@ -1697,9 +1705,9 @@
     <FxCompile Include="Shaders\DepthOnlyVS.hlsl" />
     <FxCompile Include="Shaders\LightPBR.hlsl" />
     <FxCompile Include="Shaders\PointLightCubemapGS.hlsl" />
-    <FxCompile Include="Shaders\ParticlePixelShader.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
+    <FxCompile Include="Shaders\MeshParticlePixelShader.hlsl" />
+    <FxCompile Include="Shaders\MeshParticleVertexShader.hlsl" />
+    <FxCompile Include="Shaders\SpriteParticlePixelShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\SkeletalMeshComponent.h" />
@@ -1778,6 +1786,25 @@
     <ClInclude Include="Engine\Source\Runtime\Core\Math\RandomStream.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModuleSpawnBase.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModuleSpawn.h" />
+    <ClInclude Include="Engine\Source\Runtime\CoreUObject\UObject\ScriptStruct.h" />
+    <ClInclude Include="Engine\Source\Runtime\CoreUObject\UObject\Struct.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModuleColor.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModuleColorBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Lifetime\ParticleModuleLifetime.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Lifetime\ParticleModuleLifetimeBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Lifetime\ParticleModuleLifetime_Seeded.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Location\ParticleModuleLocation.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Location\ParticleModuleLocationBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleSpriteEmitter.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleSystemRender.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Size\ParticleModuleSize.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Velocity\ParticleModuleVelocity.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Velocity\ParticleModuleVelocityBase.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Distributions.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Actors\ParticleSystemActor.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Distributions\DistributionFloat.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Distributions\DistributionVector.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Distributions\Distribution.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\CompositingShader.hlsl" />

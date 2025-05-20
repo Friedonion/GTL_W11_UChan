@@ -2,22 +2,22 @@
     "Actors": [
         {
             "ActorClass": "AParticleSystemActor",
-            "ActorID": "AParticleSystemActor_166",
-            "ActorLabel": "OBJ_PARTICLESYSTEM_166",
+            "ActorID": "AParticleSystemActor_182",
+            "ActorLabel": "OBJ_PARTICLESYSTEM_182",
             "ActorTickInEditor": "true",
             "Components": [
                 {
                     "ComponentClass": "UParticleSystemComponent",
-                    "ComponentID": "UParticleSystemComponent_167",
+                    "ComponentID": "UParticleSystemComponent_183",
                     "Properties": {
                         "AABB_max": "X=0.000 Y=0.000 Z=0.000",
                         "AABB_min": "X=0.000 Y=0.000 Z=0.000",
                         "AttachParentID": "nullptr",
                         "ComponentClass": "UParticleSystemComponent",
-                        "ComponentName": "UParticleSystemComponent_167",
-                        "ComponentOwner": "AParticleSystemActor_166",
+                        "ComponentName": "UParticleSystemComponent_183",
+                        "ComponentOwner": "AParticleSystemActor_182",
                         "ComponentOwnerClass": "AParticleSystemActor",
-                        "RelativeLocation": "X=-0.274 Y=0.006 Z=0.000",
+                        "RelativeLocation": "X=0.000 Y=0.000 Z=0.000",
                         "RelativeRotation": "Pitch=0.000 Yaw=0.000 Roll=-0.000",
                         "RelativeScale3D": "X=1.000 Y=1.000 Z=1.000",
                         "bAutoActive": "true",
@@ -26,7 +26,7 @@
                     }
                 }
             ],
-            "RootComponentID": "UParticleSystemComponent_167"
+            "RootComponentID": "UParticleSystemComponent_183"
         }
     ],
     "NextUUID": 0,
