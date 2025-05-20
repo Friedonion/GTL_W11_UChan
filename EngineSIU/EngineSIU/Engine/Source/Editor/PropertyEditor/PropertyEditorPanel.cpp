@@ -1816,6 +1816,24 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
             break;
         }
 
+        ImGui::Separator();
+        UClass* Class = nullptr;
+        Class = Module->GetClass();
+        for (; Class; Class = Class->GetSuperClass())
+        {
+            const TArray<FProperty*>& Properties = Class->GetProperties();
+            if (!Properties.IsEmpty())
+            {
+                ImGui::SeparatorText(*Class->GetName());
+            }
+
+            for (const FProperty* Prop : Properties)
+            {
+                Prop->DisplayInImGui(Module);
+            }
+        }
+        ImGui::Separator();
+
         // LOD 표시
         ImGui::Text("LOD Validity: 0x%02X", Module->LODValidity);
 
