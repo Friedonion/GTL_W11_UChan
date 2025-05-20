@@ -51,17 +51,22 @@ enum class EEmitterRenderMode : int
 //USTRUCT()
 struct FParticleBurst
 {
+    DECLARE_STRUCT(FParticleBurst)
+
     /** The number of particles to burst */
     //UPROPERTY(EditAnywhere, Category = ParticleBurst)
-    int32 Count;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, Count)
 
     /** If >= 0, use as a range [CountLow..Count] */
     //UPROPERTY(EditAnywhere, Category = ParticleBurst)
-    int32 CountLow;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, CountLow)
 
     /** The time at which to burst them (0..1: emitter lifetime) */
     //UPROPERTY(EditAnywhere, Category = ParticleBurst)
-    float Time;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, Time)
 
     FParticleBurst()
         : Count(0)
