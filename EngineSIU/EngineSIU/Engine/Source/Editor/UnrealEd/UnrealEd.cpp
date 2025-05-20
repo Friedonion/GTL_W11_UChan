@@ -1,12 +1,12 @@
 #include "UnrealEd.h"
+#include "World/World.h"
 #include "EditorPanel.h"
-
 #include "PropertyEditor/ControlEditorPanel.h"
 #include "PropertyEditor/OutlinerEditorPanel.h"
 #include "PropertyEditor/PropertyEditorPanel.h"
 #include "PropertyEditor/SkeletalMeshViewerPanel.h"
 #include "PropertyEditor/ParticleSystemEmittersPanel.h"
-#include "World/World.h"
+
 void UnrealEd::Initialize()
 {
     /* Main Editor */
@@ -46,6 +46,20 @@ void UnrealEd::Initialize()
     ParticleEmittersPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
     ParticleEmittersPanel->SetPreviewType(EPreviewTypeBitFlag::ParticleSystem);
     Panels["ParticleSystemEmittersPanel"] = ParticleEmittersPanel;
+    
+    // PropertyEditorPanel과 ParticleSystemEmittersPanel 연결
+    // 에미터 패널에서 선택 변경 시 속성 패널에 알림
+    auto PropertyPanelPtr = dynamic_cast<PropertyEditorPanel*>(ParticleDetailPanel.get());
+    auto EmittersPanelPtr = dynamic_cast<ParticleSystemEmittersPanel*>(ParticleEmittersPanel.get());
+    
+    if (PropertyPanelPtr && EmittersPanelPtr)
+    {
+        EmittersPanelPtr->SetSelectionChangedCallback(
+            [PropertyPanelPtr](const FSelectedObject& Selection, UParticleSystemComponent* ParticleSystemComponent) {
+                PropertyPanelPtr->OnParticleSelectionChanged(Selection);
+                PropertyPanelPtr->SetParticleSystemComponent(ParticleSystemComponent);
+            });
+    }
 }
 
 void UnrealEd::Render() const

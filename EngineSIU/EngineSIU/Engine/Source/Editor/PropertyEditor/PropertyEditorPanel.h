@@ -8,6 +8,7 @@
 #include "UnrealEd/EditorPanel.h"
 #include "Math/Rotator.h"
 #include "UObject/Casts.h"
+#include "ParticleSystemEmittersPanel.h"
 
 class USkeletalMeshComponent;
 class USpringArmComponent;
@@ -23,6 +24,9 @@ class UHeightFogComponent;
 class AEditorPlayer;
 class UStaticMeshComponent;
 class UMaterial;
+class UParticleSystem;
+class UParticleEmitter;
+class UParticleModule;
 
 // 헬퍼 함수 예시
 template<typename Getter, typename Setter>
@@ -100,6 +104,23 @@ private:
     bool IsCreateMaterial;
 
     const FString TemplateFilePath = FString("LuaScripts/template.lua");
+
+    // 파티클 시스템 속성 편집 관련 멤버
+    FSelectedObject CurrentParticleSelection;
+    UParticleSystemComponent* CurrentParticleSystemComponent = nullptr;
+
+    // 파티클 시스템 관련 렌더링 함수
+    void RenderForParticleSystem(UParticleSystem* ParticleSystem);
+    void RenderForParticleEmitter(UParticleEmitter* Emitter);
+    void RenderForParticleModule(UParticleModule* Module);
+
+public:
+    // 선택 변경 이벤트 처리 함수
+    void OnParticleSelectionChanged(const FSelectedObject& Selection);
+    
+    // 파티클 시스템 컴포넌트 설정
+    void SetParticleSystemComponent(UParticleSystemComponent* InParticleSystemComponent);
+
 };
 
 template <typename T> requires std::derived_from<T, UActorComponent>
