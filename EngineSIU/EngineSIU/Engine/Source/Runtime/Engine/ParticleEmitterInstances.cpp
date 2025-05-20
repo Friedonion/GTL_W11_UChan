@@ -719,6 +719,7 @@ void FParticleEmitterInstance::ForceUpdateBoundingBox()
 
 uint32 FParticleEmitterInstance::RequiredBytes()
 {
+    //SubUV Particle있으면 구현필요할듯
     return 0;
 }
 
@@ -756,9 +757,9 @@ uint8* FParticleEmitterInstance::GetTypeDataModuleInstanceData()
     return nullptr;
 }
 
-uint32 FParticleEmitterInstance::CalculateParticleStride(uint32 ParticleSize)
+uint32 FParticleEmitterInstance::CalculateParticleStride(uint32 InParticleSize)
 {
-    return 0;
+    return InParticleSize;
 }
 
 
@@ -935,8 +936,8 @@ float FParticleEmitterInstance::Spawn(float DeltaTime)
             }*/
 
             //const FVector InitialLocation = EmitterToSimulation.GetOrigin();
-            // [TEMP] SUPER HARD CODED WHERE IS THE COUNT OUT SETTING
-            Number = 5;
+            // // [TEMP] SUPER HARD CODED WHERE IS THE COUNT OUT SETTING
+            // Number = 5;
             FVector InitialLocation(0, 0, 0);
             // Spawn particles.
             SpawnParticles(Number, StartTime, Increment, InitialLocation, FVector::ZeroVector, EventPayload);
@@ -1026,7 +1027,7 @@ void FParticleEmitterInstance::SpawnParticles(int32 Count, float StartTime, floa
                     static bool bErrorReported = false;
                     if (!bErrorReported)
                     {
-                        UE_LOG(ELogLevel::Error, TEXT("Detected null particles. Template : %s, Component %s"));
+                        //UE_LOG(ELogLevel::Error, TEXT("Detected null particles. Template : %s, Component %s"));
                         bErrorReported = true;
                     }
                     ActiveParticles = 0;
