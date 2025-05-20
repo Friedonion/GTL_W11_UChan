@@ -31,7 +31,8 @@ class UDistributionVector : public UDistribution
 {
     DECLARE_CLASS(UDistributionVector, UDistribution)
 public:
-    FVector Constant;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector, Constant)
 
     /** Set internally when the distribution is updated so that that FRawDistribution can know to update itself*/
     //UPROPERTY()
@@ -55,7 +56,7 @@ public:
     /**
      * Return the operation used at runtime to calculate the final value
      */
-    virtual ERawDistributionOperation GetOperation() const { return RDO_None; }
+    virtual ERawDistributionOperation GetOperation() const { return ERawDistributionOperation::RDO_None; }
 
     /**
      * Returns the lock axes flag used at runtime to swizzle random stream values.
@@ -93,22 +94,28 @@ public:
 //USTRUCT()
 struct FRawDistributionVector : public FRawDistribution
 {
+    DECLARE_STRUCT_WITH_SUPER(FRawDistributionVector, FRawDistribution)
 private:
     //UPROPERTY()
-    float MinValue;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, MinValue)
 
     //UPROPERTY()
-    float MaxValue;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, MaxValue)
 
     //UPROPERTY()
-    FVector MinValueVec;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector, MinValueVec)
 
     //UPROPERTY()
-    FVector MaxValueVec;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector, MaxValueVec)
 
 public:
     //UPROPERTY(EditAnywhere, export, noclear, Category = RawDistributionVector)
-    UDistributionVector* Distribution;
+    UPROPERTY_WITH_FLAGS
+    (VisibleAnywhere, UDistributionVector*, Distribution)
 
     /** Whether the distribution data has been cooked or the object itself is available */
     bool IsCreated();
@@ -118,7 +125,7 @@ public:
         , MaxValue(0)
         , MinValueVec(FVector::ZeroVector)
         , MaxValueVec(FVector::ZeroVector)
-        , Distribution(NULL)
+        , Distribution(nullptr)
     {
     }
 

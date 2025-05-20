@@ -5,11 +5,12 @@
 #include "Core/Container/Array.h"
 #include "Core/Math/Vector.h"
 #include "Math/RandomStream.h"
+#include "UObject/ObjectMacros.h"
 
 /**
  * Operation to perform when looking up a value.
  */
-enum ERawDistributionOperation
+enum class ERawDistributionOperation
 {
     RDO_Uninitialized,
     RDO_None,
@@ -25,10 +26,11 @@ enum ERawDistributionOperation
  */
 struct FRawDistribution
 {
+    DECLARE_STRUCT(FRawDistribution)
     /** Default constructor. */
     FRawDistribution()
     {
-        Op = RDO_None;
+        Op = ERawDistributionOperation::RDO_None;
     }
 
     /**
@@ -84,11 +86,12 @@ struct FRawDistribution
 
     FORCEINLINE bool IsSimple()
     {
-        return Op == RDO_None;
+        return Op == ERawDistributionOperation::RDO_None;
     }
 
 public:
-    ERawDistributionOperation Op;
+    UPROPERTY
+    (EditAnywhere, ERawDistributionOperation,  Op, = ERawDistributionOperation::RDO_None)
 };
 
 /**

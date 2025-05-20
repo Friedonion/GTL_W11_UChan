@@ -23,16 +23,20 @@ public:
     virtual void Tick(float DeltaTime) override;
     void Release() override;
 
+    UWorld* EditorWorld = nullptr;
     UWorld* PIEWorld = nullptr;
     USkeletalViewerWorld* SkeletalMeshViewerWorld = nullptr;
-    UWorld* EditorWorld = nullptr;
-    
+    UWorld* ParticleSystemViewerWorld = nullptr;
 
     void StartPIE();
-    void StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAsset* AnimAsset);
     void BindEssentialObjects();
     void EndPIE();
+
+    void StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAsset* AnimAsset);
     void EndSkeletalMeshViewer();
+
+    void StartParticleSystemViewer();
+    void EndParticleSystemViewer();
 
     // 주석은 UE에서 사용하던 매개변수.
     FWorldContext& GetEditorWorldContext(/*bool bEnsureIsGWorld = false*/);
@@ -66,11 +70,20 @@ public:
 
 public:
     AEditorPlayer* GetEditorPlayer() const;
-    
+
+    SLevelEditor* GetLevelEditor() const { return LevelEditor; }
+    UnrealEd* GetUnrealEditor() const { return UnrealEditor; }
+
+    void SetLevelEditor(SLevelEditor* InLevelEditor) { LevelEditor = InLevelEditor; }
+    void SetUnrealEditor(UnrealEd* InUnrealEditor) { UnrealEditor = InUnrealEditor; }
+
 private:
     AEditorPlayer* EditorPlayer = nullptr;
     FVector CameraLocation;
     FVector CameraRotation;
+
+    SLevelEditor* LevelEditor;
+    UnrealEd* UnrealEditor;
 };
 
 

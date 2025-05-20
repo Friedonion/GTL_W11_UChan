@@ -1,25 +1,65 @@
 #include "UnrealEd.h"
+#include "World/World.h"
 #include "EditorPanel.h"
-
 #include "PropertyEditor/ControlEditorPanel.h"
 #include "PropertyEditor/OutlinerEditorPanel.h"
 #include "PropertyEditor/PropertyEditorPanel.h"
 #include "PropertyEditor/SkeletalMeshViewerPanel.h"
-#include "World/World.h"
+#include "PropertyEditor/ParticleSystemEmittersPanel.h"
+
 void UnrealEd::Initialize()
 {
+    /* Main Editor */
     auto ControlPanel = std::make_shared<ControlEditorPanel>();
+    ControlPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE | EWorldTypeBitFlag::EditorPreview);
+    ControlPanel->SetPreviewType(EPreviewTypeBitFlag::AnimSequence | EPreviewTypeBitFlag::ParticleSystem);
     Panels["ControlPanel"] = ControlPanel;
     
     auto OutlinerPanel = std::make_shared<OutlinerEditorPanel>();
+    OutlinerPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE);
     Panels["OutlinerPanel"] = OutlinerPanel;
     
     auto PropertyPanel = std::make_shared<PropertyEditorPanel>();
+    PropertyPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::Editor | EWorldTypeBitFlag::PIE);
     Panels["PropertyPanel"] = PropertyPanel;
 
-    // TODO : SkeletalViewe 전용 UI 분리
-    auto BoneHierarchyPanel = std::make_shared<SkeletalMeshViewerPanel>();
-    Panels["BoneHierarchyPaenl"] = BoneHierarchyPanel;
+    /* SkeletalMesh */
+    auto SkeletalMeshPropertyPanel = std::make_shared<PropertyEditorPanel>();
+    SkeletalMeshPropertyPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
+    SkeletalMeshPropertyPanel->SetPreviewType(EPreviewTypeBitFlag::SkeletalMesh);
+    Panels["SkeletalMeshPropertyPanel"] = SkeletalMeshPropertyPanel;
+
+    /* AnimSequence */
+    // TODO : SkeletalViewer 전용 UI 분리
+    auto BoneHierarchyAnimPanel = std::make_shared<SkeletalMeshViewerPanel>();
+    BoneHierarchyAnimPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
+    BoneHierarchyAnimPanel->SetPreviewType(EPreviewTypeBitFlag::AnimSequence);
+    Panels["BoneHierarchyPanel"] = BoneHierarchyAnimPanel;
+
+    /* Particle System */
+    auto ParticleDetailPanel = std::make_shared<PropertyEditorPanel>();
+    ParticleDetailPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
+    ParticleDetailPanel->SetPreviewType(EPreviewTypeBitFlag::ParticleSystem);
+    Panels["ParticleDetailPanel"] = ParticleDetailPanel;
+
+    auto ParticleEmittersPanel = std::make_shared<ParticleSystemEmittersPanel>();
+    ParticleEmittersPanel->SetSupportedWorldTypes(EWorldTypeBitFlag::EditorPreview);
+    ParticleEmittersPanel->SetPreviewType(EPreviewTypeBitFlag::ParticleSystem);
+    Panels["ParticleSystemEmittersPanel"] = ParticleEmittersPanel;
+    
+    // PropertyEditorPanel과 ParticleSystemEmittersPanel 연결
+    // 에미터 패널에서 선택 변경 시 속성 패널에 알림
+    auto PropertyPanelPtr = dynamic_cast<PropertyEditorPanel*>(ParticleDetailPanel.get());
+    auto EmittersPanelPtr = dynamic_cast<ParticleSystemEmittersPanel*>(ParticleEmittersPanel.get());
+    
+    if (PropertyPanelPtr && EmittersPanelPtr)
+    {
+        EmittersPanelPtr->SetSelectionChangedCallback(
+            [PropertyPanelPtr](const FSelectedObject& Selection, UParticleSystemComponent* ParticleSystemComponent) {
+                PropertyPanelPtr->OnParticleSelectionChanged(Selection);
+                PropertyPanelPtr->SetParticleSystemComponent(ParticleSystemComponent);
+            });
+    }
 }
 
 void UnrealEd::Render() const
@@ -45,22 +85,30 @@ void UnrealEd::Render() const
     case EWorldType::GameRPC:
         currentMask = EWorldTypeBitFlag::GameRPC;
         break;
-    case EWorldType::SkeletalViewer:
-        currentMask = EWorldTypeBitFlag::SkeletalViewer;
-        break;
     case EWorldType::Inactive:
         currentMask = EWorldTypeBitFlag::Inactive;
         break;
+    case EWorldType::None:
     default:
         currentMask = EWorldTypeBitFlag::None;
         break;
-        
     }
     for (const auto& Panel : Panels)
     {
         if (HasFlag(Panel.Value->GetSupportedWorldTypes(), currentMask))
         {
-            Panel.Value->Render();
+            if (currentMask == EWorldTypeBitFlag::EditorPreview)
+            {
+                auto WorldContext = GEngine->GetWorldContextFromWorld(GEngine->ActiveWorld);
+                if (HasFlag(Panel.Value->GetPreviewType(), WorldContext->PreviewType))
+                {
+                    Panel.Value->Render();
+                }
+            }
+            else
+            {
+                Panel.Value->Render();
+            }
         }
     }
 }

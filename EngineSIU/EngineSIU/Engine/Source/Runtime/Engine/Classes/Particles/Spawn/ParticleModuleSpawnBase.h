@@ -19,7 +19,8 @@ public:
      *	have this set to false, it will not process the SpawnModule SpawnRate.
      */
     //UPROPERTY(EditAnywhere, Category = Spawn)
-    uint32 bProcessSpawnRate : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bProcessSpawnRate, = 1)
 
     /**
      *	If true, the BurstList of the SpawnModule of the emitter will be processed.
@@ -27,8 +28,8 @@ public:
      *	have this set to false, it will not process the SpawnModule BurstList.
      */
     //UPROPERTY(EditAnywhere, Category = Burst)
-    uint32 bProcessBurstList : 1;
-
+    UPROPERTY
+    (EditAnywhere, uint8, bProcessBurstList, = 1)
 
     //~ Begin UParticleModule Interface
     virtual EModuleType	GetModuleType() const override { return EPMT_Spawn; }

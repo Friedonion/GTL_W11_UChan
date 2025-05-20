@@ -37,7 +37,7 @@ void UParticleModuleVelocity::InitializeDefaults()
 	// }
     // [TEMP] 임시 초기 속도 설정
     StartVelocity.Distribution = FObjectFactory::ConstructObject<UDistributionVector>(nullptr);
-    StartVelocity.Op = RDO_Random;
+    StartVelocity.Op = ERawDistributionOperation::RDO_Random;
     StartVelocityRadial = 5.0f;
 }
 

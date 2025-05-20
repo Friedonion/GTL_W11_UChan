@@ -11,10 +11,6 @@ USkeletalViewerWorld* USkeletalViewerWorld::CreateWorld(UObject* InOuter, const 
     NewWorld->InitializeNewWorld();
     NewWorld->SelectBoneIndex = 0;
 
-
-
-    
-    
     return NewWorld;
 }
 

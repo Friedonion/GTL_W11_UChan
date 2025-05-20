@@ -10,6 +10,10 @@
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleEmitter.h"
+#include "Particles/ParticleModule.h"
+#include "Components/ParticleSystemComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/Light/LightComponent.h"
@@ -44,11 +48,7 @@
 #include "imgui/imgui_curve.h"
 #include "Math/Transform.h"
 #include "Animation/AnimStateMachine.h"
-
-PropertyEditorPanel::PropertyEditorPanel()
-{
-    SetSupportedWorldTypes(EWorldTypeBitFlag::Editor|EWorldTypeBitFlag::PIE);
-}
+#include "Runtime/CoreUObject/UObject/Property.h"
 
 void PropertyEditorPanel::Render()
 {
@@ -59,11 +59,46 @@ void PropertyEditorPanel::Render()
     }
     
     /* Pre Setup */
-    float PanelWidth = (Width) * 0.2f - 5.0f;
-    float PanelHeight = (Height)-((Height) * 0.3f + 10.0f) - 32.0f;
+    float PanelWidth;
+    float PanelHeight;
 
-    float PanelPosX = (Width) * 0.8f + 4.0f;
-    float PanelPosY = (Height) * 0.3f + 10.0f;
+    float PanelPosX;
+    float PanelPosY;
+
+    if (Engine->ActiveWorld)
+    {
+        if (Engine->ActiveWorld->WorldType == EWorldType::Editor)
+        {
+            PanelWidth = (Width) * 0.2f - 5.0f;
+            PanelHeight = (Height)-((Height) * 0.3f + 10.0f) - 32.0f;
+
+            PanelPosX = (Width) * 0.8f + 4.0f;
+            PanelPosY = (Height) * 0.3f + 10.0f;
+        }
+        else if (Engine->ActiveWorld->WorldType == EWorldType::EditorPreview)
+        {
+            if (GetPreviewType() == EPreviewTypeBitFlag::SkeletalMesh)
+            {
+                PanelWidth = (Width) * 0.2f - 5.0f;
+                PanelHeight = (Height)-((Height) * 0.3f + 10.0f) - 32.0f;
+
+                PanelPosX = (Width) * 0.8f + 4.0f;
+                PanelPosY = (Height) * 0.3f + 10.0f;
+            }
+            else if (GetPreviewType() == EPreviewTypeBitFlag::ParticleSystem)
+            {
+                PanelWidth = (Width) * 0.3f;
+                PanelHeight = (Height) * 0.35f;
+
+                PanelPosX = 0.f;
+                PanelPosY = Height * 0.65f;
+            }
+            else
+            {
+                return;
+            }
+        }
+    }
 
     /* Panel Position */
     ImGui::SetNextWindowPos(ImVec2(PanelPosX, PanelPosY), ImGuiCond_Always);
@@ -77,6 +112,35 @@ void PropertyEditorPanel::Render()
     /* Render Start */
     ImGui::Begin("Detail", nullptr, PanelFlags);
 
+    // 파티클 시스템 프리뷰 모드인 경우 파티클 속성 렌더링
+    if (Engine->ActiveWorld && Engine->ActiveWorld->WorldType == EWorldType::EditorPreview &&
+        GetPreviewType() == EPreviewTypeBitFlag::ParticleSystem && CurrentParticleSystemComponent)
+    {
+        // 파티클 시스템 자체가 선택된 경우
+        if (CurrentParticleSelection.SelectedEmitter == nullptr && CurrentParticleSelection.SelectedModule == nullptr)
+        {
+            UParticleSystem* ParticleSystem = CurrentParticleSystemComponent->Template;
+            if (ParticleSystem)
+            {
+                RenderForParticleSystem(ParticleSystem);
+            }
+        }
+        // 에미터가 선택된 경우
+        else if (CurrentParticleSelection.SelectedEmitter != nullptr && CurrentParticleSelection.SelectedModule == nullptr)
+        {
+            RenderForParticleEmitter(CurrentParticleSelection.SelectedEmitter);
+        }
+        // 모듈이 선택된 경우
+        else if (CurrentParticleSelection.SelectedModule != nullptr)
+        {
+            RenderForParticleModule(CurrentParticleSelection.SelectedModule);
+        }
+
+        ImGui::End();
+        return;
+    }
+
+    // 에디터 모드에서 일반 속성 렌더링 (기존 코드)
     AActor* SelectedActor = Engine->GetSelectedActor();
     USceneComponent* SelectedComponent = Engine->GetSelectedComponent();
     USceneComponent* TargetComponent = nullptr;
@@ -86,7 +150,7 @@ void PropertyEditorPanel::Render()
         TargetComponent = SelectedComponent;
     }
     else if (SelectedActor != nullptr)
-    {        
+    {
         TargetComponent = SelectedActor->GetRootComponent();
     }
 
@@ -95,7 +159,6 @@ void PropertyEditorPanel::Render()
         AEditorPlayer* Player = Engine->GetEditorPlayer();
         RenderForSceneComponent(TargetComponent, Player);
     }
-
     if (SelectedActor)
     {
         RenderForActor(SelectedActor, TargetComponent);
@@ -889,6 +952,7 @@ void PropertyEditorPanel::RenderForSpotLightComponent(USpotLightComponent* SpotL
 
 void PropertyEditorPanel::RenderForLightCommon(ULightComponentBase* LightComponent) const
 {
+    const auto Engine = Cast<UEditorEngine>(GEngine);
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
 
     // --- "Override Camera" 버튼 추가 ---
@@ -907,7 +971,7 @@ void PropertyEditorPanel::RenderForLightCommon(ULightComponentBase* LightCompone
         LightRotationVector.Z = LightRotation.Yaw;
 
         // 2. 활성 에디터 뷰포트 클라이언트 가져오기 (!!! 엔진별 구현 필요 !!!)
-        std::shared_ptr<FEditorViewportClient> ViewportClient = GEngineLoop.GetLevelEditor()->GetActiveViewportClient(); // 위에 정의된 헬퍼 함수 사용 (또는 직접 구현)
+        std::shared_ptr<FEditorViewportClient> ViewportClient = Engine->GetLevelEditor()->GetActiveViewportClient(); // 위에 정의된 헬퍼 함수 사용 (또는 직접 구현)
 
         // 3. 뷰포트 클라이언트가 유효하면 카메라 설정
         if (ViewportClient)
@@ -1517,6 +1581,296 @@ void PropertyEditorPanel::OnResize(HWND hWnd)
 {
     RECT ClientRect;
     GetClientRect(hWnd, &ClientRect);
-    Width = ClientRect.right - ClientRect.left;
-    Height = ClientRect.bottom - ClientRect.top;
+    Width = static_cast<float>(ClientRect.right - ClientRect.left);
+    Height = static_cast<float>(ClientRect.bottom - ClientRect.top);
+}
+
+void PropertyEditorPanel::RenderForParticleSystem(UParticleSystem* ParticleSystem)
+{
+    if (!ParticleSystem)
+    {
+        return;
+    }
+
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.1f, 0.1f, 0.3f, 1.0f));
+    if (ImGui::TreeNodeEx("Particle System", ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        // 이름 표시
+        ImGui::Text("Name: %s", GetData(ParticleSystem->GetName()));
+        
+        // 업데이트 모드 설정
+        const char* UpdateModeItems[] = { "RealTime", "FixedTime" };
+        int UpdateModeIndex = static_cast<int>(ParticleSystem->SystemUpdateMode);
+        if (ImGui::Combo("Update Mode", &UpdateModeIndex, UpdateModeItems, IM_ARRAYSIZE(UpdateModeItems)))
+        {
+            ParticleSystem->SystemUpdateMode = static_cast<EParticleSystemUpdateMode>(UpdateModeIndex);
+        }
+
+        // Fixed Time 모드일 경우 FPS 설정
+        if (ParticleSystem->SystemUpdateMode == EPSUM_FixedTime)
+        {
+            float UpdateTimeFPS = ParticleSystem->UpdateTime_FPS;
+            if (ImGui::DragFloat("Update FPS", &UpdateTimeFPS, 1.0f, 10.0f, 120.0f))
+            {
+                ParticleSystem->UpdateTime_FPS = UpdateTimeFPS;
+                // 델타 타임 자동 계산 (초당 프레임 수의 역수)
+                ParticleSystem->UpdateTime_Delta = 1.0f / UpdateTimeFPS;
+            }
+        }
+
+        // 웜업 타임 설정 (주의 텍스트와 함께)
+        float WarmupTime = ParticleSystem->WarmupTime;
+        ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.0f, 1.0f), "Warning: High values may cause hitches");
+        if (ImGui::DragFloat("Warmup Time", &WarmupTime, 0.1f, 0.0f, 10.0f))
+        {
+            ParticleSystem->WarmupTime = WarmupTime;
+        }
+
+        // 웜업 틱 레이트 설정
+        float WarmupTickRate = ParticleSystem->WarmupTickRate;
+        if (ImGui::DragFloat("Warmup Tick Rate", &WarmupTickRate, 0.001f, 0.001f, 0.1f))
+        {
+            ParticleSystem->WarmupTickRate = WarmupTickRate;
+        }
+
+        // LOD 방식 설정
+        const char* LODMethodItems[] = { "Automatic", "DirectSet", "ActivateAutomatic" };
+        int LODMethodIndex = static_cast<int>(ParticleSystem->LODMethod);
+        if (ImGui::Combo("LOD Method", &LODMethodIndex, LODMethodItems, IM_ARRAYSIZE(LODMethodItems)))
+        {
+            ParticleSystem->LODMethod = static_cast<ParticleSystemLODMethod>(LODMethodIndex);
+        }
+
+        // LOD 거리 체크 시간 설정
+        float LODDistanceCheckTime = ParticleSystem->LODDistanceCheckTime;
+        if (ImGui::DragFloat("LOD Check Time", &LODDistanceCheckTime, 0.1f, 0.1f, 10.0f))
+        {
+            ParticleSystem->LODDistanceCheckTime = LODDistanceCheckTime;
+        }
+
+        // 카메라 방향 설정
+        bool bOrientToCamera = ParticleSystem->bOrientZAxisTowardCamera != 0;
+        if (ImGui::Checkbox("Orient Toward Camera", &bOrientToCamera))
+        {
+            ParticleSystem->bOrientZAxisTowardCamera = bOrientToCamera ? 1 : 0;
+        }
+
+        // 자동 비활성화 설정
+        bool bAutoDeactivate = ParticleSystem->bAutoDeactivate != 0;
+        if (ImGui::Checkbox("Auto Deactivate", &bAutoDeactivate))
+        {
+            ParticleSystem->bAutoDeactivate = bAutoDeactivate ? 1 : 0;
+        }
+
+        // 지연 시간 설정
+        float Delay = ParticleSystem->Delay;
+        if (ImGui::DragFloat("Spawn Delay", &Delay, 0.1f, 0.0f, 10.0f))
+        {
+            ParticleSystem->SetDelay(Delay);
+        }
+
+        // 지연 범위 사용 여부
+        bool bUseDelayRange = ParticleSystem->bUseDelayRange != 0;
+        if (ImGui::Checkbox("Use Delay Range", &bUseDelayRange))
+        {
+            ParticleSystem->bUseDelayRange = bUseDelayRange ? 1 : 0;
+        }
+
+        // 지연 범위를 사용하는 경우 최소값 설정
+        if (bUseDelayRange)
+        {
+            float DelayLow = ParticleSystem->DelayLow;
+            if (ImGui::DragFloat("Delay Low", &DelayLow, 0.1f, 0.0f, Delay))
+            {
+                ParticleSystem->DelayLow = DelayLow;
+            }
+        }
+
+        ImGui::TreePop();
+    }
+    ImGui::PopStyleColor();
+}
+
+void PropertyEditorPanel::RenderForParticleEmitter(UParticleEmitter* Emitter)
+{
+    if (!Emitter)
+    {
+        return;
+    }
+
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
+    if (ImGui::TreeNodeEx("Particle Emitter", ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        // 에미터 이름 표시 및 편집
+        FString EmitterNameStr = Emitter->EmitterName.ToString();
+        char EmitterNameBuffer[256];
+        strcpy_s(EmitterNameBuffer, GetData(EmitterNameStr));
+
+        ImGui::Text("Emitter Name: ");
+        ImGui::SameLine();
+        if (ImGui::InputText("##EmitterName", EmitterNameBuffer, IM_ARRAYSIZE(EmitterNameBuffer), ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            FName NewEmitterName = FName(EmitterNameBuffer);
+            Emitter->SetEmitterName(NewEmitterName);
+        }
+
+        // 에미터 활성화 상태 편집
+        bool bEmitterEnabled = Emitter->bIsSoloing != 0;
+        if (ImGui::Checkbox("Enabled", &bEmitterEnabled))
+        {
+            Emitter->bIsSoloing = bEmitterEnabled ? 1 : 0;
+        }
+
+        // 축 잠금 플래그 설정
+        const char* AxisLockItems[] = { "None", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ" };
+        int AxisLockIndex = static_cast<int>(Emitter->LockAxisFlags);
+        if (ImGui::Combo("Lock Axis", &AxisLockIndex, AxisLockItems, IM_ARRAYSIZE(AxisLockItems)))
+        {
+            Emitter->LockAxisFlags = static_cast<EParticleAxisLock>(AxisLockIndex);
+            Emitter->bAxisLockEnabled = (Emitter->LockAxisFlags != EPAL_NONE);
+        }
+
+        // 초기 할당 개수 설정
+        int32 InitialAllocationCount = Emitter->InitialAllocationCount;
+        if (ImGui::DragInt("Initial Allocation", &InitialAllocationCount, 1.0f, 0, 10000))
+        {
+            Emitter->InitialAllocationCount = InitialAllocationCount;
+        }
+
+        // LOD 설정
+        ImGui::Separator();
+        ImGui::Text("LOD Settings");
+
+        // 현재 LOD 레벨 수 표시
+        const int32 LODCount = Emitter->LODLevels.Num();
+        ImGui::Text("LOD Levels: %d", LODCount);
+
+        // 최적화 설정
+        ImGui::Separator();
+        ImGui::Text("Performance Settings");
+        
+        // 품질 레벨 스폰 속도 스케일 설정
+        float QualityLevelSpawnRateScale = Emitter->QualityLevelSpawnRateScale;
+        if (ImGui::DragFloat("Quality Scale", &QualityLevelSpawnRateScale, 0.01f, 0.0f, 1.0f))
+        {
+            Emitter->QualityLevelSpawnRateScale = QualityLevelSpawnRateScale;
+        }
+
+        // 현재 활성 파티클 수 표시
+        ImGui::Text("Active Particles: %d", Emitter->PeakActiveParticles);
+
+        ImGui::TreePop();
+    }
+    ImGui::PopStyleColor();
+}
+
+void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
+{
+    if (!Module)
+    {
+        return;
+    }
+
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
+    if (ImGui::TreeNodeEx("Particle Module", ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        // 모듈 이름 및 타입 표시
+        ImGui::Text("Module Type: %s", GetData(Module->GetClass()->GetName()));
+
+        // 모듈 활성화 상태 설정
+        bool bEnabled = Module->bEnabled != 0;
+        if (ImGui::Checkbox("Enabled", &bEnabled))
+        {
+            Module->bEnabled = bEnabled ? 1 : 0;
+        }
+
+        // 모듈 속성에 따른 추가 UI 표시
+        switch (Module->GetModuleType())
+        {
+        case EPMT_Spawn:
+            ImGui::Text("Spawn Module");
+            break;
+        case EPMT_Required:
+            ImGui::Text("Required Module");
+            break;
+        case EPMT_TypeData:
+            ImGui::Text("Type Data Module");
+            break;
+        case EPMT_Beam:
+            ImGui::Text("Beam Module");
+            break;
+        case EPMT_Trail:
+            ImGui::Text("Trail Module");
+            break;
+        case EPMT_Light:
+            ImGui::Text("Light Module");
+            break;
+        case EPMT_SubUV:
+            ImGui::Text("SubUV Module");
+            break;
+        case EPMT_Event:
+            ImGui::Text("Event Module");
+            break;
+        default:
+            ImGui::Text("General Module");
+            break;
+        }
+
+        ImGui::Separator();
+        UClass* Class = nullptr;
+        Class = Module->GetClass();
+        for (; Class; Class = Class->GetSuperClass())
+        {
+            const TArray<FProperty*>& Properties = Class->GetProperties();
+            if (!Properties.IsEmpty())
+            {
+                ImGui::SeparatorText(*Class->GetName());
+            }
+
+            for (const FProperty* Prop : Properties)
+            {
+                Prop->DisplayInImGui(Module);
+            }
+        }
+        ImGui::Separator();
+
+        // LOD 표시
+        ImGui::Text("LOD Validity: 0x%02X", Module->LODValidity);
+
+        // 모듈 속성
+        if (Module->bSpawnModule)
+        {
+            ImGui::Text("This module modifies particles during spawning");
+        }
+        if (Module->bUpdateModule)
+        {
+            ImGui::Text("This module modifies particles during update");
+        }
+        if (Module->bFinalUpdateModule)
+        {
+            ImGui::Text("This module modifies particles during final update");
+        }
+        if (Module->bUpdateForGPUEmitter)
+        {
+            ImGui::Text("This module is used for GPU particles");
+        }
+
+        // 모듈 특성에 따른 추가 속성
+        // 이 부분은 모듈 타입에 따라 더 많은 속성들을 표시할 수 있음
+        // 각 모듈 타입에 맞게 확장 필요
+
+        ImGui::TreePop();
+    }
+    ImGui::PopStyleColor();
+}
+
+void PropertyEditorPanel::OnParticleSelectionChanged(const FSelectedObject& Selection)
+{
+    // 선택 정보 저장
+    CurrentParticleSelection = Selection;
+}
+
+void PropertyEditorPanel::SetParticleSystemComponent(UParticleSystemComponent* InParticleSystemComponent)
+{
+    CurrentParticleSystemComponent = InParticleSystemComponent;
 }

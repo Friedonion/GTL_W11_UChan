@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "ParticleModuleLocationBase.h"
 #include "UObject/ObjectMacros.h"
@@ -21,14 +21,16 @@ class UParticleModuleLocation : public UParticleModuleLocationBase
 	 */
 	//UPROPERTY(EditAnywhere, Category=Location)
 	//struct FRawDistributionVector StartLocation;
-    FVector StartLocation;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector, StartLocation)
 
 	/**
 	 *  When set to a non-zero value this will force the particles to only spawn on evenly distributed
 	 *  positions between the two points specified.
 	 */
 	//UPROPERTY(EditAnywhere, Category=Location)
-	float DistributeOverNPoints;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, DistributeOverNPoints)
 
 	/**
 	 *  When DistributeOverNPoints is set to a non-zero value, this specifies the ratio of particles spawned
@@ -36,7 +38,8 @@ class UParticleModuleLocation : public UParticleModuleLocationBase
 	 *  be distributed evenly whereas .75 would cause 1/4 of the particles to be randomly placed).
 	 */
 	//UPROPERTY(EditAnywhere, Category=Location)
-	float DistributeThreshold;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, DistributeThreshold)
 
 	/** Initializes the default values for this property */
 	void InitializeDefaults();

@@ -13,6 +13,7 @@ class UWorld;
 struct FWorldContext
 {
     EWorldType WorldType;
+    EPreviewTypeBitFlag PreviewType;
     FName ContextHandle;
 
     void SetCurrentWorld(UWorld* InWorld)
@@ -27,11 +28,11 @@ struct FWorldContext
 
     FWorldContext()
         : WorldType(EWorldType::None)
+        , PreviewType(EPreviewTypeBitFlag::None)
         , ContextHandle(TEXT("None"))
         , ThisCurrentWorld(nullptr)
     {}
 
 private:
     UWorld* ThisCurrentWorld;
-
 };

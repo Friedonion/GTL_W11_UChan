@@ -30,14 +30,14 @@ void UParticleModuleColor::InitializeDefaults()
 	 {
 	 	StartColor.Distribution = FObjectFactory::ConstructObject<UDistributionVector>(nullptr);
         StartColor.Distribution->Constant = FVector(1.0f, 0.0f, 0.0f);
-        StartColor.Op = RDO_Random;
+        StartColor.Op = ERawDistributionOperation::RDO_Random;
 	 }
 	
 	 if (!StartAlpha.IsCreated())
 	 {
 	 	UDistributionFloat* DistributionStartAlpha = FObjectFactory::ConstructObject<UDistributionFloat>(nullptr);
 	 	DistributionStartAlpha->Constant = 1.0f;
-        StartAlpha.Op = RDO_Random;
+        StartAlpha.Op = ERawDistributionOperation::RDO_Random;
 	 	StartAlpha.Distribution = DistributionStartAlpha;
 	 }
     //StartColor = FVector(1.0f, 0.0f, 0.0f);

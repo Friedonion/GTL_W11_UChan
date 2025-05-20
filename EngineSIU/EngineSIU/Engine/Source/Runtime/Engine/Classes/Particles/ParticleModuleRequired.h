@@ -86,7 +86,7 @@ enum EParticleSortMode : int
     PSORTMODE_MAX,
 };
 
-enum EEmitterNormalsMode : int
+enum class EEmitterNormalsMode : int
 {
     /** Default mode, normals are based on the camera facing geometry. */
     ENM_CameraFacing,
@@ -118,21 +118,26 @@ public:
     
     /** The material to utilize for the emitter at this LOD level.						*/
     //// UPROPERTY(EditAnywhere, Category = Emitter)
-    UMaterial* Material;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, UMaterial*, Material)
 
     /** The distance at which PSA_FacingCameraDistanceBlend	is fully PSA_Square */
     //// UPROPERTY(EditAnywhere, Category = Emitter, meta = (UIMin = "0", DisplayAfter = "ScreenAlignment"))
-    float MinFacingCameraBlendDistance;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, MinFacingCameraBlendDistance)
 
     /** The distance at which PSA_FacingCameraDistanceBlend	is fully PSA_FacingCameraPosition */
     //// UPROPERTY(EditAnywhere, Category = Emitter, meta = (UIMin = "0", DisplayAfter = "MinFacingCameraBlendDistance"))
-    float MaxFacingCameraBlendDistance;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, MaxFacingCameraBlendDistance)
 
     //// UPROPERTY(EditAnywhere, Category = Emitter)
-    FVector EmitterOrigin;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector, EmitterOrigin)
 
     //// UPROPERTY(EditAnywhere, Category = Emitter)
-    FRotator EmitterRotation;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FRotator, EmitterRotation)
 
     /**
      *	The screen alignment to utilize for the emitter at this LOD level.
@@ -151,15 +156,18 @@ public:
 
     /** If true, update the emitter in local space										*/
     //// UPROPERTY(EditAnywhere, Category = Emitter, meta = (DisplayAfter = "MaxFacingCameraBlendDistance"))
-    uint8 bUseLocalSpace : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bUseLocalSpace, = 1)
 
     /** If true, kill the emitter when the particle system is deactivated				*/
     //// UPROPERTY(EditAnywhere, Category = Emitter)
-    uint8 bKillOnDeactivate : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bKillOnDeactivate, = 1)
 
     /** If true, kill the emitter when it completes										*/
     //// UPROPERTY(EditAnywhere, Category = Emitter)
-    uint8 bKillOnCompleted : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bKillOnCompleted, = 1)
 
     /**
      *	The sorting mode to use for this emitter.
@@ -184,39 +192,45 @@ public:
      *	resulting in proper looping/delay behavior.
      */
     //// UPROPERTY(EditAnywhere, Category = Emitter)
-    uint8 bUseLegacyEmitterTime : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bUseLegacyEmitterTime, = 1)
 
     /** If true, removes the HMD view roll (e.g. in VR) */
     //// UPROPERTY(EditAnywhere, Category = Emitter, meta = (DisplayName = "Remove HMD Roll"))
-    uint8 bRemoveHMDRoll : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bRemoveHMDRoll, = 1)
 
     /** If true, gpu simulation positions are offset to support double precision vectors. Cpu sims always support large world coordinates. */
     //// UPROPERTY(EditAnywhere, Category = Emitter)
-    uint8 bSupportLargeWorldCoordinates : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bSupportLargeWorldCoordinates, = 1)
 
     /**
      *	If true, select the emitter duration from the range
      *		[EmitterDurationLow..EmitterDuration]
      */
     //// UPROPERTY(EditAnywhere, Category = Duration)
-    uint8 bEmitterDurationUseRange : 1;
-
+    UPROPERTY
+    (EditAnywhere, uint8, bEmitterDurationUseRange, = 1)
 
     //// UPROPERTY(EditAnywhere, Category = Rendering)
-    uint8 bOverrideUseVelocityForMotionBlur : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bOverrideUseVelocityForMotionBlur, = 1)
 
     /**
      * When supported by the vertex factory will use particle velocity for motion blur approximation.
      * This will be inaccurate in some cases, i.e. sprite rotation, but may provide a reasonable result vs having this disabled
      */
     //// UPROPERTY(EditAnywhere, Category = Rendering, meta = (EditCondition = "bOverrideUseVelocityForMotionBlur"))
-    uint8 bUseVelocityForMotionBlur : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bUseVelocityForMotionBlur, = 1)
 
     /**
      *	How long, in seconds, the emitter will run before looping.
      */
     //// UPROPERTY(EditAnywhere, Category = Duration, meta = (DisplayAfter = "bRemoveHMDRoll"))
-    float EmitterDuration;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, EmitterDuration)
 
     //
     // Spawn-related.
@@ -225,7 +239,8 @@ public:
     /** The rate at which to spawn particles									*/
     // UPROPERTY()
     // struct FRawDistributionFloat SpawnRate;
-    float SpawnRate;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, SpawnRate)
 
     /** The array of burst entries.												*/
     //UPROPERTY(export, noclear)
@@ -239,19 +254,22 @@ public:
      *	Indicates the time (in seconds) that this emitter should be delayed in the particle system.
      */
     //// UPROPERTY(EditAnywhere, Category = Delay)
-    float EmitterDelay;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, EmitterDelay)
 
     /**
      *	The low end of the emitter delay if using a range.
      */
     //// UPROPERTY(EditAnywhere, Category = Delay)
-    float EmitterDelayLow;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, EmitterDelayLow)
 
     /**
      *	If true, the emitter will be delayed only on the first loop.
      */
     //// UPROPERTY(EditAnywhere, Category = Delay)
-    uint8 bDelayFirstLoopOnly : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bDelayFirstLoopOnly, = 1)
 
     //
     // SubUV-related.
@@ -271,18 +289,21 @@ public:
      *						  and the next
      */
     // UPROPERTY(EditAnywhere, Category = SubUV)
-    EParticleSubUVInterpMethod InterpolationMethod;
+    UPROPERTY
+    (EditAnywhere, EParticleSubUVInterpMethod, InterpolationMethod, = EParticleSubUVInterpMethod::PSUVIM_None)
 
     /** Whether to scale the UV or not - ie, the model wasn't setup with sub uvs		*/
     // UPROPERTY(EditAnywhere, Category = SubUV)
-    uint8 bScaleUV : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bScaleUV, = 1)
 
     /**
      *	If true, select the emitter delay from the range
      *		[EmitterDelayLow..EmitterDelay]
      */
     // UPROPERTY(EditAnywhere, Category = Delay)
-    uint8 bEmitterDelayUseRange : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bEmitterDelayUseRange, = 1)
 
     /** The method to utilize when burst-emitting particles						*/
     // UPROPERTY()
@@ -290,35 +311,41 @@ public:
 
     /** Override the system MacroUV settings                                            */
     // UPROPERTY(EditAnywhere, Category = MacroUV)
-    uint8 bOverrideSystemMacroUV : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bOverrideSystemMacroUV, = 1)
 
     /**
      *	If true, use the MaxDrawCount to limit the number of particles rendered.
      *	NOTE: This does not limit the number spawned/updated, only what is drawn.
      */
     // UPROPERTY(EditAnywhere, Category = Rendering)
-    uint8 bUseMaxDrawCount : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bUseMaxDrawCount, = 1)
 
     // UPROPERTY(EditAnywhere, Category = ParticleCutout)
     //EOpacitySourceMode OpacitySourceMode;
 
     /** Normal generation mode for this emitter LOD. */
     // UPROPERTY(EditAnywhere, Category = Normals)
-    EEmitterNormalsMode EmitterNormalsMode;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, EEmitterNormalsMode, EmitterNormalsMode, = EEmitterNormalsMode::ENM_CameraFacing)
 
     /**
     * Ensures that movement generated from the orbit module is applied to velocity-aligned particles
     */
     // UPROPERTY(EditAnywhere, Category = Emitter)
-    uint8 bOrbitModuleAffectsVelocityAlignment : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bOrbitModuleAffectsVelocityAlignment, = 1)
 
     /** The number of sub-images horizontally in the texture							*/
     // UPROPERTY(EditAnywhere, Category = SubUV)
-    int32 SubImages_Horizontal;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, SubImages_Horizontal)
 
     /** The number of sub-images vertically in the texture								*/
     // UPROPERTY(EditAnywhere, Category = SubUV)
-    int32 SubImages_Vertical;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, SubImages_Vertical)
 
     /**
      *	The amount of time (particle-relative, 0.0 to 1.0) to 'lock' on a random sub image
@@ -330,21 +357,25 @@ public:
 
     /** The number of times to change a random image over the life of the particle.		*/
     // UPROPERTY(EditAnywhere, Category = SubUV)
-    int32 RandomImageChanges;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, RandomImageChanges)
 
     /** Local space position that UVs generated with the ParticleMacroUV material node will be centered on. */
     // UPROPERTY(EditAnywhere, Category = MacroUV)
-    FVector MacroUVPosition;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector, MacroUVPosition)
 
     /** World space radius that UVs generated with the ParticleMacroUV material node will tile based on. */
     // UPROPERTY(EditAnywhere, Category = MacroUV)
-    float MacroUVRadius;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, MacroUVRadius)
 
     /**
     * Controls UV Flipping for this emitter.
     */
     // UPROPERTY(EditAnywhere, Category = Rendering)
-    EParticleUVFlipMode UVFlippingMode;
+    UPROPERTY
+    (EditAnywhere, EParticleUVFlipMode, UVFlippingMode, = EParticleUVFlipMode::None)
 
     /**
     * More bounding vertices results in reduced overdraw, but adds more triangle overhead.
@@ -358,27 +389,31 @@ public:
      *	If true, recalculate the emitter duration on each loop.
      */
     // UPROPERTY(EditAnywhere, Category = Duration)
-    uint8 bDurationRecalcEachLoop : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bDurationRecalcEachLoop, = 1)
 
     /**
      * When EmitterNormalsMode is ENM_Spherical, particle normals are created to face away from NormalsSphereCenter.
      * NormalsSphereCenter is in local space.
      */
     // UPROPERTY(EditAnywhere, Category = Normals)
-    FVector NormalsSphereCenter;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector, NormalsSphereCenter)
 
     /**
     * Alpha channel values larger than the threshold are considered occupied and will be contained in the bounding geometry.
     * Raising this threshold slightly can reduce overdraw in particles using this animation asset.
     */
     // UPROPERTY(EditAnywhere, Category = ParticleCutout, meta = (UIMin = "0", UIMax = "1"))
-    float AlphaThreshold;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, AlphaThreshold)
 
     /** The number of times to loop the emitter.
      *	0 indicates loop continuously
      */
     // UPROPERTY(EditAnywhere, Category = Duration)
-    int32 EmitterLoops;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, EmitterLoops)
 
     /**
     * Texture to generate bounding geometry from.
@@ -391,13 +426,15 @@ public:
      *	If set to 0, it will use whatever number are present.
      */
     // UPROPERTY(EditAnywhere, Category = Rendering)
-    int32 MaxDrawCount;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, MaxDrawCount)
 
     /**
      *	The low end of the emitter duration if using a range.
      */
     // UPROPERTY(EditAnywhere, Category = Duration, meta = (DisplayAfter = "EmitterDuration"))
-    float EmitterDurationLow;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, EmitterDurationLow)
 
     /**
      * When EmitterNormalsMode is ENM_Cylindrical,
@@ -405,13 +442,15 @@ public:
      * NormalsCylinderDirection is in local space.
      */
     // UPROPERTY(EditAnywhere, Category = Normals)
-    FVector NormalsCylinderDirection;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector, NormalsCylinderDirection)
 
     /**
     *	Overrides this emitter's material(s) with those in the correspondingly named slot(s) of the owning system.
     */
     // UPROPERTY(EditAnywhere, Category = Materials)
-    TArray<FName> NamedMaterialOverrides;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, TArray<FName>, NamedMaterialOverrides)
 
     /** Initializes the default values for this property */
     void InitializeDefaults();

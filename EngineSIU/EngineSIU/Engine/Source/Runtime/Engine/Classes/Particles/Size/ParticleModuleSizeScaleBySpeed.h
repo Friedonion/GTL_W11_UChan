@@ -15,11 +15,13 @@ public:
     
     /** By how much speed affects the size of the particle in each dimension. */
     //UPROPERTY(EditAnywhere, Category = ParticleModuleSizeScaleBySpeed)
-    FVector2D SpeedScale;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector2D, SpeedScale)
 
     /** The maximum amount by which to scale a particle in each dimension. */
     //UPROPERTY(EditAnywhere, Category = ParticleModuleSizeScaleBySpeed)
-    FVector2D MaxScale;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FVector2D, MaxScale)
 
     //~ Begin UParticleModule Interface
     virtual void Update(FParticleEmitterInstance* Owner, int32 Offset, float DeltaTime) override;

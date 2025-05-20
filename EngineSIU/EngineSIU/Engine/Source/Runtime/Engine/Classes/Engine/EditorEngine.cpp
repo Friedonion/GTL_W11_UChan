@@ -11,9 +11,13 @@
 #include "UObject/UObjectIterator.h"
 #include "Animation/SkeletalMeshActor.h"
 #include "Actors/DirectionalLightActor.h"
+#include "Actors/ParticleSystemActor.h"
+#include "Components/ParticleSystemComponent.h"
 #include "Components/Light/DirectionalLightComponent.h"
 #include "LevelEditor/SLevelEditor.h"
 #include "Editor/UnrealEd/EditorViewportClient.h"
+#include "UnrealEd/UnrealEd.h"
+#include "PropertyEditor/ParticleSystemEmittersPanel.h"
 
 extern FEngineLoop GEngineLoop;
 
@@ -61,6 +65,12 @@ void UEditorEngine::Release()
         WorldContext->World()->Release();
     }
     WorldList.Empty();
+
+    LevelEditor->Release();
+    LevelEditor = nullptr;
+
+    delete UnrealEditor;
+    delete LevelEditor;
 }
 
 void UEditorEngine::Tick(float DeltaTime)
@@ -107,7 +117,7 @@ void UEditorEngine::Tick(float DeltaTime)
                 }
             }
         }
-        else if (WorldContext->WorldType == EWorldType::SkeletalViewer)
+        else if (WorldContext->WorldType == EWorldType::EditorPreview)
         {
             if (UWorld* World = WorldContext->World())
             {
@@ -171,14 +181,13 @@ void UEditorEngine::StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAs
         return;
     }
     
-    FWorldContext& WorldContext = CreateNewWorldContext(EWorldType::SkeletalViewer);
-
+    FWorldContext& WorldContext = CreateNewWorldContext(EWorldType::EditorPreview, EPreviewTypeBitFlag::AnimSequence);
     
-    SkeletalMeshViewerWorld = USkeletalViewerWorld::CreateWorld(this, EWorldType::SkeletalViewer, FString("SkeletalMeshViewerWorld"));
+    SkeletalMeshViewerWorld = USkeletalViewerWorld::CreateWorld(this, EWorldType::EditorPreview, FString("SkeletalMeshViewerWorld"));
 
     WorldContext.SetCurrentWorld(SkeletalMeshViewerWorld);
     ActiveWorld = SkeletalMeshViewerWorld;
-    SkeletalMeshViewerWorld->WorldType = EWorldType::SkeletalViewer;
+    SkeletalMeshViewerWorld->WorldType = EWorldType::EditorPreview;
 
     // 스켈레탈 액터 스폰
     ASkeletalMeshActor* SkeletalActor = SkeletalMeshViewerWorld->SpawnActor<ASkeletalMeshActor>();
@@ -199,14 +208,14 @@ void UEditorEngine::StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAs
     DirectionalLight->SetActorRotation(FRotator(45.f, 45.f, 0.f));
     DirectionalLight->GetComponentByClass<UDirectionalLightComponent>()->SetIntensity(4.0f);
 
-    FViewportCamera& Camera = *GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetPerspectiveCamera();
-    CameraLocation = Camera.GetLocation();
-    CameraRotation = Camera.GetRotation();
+    FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
+    CameraLocation = Camera->GetLocation();
+    CameraRotation = Camera->GetRotation();
     
-    Camera.SetRotation(FVector(0.0f, 30, 180));
+    Camera->SetRotation(FVector(0.0f, 30, 180));
     if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(MeshComp))
     {
-        float FOV = GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetCameraFOV();
+        float FOV = LevelEditor->GetActiveViewportClient()->GetCameraFOV();
 
         // 로컬 바운딩 박스
         FBoundingBox Box = Primitive->GetBoundingBox();
@@ -222,7 +231,7 @@ void UEditorEngine::StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAs
         float Distance = Radius / FMath::Tan(VerticalFOV * 0.5f);
 
         // 카메라 위치 설정
-        Camera.SetLocation(WorldCenter - Camera.GetForwardVector() * Distance);
+        Camera->SetLocation(WorldCenter - Camera->GetForwardVector() * Distance);
     }
 
     if (AEditorPlayer* Player = GetEditorPlayer())
@@ -292,13 +301,110 @@ void UEditorEngine::EndSkeletalMeshViewer()
         GUObjectArray.MarkRemoveObject(SkeletalMeshViewerWorld);
         SkeletalMeshViewerWorld = nullptr;
         
-        FViewportCamera& Camera = *GEngineLoop.GetLevelEditor()->GetActiveViewportClient()->GetPerspectiveCamera();
-        Camera.SetLocation(CameraLocation);
-        Camera.SetRotation(CameraRotation);
+        FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
+        Camera->SetLocation(CameraLocation);
+        Camera->SetRotation(CameraRotation);
         
         DeselectActor(GetSelectedActor());
         DeselectComponent(GetSelectedComponent());
     }
+    ActiveWorld = EditorWorld;
+
+    if (AEditorPlayer* Player = GetEditorPlayer())
+    {
+        Player->SetCoordMode(ECoordMode::CDM_WORLD);
+    }
+}
+
+void UEditorEngine::StartParticleSystemViewer()
+{
+    // Check Valid Particle Asset
+
+    if (ParticleSystemViewerWorld)
+    {
+        UE_LOG(ELogLevel::Warning, TEXT("ParticleSystemViewerWorld already exists!"));
+        return;
+    }
+
+    FWorldContext& WorldContext = CreateNewWorldContext(EWorldType::EditorPreview, EPreviewTypeBitFlag::ParticleSystem);
+
+    ParticleSystemViewerWorld = UWorld::CreateWorld(this, EWorldType::EditorPreview, FString("ParticleSystemViewerWorld"));
+
+    WorldContext.SetCurrentWorld(ParticleSystemViewerWorld);
+    ActiveWorld = ParticleSystemViewerWorld;
+
+    // ParticleSystem 액터 스폰
+    AParticleSystemActor* ParticleActor = ParticleSystemViewerWorld->SpawnActor<AParticleSystemActor>();
+    // @note ParticleActor의 생성자에서 기본적으로 설정해주고 있음, 추후 확인 필요
+    //ParticleActor->SetActorTickInEditor(true);
+
+    //UParticleSystemComponent* ParticleComponent = ParticleActor->AddComponent<UParticleSystemComponent>();
+
+    //ParticleActor->SetRootComponent(ParticleComponent);
+    ParticleActor->SetActorLabel(TEXT("OBJ_PARTICLESYSTEM"));
+
+    auto EditorEngine = Cast<UEditorEngine>(GEngine);
+    auto UnrealEd = EditorEngine->GetUnrealEditor();
+    auto Panel = reinterpret_cast<ParticleSystemEmittersPanel*>(UnrealEd->GetEditorPanel("ParticleSystemEmittersPanel").get());
+    if (Panel)
+    {
+        Panel->SetParticleSystemComponent(ParticleActor->ParticleSystemComponent);
+    }
+
+    ADirectionalLight* DirectionalLight = ParticleSystemViewerWorld->SpawnActor<ADirectionalLight>();
+    DirectionalLight->SetActorRotation(FRotator(45.f, 45.f, 0.f));
+    DirectionalLight->GetComponentByClass<UDirectionalLightComponent>()->SetIntensity(4.0f);
+
+    FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
+    CameraLocation = Camera->GetLocation();
+    CameraRotation = Camera->GetRotation();
+
+    Camera->SetRotation(FVector(0.0f, 30, 180));
+    //if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(ParticleComponent))
+    //{
+    //    float FOV = LevelEditor->GetActiveViewportClient()->GetCameraFOV();
+
+    //    // 로컬 바운딩 박스
+    //    FBoundingBox Box = Primitive->GetBoundingBox();
+    //    FVector LocalCenter = (Box.MinLocation + Box.MaxLocation) * 0.5f;
+    //    FVector LocalExtents = (Box.MaxLocation - Box.MinLocation) * 0.5f;
+    //    float Radius = LocalExtents.Length();
+
+    //    FMatrix ComponentToWorld = Primitive->GetWorldMatrix();
+    //    FVector WorldCenter = ComponentToWorld.TransformPosition(LocalCenter);
+
+    //    // FOV 기반 거리 계산
+    //    float VerticalFOV = FMath::DegreesToRadians(FOV);
+    //    float Distance = Radius / FMath::Tan(VerticalFOV * 0.5f);
+
+    //    // 카메라 위치 설정
+    //    Camera->SetLocation(WorldCenter - Camera->GetForwardVector() * Distance);
+    //}
+
+    if (AEditorPlayer* Player = GetEditorPlayer())
+    {
+        Player->SetCoordMode(ECoordMode::CDM_LOCAL);
+    }
+}
+
+void UEditorEngine::EndParticleSystemViewer()
+{
+    if (ParticleSystemViewerWorld)
+    {
+        this->ClearActorSelection();
+        WorldList.Remove(GetWorldContextFromWorld(ParticleSystemViewerWorld));
+        ParticleSystemViewerWorld->Release();
+        GUObjectArray.MarkRemoveObject(ParticleSystemViewerWorld);
+        ParticleSystemViewerWorld = nullptr;
+
+        FViewportCamera* Camera = LevelEditor->GetActiveViewportClient()->GetPerspectiveCamera();
+        Camera->SetLocation(CameraLocation);
+        Camera->SetRotation(CameraRotation);
+
+        DeselectActor(GetSelectedActor());
+        DeselectComponent(GetSelectedComponent());
+    }
+
     ActiveWorld = EditorWorld;
 
     if (AEditorPlayer* Player = GetEditorPlayer())

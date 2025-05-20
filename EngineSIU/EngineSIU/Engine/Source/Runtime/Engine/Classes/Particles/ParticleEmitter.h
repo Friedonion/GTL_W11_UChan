@@ -15,7 +15,7 @@ enum EDetailMode : int;
 //~=============================================================================
 //	Burst emissions
 //~=============================================================================
-enum EParticleBurstMethod : int
+enum class EParticleBurstMethod : int
 {
     EPBM_Instant,
     EPBM_Interpolated,
@@ -25,7 +25,7 @@ enum EParticleBurstMethod : int
 //~=============================================================================
 //	SubUV-related
 //~=============================================================================
-enum EParticleSubUVInterpMethod : int
+enum class EParticleSubUVInterpMethod : int
 {
     PSUVIM_None ,
     PSUVIM_Linear,
@@ -38,7 +38,7 @@ enum EParticleSubUVInterpMethod : int
 //~=============================================================================
 //	Cascade-related
 //~=============================================================================
-enum EEmitterRenderMode : int
+enum class EEmitterRenderMode : int
 {
     ERM_Normal,
     ERM_Point,
@@ -51,17 +51,22 @@ enum EEmitterRenderMode : int
 //USTRUCT()
 struct FParticleBurst
 {
+    DECLARE_STRUCT(FParticleBurst)
+
     /** The number of particles to burst */
     //UPROPERTY(EditAnywhere, Category = ParticleBurst)
-    int32 Count;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, Count)
 
     /** If >= 0, use as a range [CountLow..Count] */
     //UPROPERTY(EditAnywhere, Category = ParticleBurst)
-    int32 CountLow;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, CountLow)
 
     /** The time at which to burst them (0..1: emitter lifetime) */
     //UPROPERTY(EditAnywhere, Category = ParticleBurst)
-    float Time;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, Time)
 
     FParticleBurst()
         : Count(0)
@@ -83,7 +88,8 @@ public:
     //~=============================================================================
     /** The name of the emitter. */
     //UPROPERTY(EditAnywhere, Category = Particle)
-    FName EmitterName;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FName, EmitterName)
 
     //UPROPERTY(transient)
     int32 SubUVDataOffset;
@@ -96,7 +102,8 @@ public:
      *		ERM_None	- Do not render
      */
     //UPROPERTY(EditAnywhere, Category = Cascade)
-    EEmitterRenderMode EmitterRenderMode;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, EEmitterRenderMode, EmitterRenderMode)
 
     EParticleAxisLock LockAxisFlags;
 
@@ -123,7 +130,8 @@ public:
 
     /** When true, if the current LOD is disabled the emitter will be kept alive. Otherwise, the emitter will be considered complete if the current LOD is disabled. */
     //UPROPERTY(EditAnywhere, Category = Particle)
-    uint8 bDisabledLODsKeepEmitterAlive : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bDisabledLODsKeepEmitterAlive, = 1)
 
     //~=============================================================================
     //	'Private' data - not required by the editor
@@ -142,14 +150,17 @@ public:
      *	Initial allocation count - overrides calculated peak count if > 0
      */
     //UPROPERTY(EditAnywhere, Category = Particle)
-    int32 InitialAllocationCount;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, int32, InitialAllocationCount)
 
     //UPROPERTY(EditAnywhere, Category = Particle)
-    float QualityLevelSpawnRateScale;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, QualityLevelSpawnRateScale)
 
     /** Detail mode: Set flags reflecting which system detail mode you want the emitter to be ticked and rendered in */
     //UPROPERTY(EditAnywhere, Category = Particle, meta = (Bitmask, BitmaskEnum = "/Script/Engine.EParticleDetailMode"))
-    uint32 DetailModeBitmask;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, uint32, DetailModeBitmask)
 
     /** Map module pointers to their offset into the particle data.		*/
     TMap<UParticleModule*, uint32> ModuleOffsetMap;

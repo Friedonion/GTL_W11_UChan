@@ -25,11 +25,24 @@ FWorldContext* UEngine::GetWorldContextFromWorld(const UWorld* InWorld)
     return nullptr;
 }
 
-FWorldContext& UEngine::CreateNewWorldContext(EWorldType InWorldType)
+FWorldContext* UEngine::GetWorldContextFromHandle(const FName WorldContextHandle)
 {
-    FWorldContext* NewWorldContext = new FWorldContext();
+    for (FWorldContext* WorldContext : WorldList)
+    {
+        if (WorldContext->ContextHandle == WorldContextHandle)
+        {
+            return WorldContext;
+        }
+    }
+    return nullptr;
+}
+
+FWorldContext& UEngine::CreateNewWorldContext(EWorldType InWorldType, EPreviewTypeBitFlag InPreviewType)
+{
+    FWorldContext* NewWorldContext = new FWorldContext;
     WorldList.Add(NewWorldContext);
     NewWorldContext->WorldType = InWorldType;
+    NewWorldContext->PreviewType = InPreviewType;
     NewWorldContext->ContextHandle = FName(*FString::Printf(TEXT("WorldContext_%d"), NextWorldContextHandle++));
 
     return *NewWorldContext;

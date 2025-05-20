@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Particles/Lifetime/ParticleModuleLifetimeBase.h"
 #include "UObject/ObjectMacros.h"
@@ -14,7 +14,8 @@ public:
     UParticleModuleLifetime();
     ~UParticleModuleLifetime() = default;
     /** The lifetime of the particle, in seconds. Retrieved using the EmitterTime at the spawn of the particle. */
-    UPROPERTY(float, Lifetime)
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, Lifetime)
 
     /** Initializes the default values for this property */
     void InitializeDefaults();

@@ -19,13 +19,13 @@ void FRawDistribution::GetValue1(float Time, float* Value, int32 Extreme, struct
 {
     switch (Op)
     {
-    case RDO_None:
+    case ERawDistributionOperation::RDO_None:
         GetValue1None(Time, Value);
         break;
-    case RDO_Extreme:
+    case ERawDistributionOperation::RDO_Extreme:
         GetValue1Extreme(Time, Value, Extreme, InRandomStream);
         break;
-    case RDO_Random:
+    case ERawDistributionOperation::RDO_Random:
         GetValue1Random(Time, Value, InRandomStream);
         break;
     default: // compiler complains
@@ -39,13 +39,13 @@ void FRawDistribution::GetValue3(float Time, float* Value, int32 Extreme, struct
 {
     switch (Op)
     {
-    case RDO_None:
+    case ERawDistributionOperation::RDO_None:
         GetValue3None(Time, Value);
         break;
-    case RDO_Extreme:
+    case ERawDistributionOperation::RDO_Extreme:
         GetValue3Extreme(Time, Value, Extreme, InRandomStream);
         break;
-    case RDO_Random:
+    case ERawDistributionOperation::RDO_Random:
         GetValue3Random(Time, Value, InRandomStream);
         break;
     }
@@ -157,7 +157,7 @@ void FRawDistribution::GetValue(float Time, float* Value, int32 NumCoords, int32
     //checkSlow(NumCoords == 3 || NumCoords == 1);
     switch (Op)
     {
-    case RDO_None:
+    case ERawDistributionOperation::RDO_None:
         if (NumCoords == 1)
         {
             GetValue1None(Time, Value);
@@ -167,7 +167,7 @@ void FRawDistribution::GetValue(float Time, float* Value, int32 NumCoords, int32
             GetValue3None(Time, Value);
         }
         break;
-    case RDO_Extreme:
+    case ERawDistributionOperation::RDO_Extreme:
         if (NumCoords == 1)
         {
             GetValue1Extreme(Time, Value, Extreme, InRandomStream);
@@ -177,7 +177,7 @@ void FRawDistribution::GetValue(float Time, float* Value, int32 NumCoords, int32
             GetValue3Extreme(Time, Value, Extreme, InRandomStream);
         }
         break;
-    case RDO_Random:
+    case ERawDistributionOperation::RDO_Random:
         if (NumCoords == 1)
         {
             GetValue1Random(Time, Value, InRandomStream);
@@ -303,15 +303,15 @@ uint32 UDistributionVector::InitializeRawEntry(float Time, float* Values) const
 
 FFloatDistribution::FFloatDistribution()
 {
-    Op = RDO_None;
+    Op = ERawDistributionOperation::RDO_None;
 }
 
 FVectorDistribution::FVectorDistribution()
 {
-    Op = RDO_None;
+    Op = ERawDistributionOperation::RDO_None;
 }
 
 FVector4Distribution::FVector4Distribution()
 {
-    Op = RDO_None;
+    Op = ERawDistributionOperation::RDO_None;
 }

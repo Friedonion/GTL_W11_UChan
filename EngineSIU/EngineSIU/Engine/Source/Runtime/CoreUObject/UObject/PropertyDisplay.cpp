@@ -1,4 +1,4 @@
-﻿#include "Property.h"
+#include "Property.h"
 
 #include "Class.h"
 #include "ScriptStruct.h"
@@ -103,7 +103,9 @@ void FUInt8Property::DisplayRawDataInImGui(const char* PropertyLabel, void* Data
 {
     FNumericProperty::DisplayRawDataInImGui(PropertyLabel, DataPtr);
 
-    FPropertyUIHelper::DisplayNumericDragN<uint8>(PropertyLabel, DataPtr, 1);
+    // @note utin8은 대체로 bool을 사용하므로, bool로 변환하여 체크박스 형태로 보여줌
+    //FPropertyUIHelper::DisplayNumericDragN<uint8>(PropertyLabel, DataPtr, 1);
+    ImGui::Checkbox(PropertyLabel, static_cast<bool*>(DataPtr));
 }
 
 void FUInt16Property::DisplayRawDataInImGui(const char* PropertyLabel, void* DataPtr) const
