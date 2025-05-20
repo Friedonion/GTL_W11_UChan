@@ -35,8 +35,8 @@ void UParticleModuleVelocity::InitializeDefaults()
 	// 	StartVelocityRadial.Distribution = NewObject<UDistributionFloatUniform>(this, TEXT("DistributionStartVelocityRadial"));
 	// }
     // [TEMP] 임시 초기 속도 설정
-    StartVelocity = FVector(0.0f, 0.0f, 1.0f);
-    StartVelocityRadial = 0.0f;
+    StartVelocity = FVector(0.f, 50.f, 0.f);
+    StartVelocityRadial = 5.0f;
 }
 
 void UParticleModuleVelocity::Spawn(FParticleEmitterInstance* Owner, int32 Offset, float SpawnTime, FBaseParticle* ParticleBase)

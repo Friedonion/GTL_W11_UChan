@@ -538,6 +538,10 @@ void UParticleEmitter::Build()
         //check(HighLODLevel);
         if (HighLODLevel->TypeDataModule != nullptr)
         {
+            FParticleEmitterBuildInfo EmitterBuildInfo;
+#if WITH_EDITOR
+            HighLODLevel->CompileModules( EmitterBuildInfo );
+#endif
             if(HighLODLevel->TypeDataModule->RequiresBuild())
             {
                 FParticleEmitterBuildInfo EmitterBuildInfo;
@@ -928,6 +932,18 @@ bool UParticleSystem::SetLODDistance(int32 LODLevelIndex, float InDistance)
     LODDistances[LODLevelIndex] = InDistance;
 
     return true;
+}
+
+void UParticleSystem::BuildEmitters()
+{
+    const int32 EmitterCount = Emitters.Num();
+    for ( int32 EmitterIndex = 0; EmitterIndex < EmitterCount; ++EmitterIndex )
+    {
+        if (UParticleEmitter* Emitter = Emitters[EmitterIndex])
+        {
+            Emitter->Build();
+        }
+    }
 }
 
 bool UParticleSystem::CanBePooled()const
