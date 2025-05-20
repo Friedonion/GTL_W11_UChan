@@ -636,10 +636,18 @@ struct FMath
     {
         return Value - TruncToDouble(Value);
     }
+
     static FORCEINLINE int RandRange(int Min, int Max)
     {
         static thread_local std::mt19937 rng(std::random_device{}());
         std::uniform_int_distribution<int> dist(Min, Max);
         return dist(rng);
+    }
+
+    static FORCEINLINE float SRand()
+    {
+        static thread_local std::mt19937 generator(std::random_device{}());
+        static thread_local std::uniform_real_distribution<float> distribution(0.0f, 1.0f);
+        return distribution(generator);
     }
 };
