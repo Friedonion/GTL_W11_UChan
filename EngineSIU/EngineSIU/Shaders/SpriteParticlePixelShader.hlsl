@@ -8,6 +8,7 @@ struct PSInput
     float4 Pos : SV_POSITION;
     float2 TexCoord : TEXCOORD;
     float4 Color : COLOR;
+    float Distance : DISTANCE;
 };
 
 float4 mainPS(PSInput input) : SV_TARGET

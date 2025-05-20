@@ -11,6 +11,7 @@ struct VS_INPUT
     float4 World1 : WORLD1;
     float4 World2 : WORLD2;
     float4 World3 : WORLD3;
+    float Distance : DISTANCE;
 };
 
 struct VS_OUTPUT

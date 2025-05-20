@@ -41,8 +41,8 @@ UParticleSystemComponent::UParticleSystemComponent()
     UParticleModuleSize* SampleSizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSizeModule);
 
-	UParticleModuleSizeScaleBySpeed* SampleSizeScaleModule = FObjectFactory::ConstructObject<UParticleModuleSizeScaleBySpeed>(nullptr);
-	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSizeScaleModule);
+	/*UParticleModuleSizeScaleBySpeed* SampleSizeScaleModule = FObjectFactory::ConstructObject<UParticleModuleSizeScaleBySpeed>(nullptr);
+	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSizeScaleModule);*/
 
 	UParticleModuleColor* SampleColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
 	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorModule);
