@@ -934,11 +934,8 @@ float FParticleEmitterInstance::Spawn(float DeltaTime)
                     EventPayload = NULL;
                 }
             }*/
-
-            //const FVector InitialLocation = EmitterToSimulation.GetOrigin();
-            // // [TEMP] SUPER HARD CODED WHERE IS THE COUNT OUT SETTING
-            // Number = 5;
-            FVector InitialLocation(0, 0, 0);
+            
+            const FVector InitialLocation = EmitterToSimulation.GetOrigin();
             // Spawn particles.
             SpawnParticles(Number, StartTime, Increment, InitialLocation, FVector::ZeroVector, EventPayload);
 

@@ -29,12 +29,6 @@ UParticleSystemComponent::UParticleSystemComponent()
     UParticleSpriteEmitter* SampleEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
     SampleEmitter->CreateLODLevel(0);
 
-    UParticleModuleRequired* SampleRequiredModule = FObjectFactory::ConstructObject<UParticleModuleRequired>(nullptr);
-    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleRequiredModule);
-    
-    UParticleModuleSpawn* SampleSpawnModule = FObjectFactory::ConstructObject<UParticleModuleSpawn>(nullptr);
-    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSpawnModule);
-
     UParticleModuleLifetime* SampleLifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleLifetimeModule);
     
