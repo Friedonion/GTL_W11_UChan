@@ -268,6 +268,10 @@ void FEditorViewportClient::InputKey(const FKeyEvent& InKeyEvent)
         }
         case 'M':
         {
+            if (GEngine->ActiveWorld->WorldType == EWorldType::EditorPreview)
+            {
+                break;
+            }
             FEngineLoop::GraphicDevice.Resize(GEngineLoop.AppWnd);
             SLevelEditor* LevelEd = Engine->GetLevelEditor();
             LevelEd->SetEnableMultiViewport(!LevelEd->IsMultiViewport());

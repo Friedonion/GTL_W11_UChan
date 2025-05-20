@@ -385,6 +385,10 @@ void UEditorEngine::StartParticleSystemViewer()
     {
         Player->SetCoordMode(ECoordMode::CDM_LOCAL);
     }
+    uint32 width;
+    uint32 height;
+    GEngineLoop.GetClientSize(width, height);
+    LevelEditor->GetActiveViewportClient()->GetViewport()->ResizeViewport(FRect(0.0f, 72.f, width * 0.4, height * 0.6));
 }
 
 void UEditorEngine::EndParticleSystemViewer()
@@ -406,6 +410,11 @@ void UEditorEngine::EndParticleSystemViewer()
     }
 
     ActiveWorld = EditorWorld;
+
+    uint32 width;
+    uint32 height;
+    GEngineLoop.GetClientSize(width, height);
+    LevelEditor->GetActiveViewportClient()->GetViewport()->ResizeViewport(FRect(0.0f, 72.f, width, height));
 
     if (AEditorPlayer* Player = GetEditorPlayer())
     {

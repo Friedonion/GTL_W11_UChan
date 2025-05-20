@@ -465,7 +465,6 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
     sampDesc.MinLOD = 0;
     sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
     
-    // 샘플러 생성 (없으면)
     static ID3D11SamplerState* defaultSampler = nullptr;
     if (!defaultSampler) {
         Graphics->Device->CreateSamplerState(&sampDesc, &defaultSampler);
@@ -480,7 +479,7 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
     // 레스터라이저 상태 설정
     D3D11_RASTERIZER_DESC rasterizerDesc = {};
     rasterizerDesc.FillMode = D3D11_FILL_SOLID;
-    rasterizerDesc.CullMode = D3D11_CULL_NONE; // 양면 렌더링을 위해 컬링 없음
+    rasterizerDesc.CullMode = D3D11_CULL_NONE;
     rasterizerDesc.FrontCounterClockwise = FALSE;
     rasterizerDesc.DepthClipEnable = TRUE;
     
@@ -514,13 +513,6 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
         if (FilteredInstances.Num() == 0)
             continue;
         
-        // 인스턴스 버퍼 업데이트
-        // D3D11_MAPPED_SUBRESOURCE mapped = {};
-        // if (SUCCEEDED(Graphics->DeviceContext->Map(MeshInstanceBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-        // {
-        //     memcpy(mapped.pData, FilteredInstances.GetData(), sizeof(FMeshParticleInstanceData) * FilteredInstances.Num());
-        //     Graphics->DeviceContext->Unmap(MeshInstanceBuffer, 0);
-        // }
         
         // 인스턴스 버퍼 바인딩
         Graphics->DeviceContext->IASetVertexBuffers(1, 1, &MeshInstanceBuffer, &instanceStride, &instanceOffset);
@@ -543,7 +535,6 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
                 MaterialUtils::UpdateMaterial(BufferManager, Graphics, Materials[MaterialIndex]->Material->GetMaterialInfo());
             }
             
-            // 정점 버퍼 바인딩
             UINT vertexStride = sizeof(FStaticMeshVertex);
             UINT vertexOffset = 0;
             
@@ -551,7 +542,6 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
             BufferManager->CreateVertexBuffer(RenderData->ObjectName, RenderData->Vertices, VertexInfo);
             Graphics->DeviceContext->IASetVertexBuffers(0, 1, &VertexInfo.VertexBuffer, &vertexStride, &vertexOffset);
             
-            // 인덱스 버퍼 바인딩
             FIndexInfo IndexInfo;
             BufferManager->CreateIndexBuffer(RenderData->ObjectName, RenderData->Indices, IndexInfo);
             if (IndexInfo.IndexBuffer)
@@ -559,7 +549,6 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
                 Graphics->DeviceContext->IASetIndexBuffer(IndexInfo.IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
             }
             
-            // 인스턴스드 렌더링
             uint32 StartIndex = RenderData->MaterialSubsets[SubMeshIndex].IndexStart;
             uint32 IndexCount = RenderData->MaterialSubsets[SubMeshIndex].IndexCount;
             Graphics->DeviceContext->DrawIndexedInstanced(IndexCount, FilteredInstances.Num(), StartIndex, 0, 0);
@@ -571,7 +560,6 @@ void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorVie
 {
     LoadTexture();
     
-    // 렌더링할 파티클 데이터 선택
     TArray<FSpriteParticleInstanceData>& InstanceData = bIsTransparent ? TransparentSpriteInstanceData : OpaqueSpriteInstanceData;
     
     if (!ParticleTexture || InstanceData.Num() == 0)
@@ -595,13 +583,6 @@ void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorVie
     UINT instanceOffset = 0;
     Graphics->DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
-    // // 인스턴스 버퍼 업데이트
-    // D3D11_MAPPED_SUBRESOURCE mapped = {};
-    // if (SUCCEEDED(Graphics->DeviceContext->Map(SpriteInstanceBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-    // {
-    //     memcpy(mapped.pData, InstanceData.GetData(), sizeof(FSpriteParticleInstanceData) * InstanceData.Num());
-    //     Graphics->DeviceContext->Unmap(SpriteInstanceBuffer, 0);
-    // }
     
     Graphics->DeviceContext->IASetVertexBuffers(1, 1, &SpriteInstanceBuffer, &instanceStride, &instanceOffset);
     Graphics->DeviceContext->IASetIndexBuffer(QuadIB.IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
