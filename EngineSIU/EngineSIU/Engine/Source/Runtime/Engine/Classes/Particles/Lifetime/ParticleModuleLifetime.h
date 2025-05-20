@@ -30,6 +30,7 @@ public:
     virtual float GetLifetimeValue(FParticleEmitterInstance* Owner, float InTime, UObject* Data = NULL) override;
     //~ End UParticleModuleLifetimeBase Interface
 
+    virtual void Update(FParticleEmitterInstance* Owner, int32 Offset, float DeltaTime) override;
     /**
      *	Extended version of spawn, allows for using a random stream for distribution value retrieval
      *

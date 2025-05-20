@@ -678,23 +678,23 @@ void FParticleEmitterInstance::Tick_ModulePostUpdate(float DeltaTime, UParticleL
 
 void FParticleEmitterInstance::Tick_ModuleFinalUpdate(float DeltaTime, UParticleLODLevel* InCurrentLODLevel)
 {
-    /*UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
-    
-    if (!HighestLODLevel) return;
-
-    for (int32 ModuleIndex = 0; ModuleIndex < InCurrentLODLevel->UpdateModules.Num(); ModuleIndex++)
-    {
-        UParticleModule* CurrentModule = InCurrentLODLevel->UpdateModules[ModuleIndex];
-        if (CurrentModule && CurrentModule->bEnabled && CurrentModule->bFinalUpdateModule)
-        {
-            CurrentModule->FinalUpdate(this, GetModuleDataOffset(HighestLODLevel->UpdateModules[ModuleIndex]), DeltaTime);
-        }
-    }
-
-    if (InCurrentLODLevel->TypeDataModule && InCurrentLODLevel->TypeDataModule->bEnabled && InCurrentLODLevel->TypeDataModule->bFinalUpdateModule)
-    {
-        InCurrentLODLevel->TypeDataModule->FinalUpdate(this, GetModuleDataOffset(HighestLODLevel->TypeDataModule), DeltaTime);
-    }*/
+     // UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
+     //
+     // if (!HighestLODLevel) return;
+     //
+     // for (int32 ModuleIndex = 0; ModuleIndex < InCurrentLODLevel->UpdateModules.Num(); ModuleIndex++)
+     // {
+     //     UParticleModule* CurrentModule = InCurrentLODLevel->UpdateModules[ModuleIndex];
+     //     if (CurrentModule && CurrentModule->bEnabled && CurrentModule->bFinalUpdateModule)
+     //     {
+     //         CurrentModule->FinalUpdate(this, GetModuleDataOffset(HighestLODLevel->UpdateModules[ModuleIndex]), DeltaTime);
+     //     }
+     // }
+     //
+     // if (InCurrentLODLevel->TypeDataModule && InCurrentLODLevel->TypeDataModule->bEnabled && InCurrentLODLevel->TypeDataModule->bFinalUpdateModule)
+     // {
+     //     InCurrentLODLevel->TypeDataModule->FinalUpdate(this, GetModuleDataOffset(HighestLODLevel->TypeDataModule), DeltaTime);
+     // }
 }
 void FParticleEmitterInstance::SetCurrentLODIndex(int32 InLODIndex, bool bInFullyProcess)
 {

@@ -17,6 +17,7 @@ UParticleModule::UParticleModule()
     bSupportsRandomSeed = false;
     bRequiresLoopingNotification = false;
     bUpdateForGPUEmitter = false;
+    bUpdateModule = true;
 }
 
 FParticleEmitterInstance* UParticleModuleTypeDataBase::CreateInstance(UParticleEmitter* InEmitterParent, UParticleSystemComponent* InComponent)
@@ -227,6 +228,14 @@ float UParticleModuleLifetime::GetMaxLifetime()
 float UParticleModuleLifetime::GetLifetimeValue(FParticleEmitterInstance* Owner, float InTime, UObject* Data)
 {
     return Lifetime;//.GetValue(InTime, Data);
+}
+
+void UParticleModuleLifetime::Update(FParticleEmitterInstance* Owner, int32 Offset, float DeltaTime)
+{
+    UParticleModuleLifetimeBase::Update(Owner, Offset, DeltaTime);
+    BEGIN_UPDATE_LOOP
+    Particle.RelativeTime += DeltaTime * Particle.OneOverMaxLifetime;
+    END_UPDATE_LOOP
 }
 
 //TO DO : Frawdistributionfloat인가 뭔가 어떻게 해야할듯.

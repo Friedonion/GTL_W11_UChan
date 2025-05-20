@@ -51,6 +51,8 @@ UParticleSystemComponent::UParticleSystemComponent()
 	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleVelocityModule);
 
     Template->Emitters.Add(SampleEmitter);
+
+    EmitterDelay = 0.f;
     
     FParticleEmitterInstance* SampleInstance = SampleEmitter->CreateInstance(this);
     EmitterInstances.Add(SampleInstance);
@@ -64,7 +66,7 @@ UParticleSystemComponent::UParticleSystemComponent()
     TimeSinceLastTick = 0;
 
     bNeedsFinalize = false;
-
+    
     Template->UpdateAllModuleLists();
 }
 
