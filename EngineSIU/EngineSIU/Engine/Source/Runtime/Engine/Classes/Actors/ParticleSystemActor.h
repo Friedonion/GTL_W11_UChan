@@ -11,6 +11,7 @@ public:
     AParticleSystemActor();
     
     virtual void Tick(float DeltaTime) override;
+    virtual UObject* Duplicate(UObject* InOuter) override;
 
 public:
     UParticleSystemComponent* ParticleSystemComponent;

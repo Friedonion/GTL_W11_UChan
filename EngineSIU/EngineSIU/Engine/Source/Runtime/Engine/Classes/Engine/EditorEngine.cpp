@@ -344,7 +344,7 @@ void UEditorEngine::StartParticleSystemViewer(FName InParticleTemplateName)
 
     //ParticleActor->SetRootComponent(ParticleComponent);
     ParticleActor->SetActorLabel(TEXT("OBJ_PARTICLESYSTEM"));
-    UParticleSystemComponent* ParticleSystemComponent = Cast<UParticleSystemComponent>(ParticleActor->GetRootComponent());
+    UParticleSystemComponent* ParticleSystemComponent = ParticleActor->ParticleSystemComponent;
     ParticleSystemComponent->Template = UAssetManager::Get().GetParticleTemplate(InParticleTemplateName);
     ParticleSystemComponent->UpdateComponent();
 
@@ -400,7 +400,7 @@ void UEditorEngine::EndParticleSystemViewer()
 {
     if (ParticleSystemViewerWorld)
     {
-        UParticleSystemComponent* ParticleSystemComponent = Cast<UParticleSystemComponent>(this->GetHoveredActor()->GetRootComponent());
+        UParticleSystemComponent* ParticleSystemComponent = Cast<AParticleSystemActor>(this->GetHoveredActor())->ParticleSystemComponent;
         UAssetManager::Get().AddParticleTemplate(ParticleSystemComponent->TemplateName,ParticleSystemComponent->Template);
         this->ClearActorSelection();
         WorldList.Remove(GetWorldContextFromWorld(ParticleSystemViewerWorld));

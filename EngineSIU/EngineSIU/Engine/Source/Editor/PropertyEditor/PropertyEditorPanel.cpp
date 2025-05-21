@@ -68,7 +68,7 @@ void PropertyEditorPanel::Render()
 
     if (Engine->ActiveWorld)
     {
-        if (Engine->ActiveWorld->WorldType == EWorldType::Editor)
+        if (Engine->ActiveWorld->WorldType == EWorldType::Editor or Engine->ActiveWorld->WorldType == EWorldType::PIE)
         {
             PanelWidth = (Width) * 0.2f - 5.0f;
             PanelHeight = (Height)-((Height) * 0.3f + 10.0f) - 32.0f;

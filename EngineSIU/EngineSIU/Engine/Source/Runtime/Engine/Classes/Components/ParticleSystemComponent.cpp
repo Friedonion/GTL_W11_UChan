@@ -14,6 +14,7 @@
 
 #include "Engine/ParticleEmitterInstances.h"
 #include "Particles/Lifetime/ParticleModuleLifetime.h"
+#include "UObject/Casts.h"
 #include "UObject/ObjectFactory.h"
 
 UParticleSystemComponent::UParticleSystemComponent()
@@ -76,6 +77,17 @@ void UParticleSystemComponent::UpdateComponent()
         EmitterInstances.Add(Emitter->CreateInstance(this));
     }
     Template->UpdateAllModuleLists();
+}
+
+UObject* UParticleSystemComponent::Duplicate(UObject* InOuter)
+{
+    ThisClass* NewComponent = Cast<ThisClass>(Super::Duplicate(InOuter));
+
+    NewComponent->Template = Template;
+    NewComponent->TemplateName = TemplateName;
+    NewComponent->UpdateComponent();
+
+    return NewComponent;
 }
 
 int32 UParticleSystemComponent::GetLODLevel()
