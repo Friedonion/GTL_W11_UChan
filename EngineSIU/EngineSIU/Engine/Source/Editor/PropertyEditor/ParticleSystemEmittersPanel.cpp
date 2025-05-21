@@ -600,7 +600,7 @@ void ParticleSystemEmittersPanel::ShowEmitterContextMenu(UParticleEmitter* Emitt
                 OnRenameEmitter(Emitter, EmitterIndex);
             }
             
-            if (ImGui::MenuItem("Duplicate Emitter"))
+            if (ImGui::MenuItem("[X] Duplicate Emitter"))
             {
                 // 이미터 복제
                 OnDuplicateEmitter(Emitter, EmitterIndex);
@@ -638,7 +638,7 @@ void ParticleSystemEmittersPanel::ShowEmitterContextMenu(UParticleEmitter* Emitt
                 OnAddEmitterAfter(EmitterIndex);
             }
             
-            if (ImGui::MenuItem("Remove Duplicate Module"))
+            if (ImGui::MenuItem("[X] Remove Duplicate Module"))
             {
                 // 중복 모듈 제거
                 OnRemoveDuplicateModule(Emitter);
@@ -660,7 +660,7 @@ void ParticleSystemEmittersPanel::ShowEmitterContextMenu(UParticleEmitter* Emitt
                     OnAddInitialColor(Emitter);
                 }
                 
-                if (ImGui::MenuItem("Color Over Life"))
+                if (ImGui::MenuItem("[X] Color Over Life"))
                 {
                     // 컬러 오버 라이프 모듈 추가
                     OnAddColorOverLife(Emitter);
@@ -690,7 +690,7 @@ void ParticleSystemEmittersPanel::ShowEmitterContextMenu(UParticleEmitter* Emitt
                     OnAddInitialSize(Emitter);
                 }
                 
-                if (ImGui::MenuItem("Size By Life"))
+                if (ImGui::MenuItem("[X] Size By Life"))
                 {
                     // 라이프 기준 크기 모듈 추가
                     OnAddSizeByLife(Emitter);
@@ -702,7 +702,7 @@ void ParticleSystemEmittersPanel::ShowEmitterContextMenu(UParticleEmitter* Emitt
             // 스폰 카테고리
             if (ImGui::BeginMenu("Spawn"))
             {
-                if (ImGui::MenuItem("Spawn Per Unit"))
+                if (ImGui::MenuItem("[X] Spawn Per Unit"))
                 {
                     // 단위당 스폰 모듈 추가
                     OnAddSpawnPerUnit(Emitter);
@@ -720,7 +720,7 @@ void ParticleSystemEmittersPanel::ShowEmitterContextMenu(UParticleEmitter* Emitt
                     OnAddInitialVelocity(Emitter);
                 }
                 
-                if (ImGui::MenuItem("Velocity/Life"))
+                if (ImGui::MenuItem("[X] Velocity/Life"))
                 {
                     // 속도/라이프 모듈 추가
                     OnAddVelocityOverLife(Emitter);
@@ -768,13 +768,13 @@ void ParticleSystemEmittersPanel::ShowModuleContextMenu(UParticleModule* Module,
         }
         
         // 모듈 복제
-        if (ImGui::MenuItem("Duplicate Module"))
+        if (ImGui::MenuItem("[X] Duplicate Module"))
         {
             OnDuplicateModule(Module, EmitterIndex, ModuleIndex);
         }
         
         // 모듈 제거
-        if (ImGui::MenuItem("Remove Module"))
+        if (ImGui::MenuItem("[X] Remove Module"))
         {
             OnRemoveModule(Module, EmitterIndex, ModuleIndex);
         }
@@ -1111,10 +1111,40 @@ void ParticleSystemEmittersPanel::OnAddInitialColor(UParticleEmitter* Emitter)
 {
     if (!Emitter || Emitter->LODLevels.Num() == 0)
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add Initial Color module: Invalid Emitter or no LOD levels");
         return;
     }
     
-    // TODO: 초기 색상 모듈 추가
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add Initial Color module: Invalid LOD level");
+        return;
+    }
+    
+    // 초기 색상 모듈 생성
+    UParticleModuleColor* ColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+    if (!ColorModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create Initial Color module");
+        return;
+    }
+    
+    // 기본 속성 설정
+    //ColorModule->StartColor.Distribution.Mode = EDistributionParamMode::DPM_Constant;
+    ColorModule->StartColor.Distribution->Constant = FVector(1.0f, 1.0f, 1.0f); // 흰색
+    
+    //ColorModule->StartAlpha.Distribution.Mode = EDistributionParamMode::DPM_Constant;
+    ColorModule->StartAlpha.Distribution->Constant = 1.0f;
+    
+    // 모듈 활성화
+    ColorModule->bEnabled = true;
+    
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(ColorModule);
+    
+    UE_LOG(ELogLevel::Display, "[PSV] Added Initial Color module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
 
 void ParticleSystemEmittersPanel::OnAddColorOverLife(UParticleEmitter* Emitter)
@@ -1131,20 +1161,72 @@ void ParticleSystemEmittersPanel::OnAddLifetime(UParticleEmitter* Emitter)
 {
     if (!Emitter || Emitter->LODLevels.Num() == 0)
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add Lifetime module: Invalid Emitter or no LOD levels");
         return;
     }
     
-    // TODO: 수명 모듈 추가
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add Lifetime module: Invalid LOD level");
+        return;
+    }
+    
+    // 수명 모듈 생성
+    UParticleModuleLifetime* LifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
+    if (!LifetimeModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create Lifetime module");
+        return;
+    }
+    
+    // 기본 속성 설정 - 기본 파티클 수명은 1초로 설정
+    LifetimeModule->Lifetime = 1.0f;
+    
+    // 모듈 활성화
+    LifetimeModule->bEnabled = true;
+    
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(LifetimeModule);
+    
+    UE_LOG(ELogLevel::Display, "[PSV] Added Lifetime module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
 
 void ParticleSystemEmittersPanel::OnAddInitialSize(UParticleEmitter* Emitter)
 {
     if (!Emitter || Emitter->LODLevels.Num() == 0)
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add Initial Size module: Invalid Emitter or no LOD levels");
         return;
     }
     
-    // TODO: 초기 크기 모듈 추가
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add Initial Size module: Invalid LOD level");
+        return;
+    }
+    
+    // 초기 크기 모듈 생성
+    UParticleModuleSize* SizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
+    if (!SizeModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create Initial Size module");
+        return;
+    }
+    
+    // 기본 속성 설정 - 기본 크기는 (10, 10, 10) 벡터로 설정
+    SizeModule->StartSize = FVector(1.0f, 1.0f, 1.0f);
+    
+    // 모듈 활성화
+    SizeModule->bEnabled = true;
+    
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(SizeModule);
+    
+    UE_LOG(ELogLevel::Display, "[PSV] Added Initial Size module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
 
 void ParticleSystemEmittersPanel::OnAddSizeByLife(UParticleEmitter* Emitter)
@@ -1171,10 +1253,40 @@ void ParticleSystemEmittersPanel::OnAddInitialVelocity(UParticleEmitter* Emitter
 {
     if (!Emitter || Emitter->LODLevels.Num() == 0)
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add Initial Velocity module: Invalid Emitter or no LOD levels");
         return;
     }
     
-    // TODO: 초기 속도 모듈 추가
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add Initial Velocity module: Invalid LOD level");
+        return;
+    }
+    
+    // 초기 속도 모듈 생성
+    UParticleModuleVelocity* VelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+    if (!VelocityModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create Initial Velocity module");
+        return;
+    }
+    
+    // 기본 속성 설정
+    //VelocityModule->StartVelocity.Mode = EDistributionParamMode::DPM_Constant;
+    VelocityModule->StartVelocity.Distribution->Constant = FVector(1.0f, 1.0f, 1.0f);
+    
+    //VelocityModule->StartVelocityRadial.Mode = EDistributionParamMode::DPM_Constant;
+    VelocityModule->StartVelocityRadial = 0.0f;
+    
+    // 모듈 활성화
+    VelocityModule->bEnabled = true;
+    
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(VelocityModule);
+    
+    UE_LOG(ELogLevel::Display, "[PSV] Added Initial Velocity module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
 
 void ParticleSystemEmittersPanel::OnAddVelocityOverLife(UParticleEmitter* Emitter)
