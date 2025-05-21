@@ -284,3 +284,13 @@ FORCEINLINE FVector GetParticleBaseSize(const FBaseParticle& Particle, bool bKee
 {
     return bKeepFlipScale ? Particle.BaseSize : FVector(FMath::Abs(Particle.BaseSize.X), FMath::Abs(Particle.BaseSize.Y), FMath::Abs(Particle.BaseSize.Z));
 };
+
+struct FMeshRotationPayloadData
+{
+    FVector	 InitialOrientation;		// from mesh data module
+    FVector  InitRotation;				// from init rotation module
+    FVector  Rotation;
+    FVector	 CurContinuousRotation;
+    FVector  RotationRate;
+    FVector  RotationRateBase;
+};

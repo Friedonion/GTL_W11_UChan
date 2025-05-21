@@ -2,6 +2,7 @@
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleSystem.h"
 #include "Particles/Spawn/ParticleModuleSpawnBase.h"
+#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 #include "Components/ParticleSystemComponent.h"
 #include "Components/Light/PointLightComponent.h"
 #include "Particles/ParticleModuleRequired.h"
@@ -1592,5 +1593,197 @@ UMaterial* FParticleEmitterInstance::GetCurrentMaterial()
  *	Structure for mesh emitter instances
  */
 
-/** Constructor	*/
+ /** Constructor	*/
+FParticleMeshEmitterInstance::FParticleMeshEmitterInstance() :
+    FParticleEmitterInstance()
+    , MeshTypeData(NULL)
+    , MeshRotationActive(false)
+    , MeshRotationOffset(0)
+    , MeshMotionBlurOffset(0)
+{
+}
+
+void FParticleMeshEmitterInstance::InitParameters(UParticleEmitter* InTemplate, UParticleSystemComponent* InComponent)
+{
+    FParticleEmitterInstance::InitParameters(InTemplate, InComponent);
+
+    // Get the type data module
+    UParticleLODLevel* LODLevel = InTemplate->GetLODLevel(0);
+    if (!LODLevel) return;
+    MeshTypeData = CastChecked<UParticleModuleTypeDataMesh>(LODLevel->TypeDataModule);
+
+    // Grab cached mesh rotation flag from ParticleEmitter template
+    MeshRotationActive = InTemplate->bMeshRotationActive;
+}
+
+void FParticleMeshEmitterInstance::Init()
+{
+    FParticleEmitterInstance::Init();
+}
+
+/**
+ *	Resize the particle data array
+ *
+ *	@param	NewMaxActiveParticles	The new size to use
+ *
+ *	@return	bool					true if the resize was successful
+ */
+bool FParticleMeshEmitterInstance::Resize(int32 NewMaxActiveParticles, bool bSetMaxActiveCount)
+{
+    int32 OldMaxActiveParticles = MaxActiveParticles;
+    if (FParticleEmitterInstance::Resize(NewMaxActiveParticles, bSetMaxActiveCount) == true)
+    {
+        if (MeshRotationActive)
+        {
+            for (int32 i = OldMaxActiveParticles; i < NewMaxActiveParticles; i++)
+            {
+                DECLARE_PARTICLE(Particle, ParticleData + ParticleStride * ParticleIndices[i]);
+                //FMeshRotationPayloadData* PayloadData = (FMeshRotationPayloadData*)((uint8*)&Particle + MeshRotationOffset);
+                //PayloadData->RotationRateBase = FVector::ZeroVector;
+            }
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ *	Tick the instance.
+ *
+ *	@param	DeltaTime			The time slice to use
+ *	@param	bSuppressSpawning	If true, do not spawn during Tick
+ */
+void FParticleMeshEmitterInstance::Tick(float DeltaTime, bool bSuppressSpawning)
+{
+    if (bEnabled && MeshMotionBlurOffset)
+    {
+        for (int32 i = 0; i < ActiveParticles; i++)
+        {
+            DECLARE_PARTICLE(Particle, ParticleData + ParticleStride * ParticleIndices[i]);
+
+            FMeshRotationPayloadData* RotationPayloadData = (FMeshRotationPayloadData*)((uint8*)&Particle + MeshRotationOffset);
+        }
+    }
+
+    UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
+    // See if we are handling mesh rotation
+    if (MeshRotationActive && bEnabled)
+    {
+        // Update the rotation for each particle
+        for (int32 i = 0; i < ActiveParticles; i++)
+        {
+            DECLARE_PARTICLE(Particle, ParticleData + ParticleStride * ParticleIndices[i]);
+            FMeshRotationPayloadData* PayloadData = (FMeshRotationPayloadData*)((uint8*)&Particle + MeshRotationOffset);
+            PayloadData->RotationRate = PayloadData->RotationRateBase;
+            if ((Particle.Flags & STATE_Particle_FreezeRotation) == 0)
+            {
+                PayloadData->Rotation = PayloadData->InitRotation + PayloadData->CurContinuousRotation;
+            }
+            else 
+            {
+                // Rotation logic
+            }
+        }
+    }
+
+    // Call the standard tick
+    FParticleEmitterInstance::Tick(DeltaTime, bSuppressSpawning);
+
+    if (MeshRotationActive && bEnabled)
+    {
+        //Must do this (at least) after module update other wise the reset value of RotationRate is used.
+        //Probably the other stuff before the module tick should be brought down here too and just leave the RotationRate reset before.
+        //Though for the sake of not breaking existing behavior, leave things as they are for now.
+        for (int32 i = 0; i < ActiveParticles; i++)
+        {
+            DECLARE_PARTICLE(Particle, ParticleData + ParticleStride * ParticleIndices[i]);
+            FMeshRotationPayloadData* PayloadData = (FMeshRotationPayloadData*)((uint8*)&Particle + MeshRotationOffset);
+            PayloadData->CurContinuousRotation += PayloadData->RotationRate * DeltaTime;
+        }
+    }
+}
+
+/**
+ *	Retrieved the per-particle bytes that this emitter type requires.
+ *
+ *	@return	uint32	The number of required bytes for particles in the instance
+ */
+uint32 FParticleMeshEmitterInstance::RequiredBytes()
+{
+    uint32 uiBytes = FParticleEmitterInstance::RequiredBytes();
+
+    MeshRotationOffset = PayloadOffset + uiBytes;
+    uiBytes += sizeof(FMeshRotationPayloadData);
+
+    if (MeshTypeData)
+    {
+        const auto* MeshTD = static_cast<const UParticleModuleTypeDataMesh*>(MeshTypeData);
+    }
+
+    return uiBytes;
+}
+
+/**
+ *	Handle any post-spawning actions required by the instance
+ *
+ *	@param	Particle					The particle that was spawned
+ *	@param	InterpolationPercentage		The percentage of the time slice it was spawned at
+ *	@param	SpawnTIme					The time it was spawned at
+ */
+void FParticleMeshEmitterInstance::PostSpawn(FBaseParticle* Particle, float InterpolationPercentage, float SpawnTime)
+{
+    FParticleEmitterInstance::PostSpawn(Particle, InterpolationPercentage, SpawnTime);
+    UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
+
+    FMeshRotationPayloadData* PayloadData = (FMeshRotationPayloadData*)((uint8*)Particle + MeshRotationOffset);
+
+    FVector	NewDirection(Particle->Velocity);
+
+    NewDirection.Normalize();
+    FVector	OldDirection(1.0f, 0.0f, 0.0f);
+
+    // [TEMP] Rotation
+    //FQuat Rotation = FQuat::FindBetweenNormals(OldDirection, NewDirection);
+    //FVector Euler = Rotation.Euler();
+
+    //PayloadData->Rotation.X += Euler.X;
+    //PayloadData->Rotation.Y += Euler.Y;
+    //PayloadData->Rotation.Z += Euler.Z;
+
+    PayloadData->Rotation.X += 0.1f;
+    PayloadData->Rotation.Y += 0.1f;
+    PayloadData->Rotation.Z += 0.1f;
+
+    FVector InitialOrient = MeshTypeData->RollPitchYawRange.GetValue(SpawnTime, 0, &MeshTypeData->RandomStream);
+    PayloadData->InitialOrientation = (FVector)InitialOrient;
+}
+
+/**
+ *	Retrieve the allocated size of this instance.
+ *
+ *	@param	OutNum			The size of this instance
+ *	@param	OutMax			The maximum size of this instance
+ */
+void FParticleMeshEmitterInstance::GetAllocatedSize(int32& OutNum, int32& OutMax)
+{
+    int32 Size = sizeof(FParticleMeshEmitterInstance);
+    int32 ActiveParticleDataSize = (ParticleData != NULL) ? (ActiveParticles * ParticleStride) : 0;
+    int32 MaxActiveParticleDataSize = (ParticleData != NULL) ? (MaxActiveParticles * ParticleStride) : 0;
+    int32 ActiveParticleIndexSize = (ParticleIndices != NULL) ? (ActiveParticles * sizeof(uint16)) : 0;
+    int32 MaxActiveParticleIndexSize = (ParticleIndices != NULL) ? (MaxActiveParticles * sizeof(uint16)) : 0;
+
+    OutNum = ActiveParticleDataSize + ActiveParticleIndexSize + Size;
+    OutMax = MaxActiveParticleDataSize + MaxActiveParticleIndexSize + Size;
+}
+
+/**
+ * Sets the materials with which mesh particles should be rendered.
+ */
+void FParticleMeshEmitterInstance::SetMeshMaterials(const TArray<UMaterial*>& InMaterials)
+{
+    CurrentMaterials = InMaterials;
+}
+
 

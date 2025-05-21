@@ -3,9 +3,11 @@
 #include "Lifetime/ParticleModuleLifetime_Seeded.h"
 
 #include "Particles/TypeData/ParticleModuleTypeDataBase.h"
+#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/ParticleEmitter.h"
 #include "UObject/Casts.h"
+#include "UObject/ObjectFactory.h"
 
 UParticleModule::UParticleModule()
 {
@@ -262,4 +264,37 @@ void UParticleModuleLifetime_Seeded::EmitterLoopingNotify(FParticleEmitterInstan
 float UParticleModuleLifetime_Seeded::GetLifetimeValue(FParticleEmitterInstance* Owner, float InTime, UObject* Data )
 {
     return Lifetime;//.GetValue(InTime, Data, &GetRandomStream(Owner));
+}
+
+UParticleModuleTypeDataMesh::UParticleModuleTypeDataMesh()
+{
+    CastShadows = false;
+    DoCollisions = false;
+    MeshAlignment = PSMA_MeshFaceCameraWithRoll;
+    AxisLockOption = EPAL_NONE;
+    CameraFacingUpAxisOption_DEPRECATED = CameraFacing_NoneUP;
+    CameraFacingOption = XAxisFacing_NoUp;
+    bCollisionsConsiderPartilceSize = true;
+    bUseStaticMeshLODs = true;
+    LODSizeScale = 1.0f;
+}
+
+FParticleEmitterInstance* UParticleModuleTypeDataMesh::CreateInstance(UParticleEmitter* InEmitterParent, UParticleSystemComponent* InComponent)
+{
+    //SetToSensibleDefaults(InEmitterParent);
+    FParticleEmitterInstance* Instance = new FParticleMeshEmitterInstance();
+
+    Instance->InitParameters(InEmitterParent, InComponent);
+
+    CreateDistribution();
+
+    return Instance;
+}
+
+void UParticleModuleTypeDataMesh::CreateDistribution()
+{
+    if (!RollPitchYawRange.IsCreated())
+    {
+        RollPitchYawRange.Distribution = FObjectFactory::ConstructObject<UDistributionVector>(nullptr);
+    }
 }

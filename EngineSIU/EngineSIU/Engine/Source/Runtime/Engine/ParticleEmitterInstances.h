@@ -15,6 +15,7 @@ enum EParticleAxisLock : int;
 class UParticleSystemComponent;
 class UParticleEmitter;
 class UParticleLODLevel;
+class UParticleModuleTypeDataMesh;
 
 struct FLODBurstFired
 {
@@ -684,4 +685,65 @@ struct FParticleSpriteEmitterInstance : public FParticleEmitterInstance
      * @return  Size of resource as to be displayed to artists/ LDs in the Editor.
      */
     //virtual void GetResourceSizeEx(FResourceSizeEx& CumulativeResourceSize) override;
+};
+
+/*-----------------------------------------------------------------------------
+    ParticleMeshEmitterInstance
+-----------------------------------------------------------------------------*/
+struct FParticleMeshEmitterInstance : public FParticleEmitterInstance
+{
+    UParticleModuleTypeDataMesh* MeshTypeData;
+    bool MeshRotationActive;
+    int32 MeshRotationOffset;
+    int32 MeshMotionBlurOffset;
+
+    /** The materials to render this instance with.	*/
+    TArray<UMaterial*> CurrentMaterials;
+
+    /** Constructor	*/
+    FParticleMeshEmitterInstance();
+
+    virtual void InitParameters(UParticleEmitter* InTemplate, UParticleSystemComponent* InComponent) override;
+    virtual void Init() override;
+    virtual bool Resize(int32 NewMaxActiveParticles, bool bSetMaxActiveCount = true) override;
+    virtual void Tick(float DeltaTime, bool bSuppressSpawning) override;
+    virtual uint32 RequiredBytes() override;
+    virtual void PostSpawn(FBaseParticle* Particle, float InterpolationPercentage, float SpawnTime) override;
+
+    //virtual void Tick_MaterialOverrides(int32 EmitterIndex) override;
+
+    /**
+     *	Retrieve the allocated size of this instance.
+     *
+     *	@param	OutNum			The size of this instance
+     *	@param	OutMax			The maximum size of this instance
+     */
+    virtual void GetAllocatedSize(int32& OutNum, int32& OutMax) override;
+
+    /**
+     * Returns the offset to the mesh rotation payload, if any.
+     */
+    virtual int32 GetMeshRotationOffset() const override
+    {
+        return MeshRotationOffset;
+    }
+
+    /**
+     * Returns true if mesh rotation is active.
+     */
+    virtual bool IsMeshRotationActive() const override
+    {
+        return MeshRotationActive;
+    }
+
+    /**
+     * Sets the materials with which mesh particles should be rendered.
+     * @param InMaterials - The materials.
+     */
+    virtual void SetMeshMaterials(const TArray<UMaterial*>& InMaterials) override;
+
+    /**
+     * Gets the materials applied to each section of a mesh.
+     */
+    //void GetMeshMaterials(TArray<UMaterialInterface*, TInlineAllocator<2> >& OutMaterials, const UParticleLODLevel* LODLevel, ERHIFeatureLevel::Type InFeatureLevel, bool bLogWarnings = false) const;
 };
