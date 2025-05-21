@@ -96,42 +96,13 @@ void UAssetManager::InitDefaultParticleTemplate()
     UParticleModuleColorOverLife* SampleColorOverLifeModule = FObjectFactory::ConstructObject<UParticleModuleColorOverLife>(nullptr);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorOverLifeModule);
     
-    
     UParticleModuleSubUV* SampleSubUVModule = FObjectFactory::ConstructObject<UParticleModuleSubUV>(nullptr);
     SampleEmitter->SubUVAnimation = FObjectFactory::ConstructObject<USubUVAnimation>(nullptr);
     SampleEmitter->SubUVAnimation->SubImages_Horizontal = 6;
     SampleEmitter->SubUVAnimation->SubImages_Vertical = 6;
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSubUVModule);
-
-
-    UParticleSpriteEmitter* SampleEmitter2 = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
-    SampleEmitter2->CreateLODLevel(0);
-
-    UParticleModuleLifetime* SampleLifetimeModule2 = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
-    SampleEmitter2->GetLODLevel(0)->Modules.Add(SampleLifetimeModule2);
-    
-    UParticleModuleSize* SampleSizeModule2 = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
-    SampleEmitter2->GetLODLevel(0)->Modules.Add(SampleSizeModule2);
-    
-    UParticleModuleColor* SampleColorModule2 = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
-    SampleColorModule2->StartColor.Distribution->Constant = FVector(1.0f, 1.0f, 1.0f);
-    SampleEmitter2->GetLODLevel(0)->Modules.Add(SampleColorModule2);
-    
-    UParticleModuleVelocity* SampleVelocityModule2 = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
-    SampleVelocityModule2->StartVelocity.Distribution->Constant = FVector(0.0f, 0.0f, 1.0f);
-    SampleVelocityModule2->StartVelocity.MinValueVec = FVector(-1.0f, -1.0f, 0.0f);
-    SampleVelocityModule2->StartVelocity.MaxValueVec = FVector(1.0f, 1.0f, 0.0f);
-    SampleEmitter2->GetLODLevel(0)->Modules.Add(SampleVelocityModule2);
-    
-    UParticleModuleSubUV* SampleSubUVModule2 = FObjectFactory::ConstructObject<UParticleModuleSubUV>(nullptr);
-    SampleEmitter2->SubUVAnimation = FObjectFactory::ConstructObject<USubUVAnimation>(nullptr);
-    SampleEmitter2->SubUVAnimation->SubImages_Horizontal = 6;
-    SampleEmitter2->SubUVAnimation->SubImages_Vertical = 6;
-    SampleEmitter2->GetLODLevel(0)->Modules.Add(SampleSubUVModule2);
     
     Template->Emitters.Add(SampleEmitter);
-
-    Template->Emitters.Add(SampleEmitter2);
     
     ParticleTemplateMap.Add(FName("ParticleTemplate_Default"), Template);
 }
