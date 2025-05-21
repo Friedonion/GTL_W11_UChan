@@ -1489,7 +1489,9 @@ void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
 {
     // 텍스처 스캔
     if (!bTexturesScanned)
+    {
         ScanTextureFiles();
+    }
 
     ImGui::SetNextWindowSize(ImVec2(380, 600), ImGuiCond_Once);
     ImGui::Begin("Material Viewer", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNav);
@@ -1722,41 +1724,44 @@ void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
    
 
     ImGui::Spacing();
-    ImGui::Separator();
+    // @note 머티리얼 뷰어에 부합하지 않는 기능임. 따로 분리할 것.
+    //ImGui::Separator();
 
-    ImGui::Text("Choose Material");
-    ImGui::Spacing();
+    //ImGui::Text("Choose Material");
+    //ImGui::Spacing();
 
-    ImGui::Text("Material Slot Name |");
-    ImGui::SameLine();
-    ImGui::Text(GetData(SelectedStaticMeshComp->GetMaterialSlotNames()[SelectedMaterialIndex].ToString()));
+    //ImGui::Text("Material Slot Name |");
+    //ImGui::SameLine();
+    //ImGui::Text(GetData(SelectedStaticMeshComp->GetMaterialSlotNames()[SelectedMaterialIndex].ToString()));
 
-    ImGui::Text("Override Material |");
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(160);
-    // 메테리얼 이름 목록을 const char* 배열로 변환
-    std::vector<const char*> MaterialChars;
-    for (const auto& Material : FObjManager::GetMaterials()) {
-        MaterialChars.push_back(*Material.Value->GetMaterialInfo().MaterialName);
-    }
+    //ImGui::Text("Override Material |");
+    //ImGui::SameLine();
+    //ImGui::SetNextItemWidth(160);
+    //// 메테리얼 이름 목록을 const char* 배열로 변환
+    //std::vector<const char*> MaterialChars;
+    //for (const auto& Material : FObjManager::GetMaterials())
+    //{
+    //    MaterialChars.push_back(*Material.Value->GetMaterialInfo().MaterialName);
+    //}
 
-    //// 드롭다운 표시 (currentMaterialIndex가 범위를 벗어나지 않도록 확인)
-    //if (currentMaterialIndex >= FManagerGetMaterialNum())
-    //    currentMaterialIndex = 0;
+    ////// 드롭다운 표시 (currentMaterialIndex가 범위를 벗어나지 않도록 확인)
+    ////if (currentMaterialIndex >= FManagerGetMaterialNum())
+    ////    currentMaterialIndex = 0;
 
-    // 드롭다운 너비 제한 설정
-    ImGui::SetNextItemWidth(200.0f);
-    
-    // ImGui::Combo 사용 시 고유한 ID 사용
-    if (ImGui::Combo("##MaterialDropdown", &CurMaterialIndex, MaterialChars.data(), FObjManager::GetMaterialNum())) {
-        UMaterial* Material = FObjManager::GetMaterial(MaterialChars[CurMaterialIndex]);
-        SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, Material);
-    }
+    //// 드롭다운 너비 제한 설정
+    //ImGui::SetNextItemWidth(200.0f);
+    //
+    //// ImGui::Combo 사용 시 고유한 ID 사용
+    //if (ImGui::Combo("##MaterialDropdown", &CurMaterialIndex, MaterialChars.data(), FObjManager::GetMaterialNum())) {
+    //    UMaterial* Material = FObjManager::GetMaterial(MaterialChars[CurMaterialIndex]);
+    //    SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, Material);
+    //}
 
     if (ImGui::Button("Close"))
     {
         SelectedMaterialIndex = -1;
         SelectedStaticMeshComp = nullptr;
+        bShowMaterialView = false;
     }
 
     ImGui::End();
@@ -2285,6 +2290,17 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
                             ImVec4(PreviewColor.R, PreviewColor.G, PreviewColor.B, PreviewColor.A),
                             ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
                             ImVec2(100, 100));
+                    }
+
+                    if (ImGui::IsMouseDoubleClicked(0))
+                    {
+                        bShowMaterialView = true;
+                        // @note RenderMaterialView의 Close에서 false로 변경해줌
+                    }
+
+                    if (bShowMaterialView)
+                    {
+                        RenderMaterialView(CurrentMaterial);
                     }
                 }
                 else
