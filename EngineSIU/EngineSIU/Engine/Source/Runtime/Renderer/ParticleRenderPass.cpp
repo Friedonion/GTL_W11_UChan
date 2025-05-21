@@ -21,6 +21,7 @@
 #include "ParticleHelper.h"
 
 #include "Engine/ParticleEmitterInstances.h"
+#include "Particles/ParticleLODLevel.h"
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 
 FParticleRenderPass::FParticleRenderPass()
@@ -101,47 +102,38 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
     {
         for (FParticleEmitterInstance* EmitterInstance : Comp->EmitterInstances)
         {
-
-            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
+            if (EmitterInstance->CurrentLODLevel->TypeDataModule && CastChecked<UParticleModuleTypeDataMesh>(EmitterInstance->CurrentLODLevel->TypeDataModule))
             {
-                PrepareMeshParticles(EmitterInstance);
+                // 메쉬
+                if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
+                {
+                    PrepareMeshParticles(EmitterInstance);
+
+                    SortParticlesByDistance(TransparentMeshInstanceData);
+
+                    FParticleMeshEmitterInstance* MeshInstance = (FParticleMeshEmitterInstance*)(EmitterInstance);
+                    UpdateMeshInstanceBuffer(true);
+                    RenderMeshParticles(Viewport, false, MeshInstance->MeshTypeData->Mesh);
+
+                    UpdateMeshInstanceBuffer(false);
+                    RenderMeshParticles(Viewport, true, MeshInstance->MeshTypeData->Mesh);
+                }
             }
-
-            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)))
+            else
             {
-                PrepareSpriteParticles(EmitterInstance);
-            }
+                // 일반적인 스프라이트
+                if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)))
+                {
+                    PrepareSpriteParticles(EmitterInstance);
 
-            SortParticlesByDistance(TransparentMeshInstanceData);
-            SortParticlesByDistance(TransparentSpriteInstanceData);
+                    SortParticlesByDistance(TransparentSpriteInstanceData);
 
+                    UpdateSpriteInstanceBuffer(true);
+                    RenderSpriteParticles(Viewport, false);
 
-            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
-            {
-                UpdateMeshInstanceBuffer(true);
-                FParticleMeshEmitterInstance* MeshInstance = static_cast<FParticleMeshEmitterInstance*>(EmitterInstance);
-                RenderMeshParticles(Viewport, false, MeshInstance->MeshTypeData->Mesh);
-            }
-
-            // 불투명 스프라이트 파티클 렌더링
-            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && OpaqueSpriteInstanceData.Num() > 0)
-            {
-                UpdateSpriteInstanceBuffer(true);
-                RenderSpriteParticles(Viewport, false);
-            }
-
-
-            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
-            {
-                UpdateMeshInstanceBuffer(false);
-                FParticleMeshEmitterInstance* MeshInstance = static_cast<FParticleMeshEmitterInstance*>(EmitterInstance);
-                RenderMeshParticles(Viewport, true, MeshInstance->MeshTypeData->Mesh);
-            }
-
-            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && TransparentSpriteInstanceData.Num() > 0)
-            {
-                UpdateSpriteInstanceBuffer(false);
-                RenderSpriteParticles(Viewport, true);
+                    UpdateSpriteInstanceBuffer(false);
+                    RenderSpriteParticles(Viewport, true);
+                }
             }
         }
     }
@@ -603,9 +595,13 @@ void FParticleRenderPass::ProcessParticleEmitter(FParticleEmitterInstance* Emitt
     uint32 ParticleStride = EmitterInstance->ParticleStride;
     uint16* ParticleIndices = EmitterInstance->ParticleIndices;
 
+    // @todo TypeDataModule의 종류에 따라 처리 가능하도록 수정 필요 (지금은 TypeDataModule이 있는 경우 Mesh로 처리중임)
     // 이미터 타입에 따라 처리
-    FParticleMeshEmitterInstance* MeshInstance = static_cast<FParticleMeshEmitterInstance*>(EmitterInstance);
-    bool bIsMesh = MeshInstance->MeshTypeData->Mesh;
+    bool bIsMesh = false;
+    if (EmitterInstance->CurrentLODLevel->TypeDataModule && CastChecked<UParticleModuleTypeDataMesh>(EmitterInstance->CurrentLODLevel->TypeDataModule))
+    {
+        bIsMesh = true;
+    }
 
     // 각 파티클 처리
     for (int32 i = 0; i < ActiveParticles; i++)
