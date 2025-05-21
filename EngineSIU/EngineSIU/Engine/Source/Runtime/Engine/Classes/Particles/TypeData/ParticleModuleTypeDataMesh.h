@@ -12,7 +12,7 @@ struct FParticleEmitterInstance;
 class UStaticMesh;
 
 //UENUM()
-enum EMeshScreenAlignment : int
+enum class EMeshScreenAlignment : int
 {
     PSMA_MeshFaceCameraWithRoll,
     PSMA_MeshFaceCameraWithSpin,
@@ -32,7 +32,7 @@ enum EMeshCameraFacingUpAxis : int
 };
 
 //UENUM()
-enum EMeshCameraFacingOptions : int
+enum class EMeshCameraFacingOptions : int
 {
     XAxisFacing_NoUp, 
     XAxisFacing_ZUp, 
@@ -63,18 +63,21 @@ public:
 
     /** The static mesh to render at the particle positions */
     //UPROPERTY(EditAnywhere, Category = Mesh)
-    UStaticMesh* Mesh;
+    UPROPERTY
+    (VisibleAnywhere, UStaticMesh*, Mesh, = nullptr)
 
     /** Random stream for the initial rotation distribution */
     FRandomStream RandomStream;
 
     /** use the static mesh's LOD setup and switch LODs based on largest particle's screen size*/
     //UPROPERTY(EditAnywhere, Category = Mesh)
-    float LODSizeScale;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, float, LODSizeScale)
 
     /** use the static mesh's LOD setup and switch LODs based on largest particle's screen size*/
     //UPROPERTY(EditAnywhere, Category = Mesh)
-    uint8 bUseStaticMeshLODs : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bUseStaticMeshLODs, = 1)
 
     /** If true, has the meshes cast shadows */
     //UPROPERTY()
@@ -97,24 +100,29 @@ public:
      *		Face the camera while maintaining the up FVector as the locked direction.
      */
     //UPROPERTY(EditAnywhere, Category = Mesh)
-    EMeshScreenAlignment MeshAlignment;
+    UPROPERTY
+    (EditAnywhere, EMeshScreenAlignment, MeshAlignment, = EMeshScreenAlignment::PSMA_MeshFaceCameraWithRoll)
 
     /**
      *	If true, use the emitter material when rendering rather than the one applied
      *	to the static mesh model.
      */
     //UPROPERTY(EditAnywhere, Category = Mesh)
-    uint8 bOverrideMaterial : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bOverrideMaterial, = 1)
 
     //UPROPERTY(EditAnywhere, Category = Mesh)
-    uint8 bOverrideDefaultMotionBlurSettings : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bOverrideDefaultMotionBlurSettings, = 1)
 
     //UPROPERTY(EditAnywhere, Category = Mesh, meta = (EditCondition = "bOverrideDefaultMotionBlurSettings"))
-    uint8 bEnableMotionBlur : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bEnableMotionBlur, = 1)
 
     /** The 'pre' rotation pitch (in degrees) to apply to the static mesh used. */
     //UPROPERTY(EditAnywhere, Category = Orientation)
-    FRawDistributionVector RollPitchYawRange;
+    UPROPERTY_WITH_FLAGS
+    (EditAnywhere, FRawDistributionVector, RollPitchYawRange)
 
     /**
      *	The axis to lock the mesh on. This overrides TypeSpecific mesh alignment as well as the LockAxis module.
@@ -130,14 +138,16 @@ public:
      *		EPAL_ROTATE_Z	 -	Ignored for mesh emitters. Treated as EPAL_NONE.
      */
     //UPROPERTY(EditAnywhere, Category = Orientation)
-    EParticleAxisLock AxisLockOption;
+    UPROPERTY
+    (EditAnywhere, EParticleAxisLock, AxisLockOption, = EParticleAxisLock::EPAL_NONE)
 
     /**
      *	If true, then point the X-axis of the mesh towards the camera.
      *	When set, AxisLockOption as well as all other locked axis/screen alignment settings are ignored.
      */
     //UPROPERTY(EditAnywhere, Category = CameraFacing)
-    uint8 bCameraFacing : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bCameraFacing, = 1)
 
     /**
      *	The axis of the mesh to point up when camera facing the X-axis.
@@ -171,28 +181,32 @@ public:
      *		VelocityAligned_NegativeYAxisFacing - X-axis aligned to the velocity, rotate the Y-axis of the mesh to face away from camera.
      */
     //UPROPERTY(EditAnywhere, Category = CameraFacing)
-    EMeshCameraFacingOptions CameraFacingOption;
+    UPROPERTY
+    (EditAnywhere, EMeshCameraFacingOptions, CameraFacingOption, = EMeshCameraFacingOptions::XAxisFacing_NoUp)
 
     /**
      *	If true, apply 'sprite' particle rotation about the orientation axis (direction mesh is pointing).
      *	If false, apply 'sprite' particle rotation about the camera facing axis.
      */
     //UPROPERTY(EditAnywhere, Category = CameraFacing)
-    uint8 bApplyParticleRotationAsSpin : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bApplyParticleRotationAsSpin, = 1)
 
     /**
     *	If true, all camera facing options will point the mesh against the camera's view direction rather than pointing at the cameras location.
     *	If false, the camera facing will point to the cameras position as normal.
     */
     //UPROPERTY(EditAnywhere, Category = CameraFacing)
-    uint8 bFaceCameraDirectionRatherThanPosition : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bFaceCameraDirectionRatherThanPosition, = 1)
 
     /**
     *	If true, all collisions for mesh particle on this emitter will take the particle size into account.
     *	If false, particle size will be ignored in collision checks.
     */
     //UPROPERTY(EditAnywhere, Category = Collision)
-    uint8 bCollisionsConsiderPartilceSize : 1;
+    UPROPERTY
+    (EditAnywhere, uint8, bCollisionsConsiderPartilceSize, = 1)
 
     //virtual void PostLoad();
 

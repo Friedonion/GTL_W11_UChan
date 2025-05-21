@@ -68,6 +68,7 @@ private:
     void OnRemoveDuplicateModule(UParticleEmitter* Emitter);
     
     // 파티클 모듈 추가 이벤트 핸들러
+    void OnAddMeshData(UParticleEmitter* Emitter);
     void OnAddInitialColor(UParticleEmitter* Emitter);
     void OnAddColorOverLife(UParticleEmitter* Emitter);
     void OnAddLifetime(UParticleEmitter* Emitter);

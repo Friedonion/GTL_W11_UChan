@@ -19,7 +19,7 @@ void FParticleDataContainer::Alloc(int32 InParticleDataNumBytes, int32 InParticl
     MemBlockSize = ParticleDataNumBytes + ParticleIndicesNumShorts * sizeof(uint16);
 
     // ParticleData = (uint8*)FastParticleSmallBlockAlloc(MemBlockSize);
-    ParticleIndices = (uint16*)(ParticleData + ParticleDataNumBytes);
+    ParticleIndices = reinterpret_cast<uint16*>(ParticleData + ParticleDataNumBytes);
 }
 
 void FParticleDataContainer::Free()
@@ -41,9 +41,9 @@ void FParticleDataContainer::Free()
 -----------------------------------------------------------------------------*/
 
 FParticleEmitterBuildInfo::FParticleEmitterBuildInfo()
-    : RequiredModule(NULL)
-    , SpawnModule(NULL)
-    , SpawnPerUnitModule(NULL)
+    : RequiredModule(nullptr)
+    , SpawnModule(nullptr)
+    , SpawnPerUnitModule(nullptr)
     , MaxSize(1.0f, 1.0f)
     , SizeScaleBySpeed(FVector2D::ZeroVector)
     , MaxSizeScaleBySpeed(1.0f, 1.0f)
@@ -59,7 +59,7 @@ FParticleEmitterBuildInfo::FParticleEmitterBuildInfo()
     , PointAttractorRadius(0.0f)
     , GlobalVectorFieldScale(0.0f)
     , GlobalVectorFieldTightness(-1)
-    , LocalVectorField(NULL)
+    , LocalVectorField(nullptr)
     , LocalVectorFieldTransform(FTransform::Identity)
     , LocalVectorFieldIntensity(0.0f)
     , LocalVectorFieldTightness(0.0f)
@@ -99,9 +99,9 @@ FParticleEmitterBuildInfo::FParticleEmitterBuildInfo()
 const float FParticleEmitterInstance::PeakActiveParticleUpdateDelta = 0.05f;
 
 FParticleEmitterInstance::FParticleEmitterInstance() :
-      SpriteTemplate(NULL)
-    , Component(NULL)
-    , CurrentLODLevel(NULL)
+      SpriteTemplate(nullptr)
+    , Component(nullptr)
+    , CurrentLODLevel(nullptr)
     , CurrentLODLevelIndex(0)
     , TypeDataOffset(0)
     , TypeDataInstanceOffset(-1)
@@ -122,11 +122,11 @@ FParticleEmitterInstance::FParticleEmitterInstance() :
     , bIsBeam(0)
     , bAxisLockEnabled(0)
     , bFakeBurstsWhenSpawningSupressed(0)
-    , LockAxisFlags(EPAL_NONE)
+    , LockAxisFlags(EParticleAxisLock::EPAL_NONE)
     , SortMode(PSORTMODE_None)
-    , ParticleData(NULL)
-    , ParticleIndices(NULL)
-    , InstanceData(NULL)
+    , ParticleData(nullptr)
+    , ParticleIndices(nullptr)
+    , InstanceData(nullptr)
     , InstancePayloadSize(0)
     , ParticleSize(0)
     , ParticleStride(0)
@@ -141,7 +141,7 @@ FParticleEmitterInstance::FParticleEmitterInstance() :
     , EmitterDuration(0.0f)
     , TrianglesToRender(0)
     , MaxVertexIndex(0)
-    , CurrentMaterial(NULL)
+    , CurrentMaterial(nullptr)
     , PositionOffsetThisTick(0)
     , PivotOffset(-0.5f,-0.5f)
 {
@@ -204,9 +204,9 @@ void FParticleEmitterInstance::Init()
 		TypeDataOffset = SpriteTemplate->TypeDataOffset;
 		TypeDataInstanceOffset = SpriteTemplate->TypeDataInstanceOffset;
 
-	    if ((InstanceData == NULL) || (SpriteTemplate->ReqInstanceBytes > InstancePayloadSize))
+	    if ((InstanceData == nullptr) || (SpriteTemplate->ReqInstanceBytes > InstancePayloadSize))
 	    {
-			    InstanceData = (uint8*)(realloc(InstanceData, SpriteTemplate->ReqInstanceBytes));
+			    InstanceData = static_cast<uint8*>(realloc(InstanceData, SpriteTemplate->ReqInstanceBytes));
 			    InstancePayloadSize = SpriteTemplate->ReqInstanceBytes;
 	    }
     
@@ -258,7 +258,7 @@ void FParticleEmitterInstance::Init()
 	TrianglesToRender		= 0;
 	MaxVertexIndex			= 0;
 
-	if (ParticleData == NULL)
+	if (ParticleData == nullptr)
 	{
 		MaxActiveParticles	= 0;
 		ActiveParticles		= 0;
@@ -373,7 +373,7 @@ void FParticleEmitterInstance::UpdateTransforms()
     //check(SpriteTemplate != NULL);
 
     UParticleLODLevel* LODLevel = GetCurrentLODLevelChecked();
-    FMatrix ComponentToWorld = Component != NULL ?
+    FMatrix ComponentToWorld = Component != nullptr ?
         Component->GetComponentTransform().ToMatrixNoScale() : FMatrix::Identity;
     FMatrix EmitterToComponent = FMatrix::CreateRotationMatrix(LODLevel->RequiredModule->EmitterRotation) * FMatrix::CreateTranslationMatrix(LODLevel->RequiredModule->EmitterOrigin);
 
@@ -407,7 +407,7 @@ bool FParticleEmitterInstance::Resize(int32 NewMaxActiveParticles, bool bSetMaxA
 		// NOTE: We don't have to zero the memory here... It gets zeroed when grabbed later.
 
 		{
-			ParticleData = (uint8*)realloc(ParticleData, ParticleStride * NewMaxActiveParticles);
+			ParticleData = static_cast<uint8*>(realloc(ParticleData, ParticleStride * NewMaxActiveParticles));
 			//check(ParticleData);
 
 			// Allocate memory for indices.
@@ -416,7 +416,7 @@ bool FParticleEmitterInstance::Resize(int32 NewMaxActiveParticles, bool bSetMaxA
 				// Make sure that we clear all when it is the first alloc
 				MaxActiveParticles = 0;
 			}
-			ParticleIndices	= (uint16*)realloc(ParticleIndices, sizeof(uint16) * (NewMaxActiveParticles + 1));
+			ParticleIndices	= static_cast<uint16*>(realloc(ParticleIndices, sizeof(uint16) * (NewMaxActiveParticles + 1)));
 		}
 
 		// Fill in default 1:1 mapping.

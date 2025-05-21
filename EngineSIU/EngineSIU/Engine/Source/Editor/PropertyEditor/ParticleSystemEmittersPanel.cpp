@@ -6,6 +6,7 @@
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModule.h"
 #include "Particles/ParticleModuleRequired.h"
+#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 #include "Particles/Lifetime/ParticleModuleLifetime.h"
 #include "Particles/Size/ParticleModuleSize.h"
 #include "Particles/Velocity/ParticleModuleVelocity.h"
@@ -727,6 +728,16 @@ void ParticleSystemEmittersPanel::ShowEmitterContextMenu(UParticleEmitter* Emitt
         
         // Modules
         {
+            // 타입 데이터 카테고리
+            if (ImGui::BeginMenu("Type Data"))
+            {
+                if (ImGui::MenuItem("New Mesh Data"))
+                {
+                    OnAddMeshData(Emitter);
+                }
+
+                ImGui::EndMenu();
+            }
             // 컬러 카테고리
             if (ImGui::BeginMenu("Color"))
             {
@@ -1190,6 +1201,40 @@ void ParticleSystemEmittersPanel::OnRemoveDuplicateModule(UParticleEmitter* Emit
 }
 
 // 파티클 속성 이벤트 핸들러
+void ParticleSystemEmittersPanel::OnAddMeshData(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add Mesh Data module: Invalid Emitter or no LOD levels");
+        return;
+    }
+
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add Mesh Data module: Invalid LOD level");
+        return;
+    }
+
+    // 메쉬 데이터 모듈 생성
+    UParticleModuleTypeDataMesh* TypeDataMeshModule = FObjectFactory::ConstructObject<UParticleModuleTypeDataMesh>(nullptr);
+    if (!TypeDataMeshModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create Mesh Data module");
+        return;
+    }
+
+    // 기본 속성 설정
+
+    // 모듈 활성화
+    TypeDataMeshModule->bEnabled = true;
+
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(TypeDataMeshModule);
+
+    UE_LOG(ELogLevel::Display, "[PSV] Added Type Data Mesh module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
+}
 void ParticleSystemEmittersPanel::OnAddInitialColor(UParticleEmitter* Emitter)
 {
     if (!Emitter || Emitter->LODLevels.Num() == 0)

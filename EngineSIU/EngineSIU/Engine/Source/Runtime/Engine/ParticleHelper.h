@@ -206,7 +206,7 @@ struct FParticleDataContainer
 };
 
 // 일단 여기 선언
-enum EParticleAxisLock : int
+enum class EParticleAxisLock : int
 {
     /** No locking to an axis...							*/
     EPAL_NONE, 

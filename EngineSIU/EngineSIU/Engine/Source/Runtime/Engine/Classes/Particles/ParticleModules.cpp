@@ -270,10 +270,10 @@ UParticleModuleTypeDataMesh::UParticleModuleTypeDataMesh()
 {
     CastShadows = false;
     DoCollisions = false;
-    MeshAlignment = PSMA_MeshFaceCameraWithRoll;
-    AxisLockOption = EPAL_NONE;
+    MeshAlignment = EMeshScreenAlignment::PSMA_MeshFaceCameraWithRoll;
+    AxisLockOption = EParticleAxisLock::EPAL_NONE;
     CameraFacingUpAxisOption_DEPRECATED = CameraFacing_NoneUP;
-    CameraFacingOption = XAxisFacing_NoUp;
+    CameraFacingOption = EMeshCameraFacingOptions::XAxisFacing_NoUp;
     bCollisionsConsiderPartilceSize = true;
     bUseStaticMeshLODs = true;
     LODSizeScale = 1.0f;
