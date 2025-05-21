@@ -24,32 +24,29 @@ UParticleSystemComponent::UParticleSystemComponent()
 {
     // 템플릿 만들기 테스트
     // 일단 여기에 다 때려넣고 테스트 함
-    Template = FObjectFactory::ConstructObject<UParticleSystem>(nullptr);
+ //    Template = FObjectFactory::ConstructObject<UParticleSystem>(nullptr);
+ //
+ //    UParticleSpriteEmitter* SampleEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
+ //    SampleEmitter->CreateLODLevel(0);
+ //
+ //    UParticleModuleLifetime* SampleLifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
+ //    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleLifetimeModule);
+ //    
+ //    UParticleModuleSize* SampleSizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
+ //    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSizeModule);
+ //
+	// UParticleModuleColor* SampleColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+	// SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorModule);
+ //
+	// UParticleModuleVelocity* SampleVelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+	// SampleEmitter->GetLODLevel(0)->Modules.Add(SampleVelocityModule);
 
-    UParticleSpriteEmitter* SampleEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
-    SampleEmitter->CreateLODLevel(0);
-
-    UParticleModuleLifetime* SampleLifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
-    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleLifetimeModule);
-    
-    UParticleModuleSize* SampleSizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
-    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSizeModule);
-
-	/*UParticleModuleSizeScaleBySpeed* SampleSizeScaleModule = FObjectFactory::ConstructObject<UParticleModuleSizeScaleBySpeed>(nullptr);
-	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSizeScaleModule);*/
-
-	UParticleModuleColor* SampleColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
-	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorModule);
-
-	UParticleModuleVelocity* SampleVelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
-	SampleEmitter->GetLODLevel(0)->Modules.Add(SampleVelocityModule);
-
-    Template->Emitters.Add(SampleEmitter);
-
+    //Template->Emitters.Add(SampleEmitter);
+    Template = nullptr;
     EmitterDelay = 0.f;
     
-    FParticleEmitterInstance* SampleInstance = SampleEmitter->CreateInstance(this);
-    EmitterInstances.Add(SampleInstance);
+    // FParticleEmitterInstance* SampleInstance = SampleEmitter->CreateInstance(this);
+    // EmitterInstances.Add(SampleInstance);
     
     bSuppressSpawning = false;
 
@@ -61,11 +58,24 @@ UParticleSystemComponent::UParticleSystemComponent()
 
     bNeedsFinalize = false;
     
-    Template->UpdateAllModuleLists();
+    // Template->UpdateAllModuleLists();
 }
 
 UParticleSystemComponent::~UParticleSystemComponent()
 {
+}
+
+void UParticleSystemComponent::UpdateComponent()
+{
+    if (Template == nullptr)
+        return;
+    
+    EmitterInstances.Empty();
+    for (UParticleEmitter* Emitter : Template->Emitters)
+    {
+        EmitterInstances.Add(Emitter->CreateInstance(this));
+    }
+    Template->UpdateAllModuleLists();
 }
 
 int32 UParticleSystemComponent::GetLODLevel()

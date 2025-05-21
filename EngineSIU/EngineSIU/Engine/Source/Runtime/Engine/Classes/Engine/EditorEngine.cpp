@@ -316,7 +316,7 @@ void UEditorEngine::EndSkeletalMeshViewer()
     }
 }
 
-void UEditorEngine::StartParticleSystemViewer()
+void UEditorEngine::StartParticleSystemViewer(FName InParticleTemplateName)
 {
     // Check Valid Particle Asset
 
@@ -333,8 +333,10 @@ void UEditorEngine::StartParticleSystemViewer()
     WorldContext.SetCurrentWorld(ParticleSystemViewerWorld);
     ActiveWorld = ParticleSystemViewerWorld;
 
+    this->ClearActorSelection();
     // ParticleSystem 액터 스폰
     AParticleSystemActor* ParticleActor = ParticleSystemViewerWorld->SpawnActor<AParticleSystemActor>();
+    HoverActor(ParticleActor);
     // @note ParticleActor의 생성자에서 기본적으로 설정해주고 있음, 추후 확인 필요
     //ParticleActor->SetActorTickInEditor(true);
 
@@ -342,6 +344,9 @@ void UEditorEngine::StartParticleSystemViewer()
 
     //ParticleActor->SetRootComponent(ParticleComponent);
     ParticleActor->SetActorLabel(TEXT("OBJ_PARTICLESYSTEM"));
+    UParticleSystemComponent* ParticleSystemComponent = Cast<UParticleSystemComponent>(ParticleActor->GetRootComponent());
+    ParticleSystemComponent->Template = UAssetManager::Get().GetParticleTemplate(InParticleTemplateName);
+    ParticleSystemComponent->UpdateComponent();
 
     auto EditorEngine = Cast<UEditorEngine>(GEngine);
     auto UnrealEd = EditorEngine->GetUnrealEditor();
@@ -395,6 +400,8 @@ void UEditorEngine::EndParticleSystemViewer()
 {
     if (ParticleSystemViewerWorld)
     {
+        UParticleSystemComponent* ParticleSystemComponent = Cast<UParticleSystemComponent>(this->GetHoveredActor()->GetRootComponent());
+        UAssetManager::Get().AddParticleTemplate(ParticleSystemComponent->TemplateName,ParticleSystemComponent->Template);
         this->ClearActorSelection();
         WorldList.Remove(GetWorldContextFromWorld(ParticleSystemViewerWorld));
         ParticleSystemViewerWorld->Release();
@@ -484,6 +491,11 @@ void UEditorEngine::HoverActor(AActor* InActor)
     {
         PrivateEditorSelection::GActorHovered = InActor;
     }
+}
+
+AActor* UEditorEngine::GetHoveredActor() const
+{
+    return PrivateEditorSelection::GActorHovered;   
 }
 
 void UEditorEngine::NewLevel()

@@ -13,6 +13,14 @@
 #include "UObject/Casts.h"
 #include "Asset/SkeletalMeshAsset.h"
 #include "Asset/StaticMeshAsset.h"
+
+#include "Particles/ParticleLODLevel.h"
+#include "Particles/ParticleSpriteEmitter.h"
+#include "Particles/Color/ParticleModuleColor.h"
+#include "Particles/Lifetime/ParticleModuleLifetime.h"
+#include "Particles/Size/ParticleModuleSize.h"
+#include "Particles/Velocity/ParticleModuleVelocity.h"
+
 #include "Serialization/MemoryArchive.h"
 #include "UObject/ObjectFactory.h"
 
@@ -46,6 +54,33 @@ void UAssetManager::InitAssetManager()
     AssetRegistry = std::make_unique<FAssetRegistry>();
 
     LoadContentFiles();
+
+    InitDefaultParticleTemplate();
+}
+
+void UAssetManager::InitDefaultParticleTemplate()
+{
+    //Particle Template 하드코딩
+    UParticleSystem* Template = FObjectFactory::ConstructObject<UParticleSystem>(nullptr);
+    
+    UParticleSpriteEmitter* SampleEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
+    SampleEmitter->CreateLODLevel(0);
+    
+    UParticleModuleLifetime* SampleLifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleLifetimeModule);
+    
+    UParticleModuleSize* SampleSizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSizeModule);
+    
+    UParticleModuleColor* SampleColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorModule);
+    
+    UParticleModuleVelocity* SampleVelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleVelocityModule);
+    
+    Template->Emitters.Add(SampleEmitter);
+    
+    ParticleTemplateMap.Add(FName("ParticleTemplate_Default"), Template);
 }
 
 const TMap<FName, FAssetInfo>& UAssetManager::GetAssetRegistry()
@@ -103,6 +138,15 @@ UAnimationAsset* UAssetManager::GetAnimation(const FName& Name)
     return nullptr;
 }
 
+UParticleSystem* UAssetManager::GetParticleTemplate(const FName& Name)
+{
+    if (ParticleTemplateMap.Contains(Name))
+    {
+        return ParticleTemplateMap[Name];
+    }
+    return nullptr;
+}
+
 void UAssetManager::AddAssetInfo(const FAssetInfo& Info)
 {
     AssetRegistry->PathNameToAssetInfo.Add(Info.AssetName, Info);
@@ -131,6 +175,11 @@ void UAssetManager::AddStaticMesh(const FName& Key, UStaticMesh* StaticMesh)
 void UAssetManager::AddAnimation(const FName& Key, UAnimationAsset* Animation)
 {
     AnimationMap.Add(Key, Animation);
+}
+
+void UAssetManager::AddParticleTemplate(const FName& Key, UParticleSystem* ParticleTemplate)
+{
+    ParticleTemplateMap.Add(Key, ParticleTemplate);
 }
 
 void UAssetManager::LoadContentFiles()

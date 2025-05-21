@@ -13,11 +13,15 @@ class UParticleSystemComponent : public UPrimitiveComponent
 public:
     UParticleSystemComponent();
     ~UParticleSystemComponent();
+    
+    void UpdateComponent();
 
     TArray<struct FParticleEmitterInstance*> EmitterInstances;
     // UMaterialInterface 미구현 - UMaterial로 대체?
     TArray<UMaterial*> EmitterMaterials;
     UParticleSystem* Template;
+
+    FName TemplateName;
 
     virtual int32 GetLODLevel();
 

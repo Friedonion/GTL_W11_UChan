@@ -49,6 +49,7 @@
 #include "Math/Transform.h"
 #include "Animation/AnimStateMachine.h"
 #include "Runtime/CoreUObject/UObject/Property.h"
+#include "Actors/ParticleSystemActor.h"
 
 void PropertyEditorPanel::Render()
 {
@@ -217,6 +218,10 @@ void PropertyEditorPanel::Render()
     if (USkeletalMeshComponent* SkeletalMeshComponent = GetTargetComponent<USkeletalMeshComponent>(SelectedActor, SelectedComponent))
     {
         RenderForSkeletalMesh(SkeletalMeshComponent);
+    }
+    if (UParticleSystemComponent* ParticleSystemComponent = GetTargetComponent<UParticleSystemComponent>(SelectedActor, SelectedComponent))
+    {
+        RenderForParticleSystemComponent(ParticleSystemComponent);
     }
     if (UHeightFogComponent* FogComponent = GetTargetComponent<UHeightFogComponent>(SelectedActor, SelectedComponent))
     {
@@ -1065,6 +1070,50 @@ void PropertyEditorPanel::RenderForTextComponent(UTextComponent* TextComponent) 
                 TextComponent->SetText(wNewText.c_str());
             }
             ImGui::PopItemFlag();
+        }
+        ImGui::TreePop();
+    }
+    ImGui::PopStyleColor();
+}
+
+void PropertyEditorPanel::RenderForParticleSystemComponent(UParticleSystemComponent* ParticleSystemComp) const
+{
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.1f, 0.1f, 0.1f, 1.0f));
+    if (ImGui::TreeNodeEx("Particle", ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_DefaultOpen)) // 트리 노드 생성
+    {
+        FName SelectedTemplateName = ParticleSystemComp->Template ? ParticleSystemComp->TemplateName : TEXT("None"); // 현재 선택된 템플릿 이름
+        
+        if (ImGui::BeginCombo("##Template", *SelectedTemplateName.ToString(), ImGuiComboFlags_None))
+        {
+            TMap<FName, UParticleSystem*> ParticleTemplates = UAssetManager::Get().GetParticleTemplateMap();
+            for (const auto& Asset : ParticleTemplates)
+            {
+                bool isSelected = (SelectedTemplateName == Asset.Key);
+                if (ImGui::Selectable(*Asset.Key.ToString(), isSelected))
+                {
+                    SelectedTemplateName = Asset.Key;
+                    // 추가로, 선택된 파티클 에셋을 변수에 할당하거나 처리
+                    ParticleSystemComp->Template = Asset.Value;
+                    ParticleSystemComp->TemplateName = Asset.Key;
+                    ParticleSystemComp->UpdateComponent();
+                }
+                if (isSelected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+    
+        if (ImGui::Button("Open Editer"))
+        {
+            UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
+            if (!Engine)
+            {
+                return;
+            }
+            if (SelectedTemplateName != TEXT("None"))
+            {
+                Engine->StartParticleSystemViewer(ParticleSystemComp->TemplateName);
+            }
         }
         ImGui::TreePop();
     }

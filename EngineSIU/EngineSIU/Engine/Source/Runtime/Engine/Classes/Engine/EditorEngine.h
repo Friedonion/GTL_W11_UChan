@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine.h"
+#include "Actors/ParticleSystemActor.h"
 #include "Actors/Player.h"
 #include "World/SkeletalViewerWorld.h"
 
@@ -35,7 +36,7 @@ public:
     void StartSkeletalMeshViewer(FName SkeletalMeshName, UAnimationAsset* AnimAsset);
     void EndSkeletalMeshViewer();
 
-    void StartParticleSystemViewer();
+    void StartParticleSystemViewer(FName ParticleTemplateName);
     void EndParticleSystemViewer();
 
     // 주석은 UE에서 사용하던 매개변수.
@@ -53,7 +54,7 @@ public:
     AActor* GetSelectedActor() const;
 
     void HoverActor(AActor* InActor);
-
+    AActor* GetHoveredActor() const;
     
     void NewLevel();
 

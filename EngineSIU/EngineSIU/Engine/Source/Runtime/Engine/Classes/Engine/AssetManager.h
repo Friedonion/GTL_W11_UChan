@@ -1,5 +1,6 @@
 #pragma once
 #include "StaticMesh.h"
+#include "Particles/ParticleSystem.h"
 #include "UObject/Object.h"
 #include "UObject/ObjectMacros.h"
 
@@ -76,6 +77,8 @@ public:
     
     void InitAssetManager();
 
+    void InitDefaultParticleTemplate();
+    
     const TMap<FName, FAssetInfo>& GetAssetRegistry();
     TMap<FName, FAssetInfo>& GetAssetRegistryRef();
 
@@ -85,16 +88,25 @@ public:
     UMaterial* GetMaterial(const FName& Name);
     UAnimationAsset* GetAnimation(const FName& Name);
 
+    UParticleSystem* GetParticleTemplate(const FName& Name);
+
     void AddAssetInfo(const FAssetInfo& Info);
     void AddSkeleton(const FName& Key, USkeleton* Skeleton);
     void AddSkeletalMesh(const FName& Key, USkeletalMesh* SkeletalMesh);
     void AddMaterial(const FName& Key, UMaterial* Material);
     void AddStaticMesh(const FName& Key, UStaticMesh* StaticMesh);
     void AddAnimation(const FName& Key, UAnimationAsset* Animation);
+    
+    void AddParticleTemplate(const FName& Key, UParticleSystem* ParticleTemplate);
 
     TMap<FName, UStaticMesh*> GetStaticMeshMap()
     {
         return StaticMeshMap;
+    }
+
+    TMap<FName, UParticleSystem*> GetParticleTemplateMap()
+    {
+        return ParticleTemplateMap;
     }
 
 private:
@@ -113,6 +125,8 @@ private:
     inline static TMap<FName, UMaterial*> MaterialMap;
     inline static TMap<FName, UAnimationAsset*> AnimationMap;
 
+    inline static TMap<FName, UParticleSystem*> ParticleTemplateMap;
+    
     bool LoadFbxBinary(const FString& FilePath, FAssetLoadResult& Result, const FString& BaseName, const FString& FolderPath);
 
     bool SaveFbxBinary(const FString& FilePath, FAssetLoadResult& Result, const FString& BaseName, const FString& FolderPath);

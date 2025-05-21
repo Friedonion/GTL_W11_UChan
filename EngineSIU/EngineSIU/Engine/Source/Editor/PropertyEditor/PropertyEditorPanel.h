@@ -78,6 +78,9 @@ private:
     
     void RenderForProjectileMovementComponent(UProjectileMovementComponent* ProjectileComp) const;
     void RenderForTextComponent(UTextComponent* TextComponent) const;
+
+    /* Particle Settings */
+    void RenderForParticleSystemComponent(UParticleSystemComponent* ParticleSystemComp) const;
     
     /* Materials Settings */
     void RenderForMaterial(UStaticMeshComponent* StaticMeshComp);

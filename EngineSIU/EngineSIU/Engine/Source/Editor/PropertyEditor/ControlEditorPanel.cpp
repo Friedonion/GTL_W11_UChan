@@ -119,12 +119,12 @@ void ControlEditorPanel::Render()
             }
             if (ImGui::MenuItem("Particle System"))
             {
-                UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
-                if (!Engine)
-                {
-                    return;
-                }
-                Engine->StartParticleSystemViewer();
+                // UEditorEngine* Engine = Cast<UEditorEngine>(GEngine);
+                // if (!Engine)
+                // {
+                //     return;
+                // }
+                // Engine->StartParticleSystemViewer();
             }
             ImGui::EndMenu();
         }
