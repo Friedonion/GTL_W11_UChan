@@ -13,6 +13,7 @@ public:
     void Release(FRenderer* Renderer);
     HRESULT LoadTextureFromFile(ID3D11Device* Device, const wchar_t* Filename, bool bIsSRGB = true);
     HRESULT LoadTextureFromDDS(ID3D11Device* Device, ID3D11DeviceContext* Context, const wchar_t* Filename);
+    TMap<FWString, std::shared_ptr<FTexture>>& GetTextureMap() { return TextureMap; }
 
     std::shared_ptr<FTexture> GetTexture(const FWString& Name) const;
 private:

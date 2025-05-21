@@ -96,13 +96,22 @@ private:
         requires std::derived_from<T, UActorComponent>
     T* GetTargetComponent(AActor* SelectedActor, USceneComponent* SelectedComponent);
 
+    // 텍스처 관련 헬퍼 함수들
+    void ScanTextureFiles();
+    TArray<FWString> GetAvailableTextures() const;
+    const char* GetTextureSlotName(EMaterialTextureSlots Slot) const;
     
 private:
     float Width = 0, Height = 0;
+    /* Texture Property */
+    TArray<FWString> AvailableTextures;
+    bool bTexturesScanned = false;
+    
     /* Material Property */
     int SelectedMaterialIndex = -1;
     int CurMaterialIndex = -1;
     UStaticMeshComponent* SelectedStaticMeshComp = nullptr;
+
     FMaterialInfo tempMaterialInfo;
     bool IsCreateMaterial;
 

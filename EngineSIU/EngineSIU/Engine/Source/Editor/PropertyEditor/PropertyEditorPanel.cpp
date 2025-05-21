@@ -1,6 +1,7 @@
 #include "PropertyEditorPanel.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <string>
 //#include <windows.h>
 //#include <tchar.h>
@@ -50,6 +51,8 @@
 #include "Animation/AnimStateMachine.h"
 #include "Runtime/CoreUObject/UObject/Property.h"
 #include "Actors/ParticleSystemActor.h"
+#include "Engine/Classes/Engine/ResourceMgr.h"
+#include "Define.h"
 
 void PropertyEditorPanel::Render()
 {
@@ -1355,6 +1358,65 @@ void PropertyEditorPanel::RenderForSpringArmComponent(USpringArmComponent* Sprin
     }
 }
 
+// 텍스처 관련 헬퍼 함수 구현
+void PropertyEditorPanel::ScanTextureFiles()
+{
+    if (bTexturesScanned)
+        return;
+
+    AvailableTextures.Empty();
+
+    TMap<FWString, std::shared_ptr<FTexture>> TextureMap = FEngineLoop::ResourceManager.GetTextureMap();
+
+    for (const auto& TexturePair : TextureMap)
+    {
+        const FWString& TextureName = TexturePair.Key;
+        const std::shared_ptr<FTexture>& Texture = TexturePair.Value;
+        // 텍스처가 유효한지 확인
+        if (Texture)
+        {
+            AvailableTextures.Add(TextureName);
+        }
+    }
+    
+    // 텍스처 이름으로 정렬
+    AvailableTextures.Sort([](const FWString& A, const FWString& B) {
+        // 파일 이름만 추출
+        size_t lastSlashA = A.find_last_of(L"/\\");
+        size_t lastSlashB = B.find_last_of(L"/\\");
+        
+        FWString FileNameA = (lastSlashA != std::wstring::npos) ? A.substr(lastSlashA + 1) : A;
+        FWString FileNameB = (lastSlashB != std::wstring::npos) ? B.substr(lastSlashB + 1) : B;
+        
+        // 알파벳순 비교
+        return FileNameA < FileNameB;
+    });
+
+    bTexturesScanned = true;
+}
+
+TArray<FWString> PropertyEditorPanel::GetAvailableTextures() const
+{
+    return AvailableTextures;
+}
+
+const char* PropertyEditorPanel::GetTextureSlotName(EMaterialTextureSlots Slot) const
+{
+    switch (Slot)
+    {
+    case EMaterialTextureSlots::MTS_Diffuse:   return "Diffuse";
+    case EMaterialTextureSlots::MTS_Specular:  return "Specular";
+    case EMaterialTextureSlots::MTS_Normal:    return "Normal";
+    case EMaterialTextureSlots::MTS_Emissive:  return "Emissive";
+    case EMaterialTextureSlots::MTS_Alpha:     return "Alpha";
+    case EMaterialTextureSlots::MTS_Ambient:   return "Ambient";
+    case EMaterialTextureSlots::MTS_Shininess: return "Shininess";
+    case EMaterialTextureSlots::MTS_Metallic:  return "Metallic";
+    case EMaterialTextureSlots::MTS_Roughness: return "Roughness";
+    default: return "Unknown";
+    }
+}
+
 void PropertyEditorPanel::RenderForMaterial(UStaticMeshComponent* StaticMeshComp)
 {
     if (StaticMeshComp->GetStaticMesh() == nullptr)
@@ -1423,10 +1485,20 @@ void PropertyEditorPanel::RenderForMaterial(UStaticMeshComponent* StaticMeshComp
 
 void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
 {
-    ImGui::SetNextWindowSize(ImVec2(380, 400), ImGuiCond_Once);
+    // 텍스처 스캔
+    if (!bTexturesScanned)
+        ScanTextureFiles();
+
+    ImGui::SetNextWindowSize(ImVec2(380, 600), ImGuiCond_Once);
     ImGui::Begin("Material Viewer", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNav);
 
     static ImGuiSelectableFlags BaseFlag = ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_None | ImGuiColorEditFlags_NoAlpha;
+    
+    // 검색 필터 추가
+    static char filterBuffer[128] = "";
+    ImGui::InputText("Filter Textures", filterBuffer, IM_ARRAYSIZE(filterBuffer));
+    std::string filter = filterBuffer;
+    std::transform(filter.begin(), filter.end(), filter.begin(), ::tolower);
 
     const FVector MatDiffuseColor = Material->GetMaterialInfo().DiffuseColor;
     const FVector MatSpecularColor = Material->GetMaterialInfo().SpecularColor;
@@ -1497,6 +1569,159 @@ void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
     ImGui::Spacing();
     ImGui::Separator();
 
+    // 텍스처 섹션 헤더
+    ImGui::Separator();
+    ImGui::Text("Textures");
+    ImGui::Spacing();
+    
+    if (AvailableTextures.Num() == 0)
+    {
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "No textures found. Check Contents/Texture/ directory.");
+    }
+    else
+    {
+        // 재질에 있는 기존 텍스처 정보 가져오기
+        FMaterialInfo& MaterialInfo = Material->GetMaterialInfo();
+        TArray<FTextureInfo>& TextureInfos = MaterialInfo.TextureInfos;
+
+        // 각 텍스처 유형에 대한 드롭다운 메뉴
+        const struct TextureSlotUI
+        {
+            EMaterialTextureSlots Slot;
+            const char* Name;
+            ImVec4 LabelColor;  // 텍스처 유형별 색상
+        } TextureSlots[] = {
+            { EMaterialTextureSlots::MTS_Diffuse,   "Diffuse",   ImVec4(0.9f, 0.9f, 0.9f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Specular,    "Specular",    ImVec4(0.0f, 0.5f, 1.0f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Normal,  "Normal",  ImVec4(1.0f, 1.0f, 0.5f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Emissive,  "Emissive",  ImVec4(0.7f, 0.7f, 0.7f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Alpha, "Alpha", ImVec4(0.5f, 0.5f, 0.5f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Ambient,  "Ambient",  ImVec4(1.0f, 0.7f, 0.3f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Shininess,   "Shininess",   ImVec4(0.5f, 0.8f, 1.0f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Metallic,     "Metallic",     ImVec4(1.0f, 1.0f, 1.0f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Roughness, "Roughness", ImVec4(0.7f, 0.7f, 0.5f, 1.0f) }
+        };
+
+        for (int j = 0; j < TextureInfos.Num(); ++j)
+        {
+            const int SlotIdx = static_cast<int>(TextureSlots[j].Slot);
+            const uint32 SlotFlag = 1 << SlotIdx;
+            
+            // 현재 슬롯에 할당된 텍스처 찾기
+            FString CurrentTexturePath = "None";
+            int TextureIndex = j;
+            if ((MaterialInfo.TextureFlag & SlotFlag) != 0)
+            {
+                    CurrentTexturePath = TextureInfos[j].TexturePath;
+            }
+            // 슬롯 이름 표시 (색상 적용)
+            ImGui::TextColored(TextureSlots[j].LabelColor, "%s:", TextureSlots[j].Name);
+            ImGui::SameLine();
+
+            // 드롭다운 메뉴 ID 생성
+            char comboID[64];
+            sprintf_s(comboID, "##Texture_%s", TextureSlots[j].Name);
+
+            // 드롭다운 메뉴 표시
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 10.0f);
+            if (ImGui::BeginCombo(comboID, *CurrentTexturePath))
+            {
+                // "None" 옵션
+                bool isNoneSelected = (CurrentTexturePath == "None");
+                if (ImGui::Selectable("None", isNoneSelected))
+                {
+                    MaterialInfo.TextureFlag &= ~SlotFlag;  // 해당 비트 지우기
+                    
+                    if (TextureIndex >= 0 && TextureIndex < TextureInfos.Num())
+                    {
+                        TextureInfos.RemoveAt(TextureIndex);
+                    }
+                }
+
+                // 필터 추가
+                static char filterBuffer[256] = "";
+                ImGui::InputText("Filter", filterBuffer, IM_ARRAYSIZE(filterBuffer));
+                std::string filter = filterBuffer;
+                std::transform(filter.begin(), filter.end(), filter.begin(), ::tolower);
+
+                // 사용 가능한 모든 텍스처 표시 (필터링 적용)
+                ImGui::BeginChild("TextureList", ImVec2(0, 200), true);
+                for (const FWString& TexturePath : AvailableTextures)
+                {
+                    // 경로에서 파일 이름만 추출
+                    FWString FileName = TexturePath;
+                    size_t lastSlash = FileName.find_last_of(L"/\\");
+                    if (lastSlash != std::wstring::npos)
+                    {
+                        FileName = FileName.substr(lastSlash + 1);
+                    }
+                    
+                    FString FileNameStr(FileName.c_str());
+                    
+                    // 필터링 적용
+                    if (!filter.empty())
+                    {
+                        std::string fileNameLower = std::string(FileNameStr);
+                        std::transform(fileNameLower.begin(), fileNameLower.end(), fileNameLower.begin(), ::tolower);
+                        
+                        if (fileNameLower.find(filter) == std::string::npos)
+                        {
+                            continue;  // 필터와 일치하지 않으면 건너뛰기
+                        }
+                    }
+                    
+                    bool isSelected = (FileNameStr == CurrentTexturePath);
+                    
+                    if (ImGui::Selectable(*FileNameStr, isSelected))
+                    {
+                        FTextureInfo NewTextureInfo;
+                        NewTextureInfo.TextureName = FileNameStr;
+                        NewTextureInfo.TexturePath = TexturePath;
+                        NewTextureInfo.bIsSRGB = true;  // 기본값
+                        
+                        if (TextureIndex >= 0 && TextureIndex < TextureInfos.Num())
+                        {
+                            TextureInfos[j] = NewTextureInfo;
+                            MaterialInfo.TextureFlag |= SlotFlag;  // 해당 비트 설정
+                        }
+                        
+                    }
+                    
+                    if (isSelected)
+                    {
+                        ImGui::SameLine();
+                        ImGui::Text("[Selected]");
+                        ImGui::SameLine();
+                       
+                    }
+                }
+                ImGui::EndChild();
+                
+                ImGui::EndCombo();
+            }
+
+            // SRGB 체크박스 추가 (텍스처가 선택된 경우만)
+            if (CurrentTexturePath != "None" && TextureIndex >= 0 && TextureIndex < TextureInfos.Num())
+            {
+                ImGui::SameLine();
+                bool bIsSRGB = TextureInfos[TextureIndex].bIsSRGB;
+                if (ImGui::Checkbox(("sRGB##" + std::string(TextureSlots[j].Name)).c_str(), &bIsSRGB))
+                {
+                    TextureInfos[TextureIndex].bIsSRGB = bIsSRGB;
+                }
+                
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("sRGB color space (checked) or linear color space (unchecked)");
+                }
+            }
+        }
+    }
+   
+
+    ImGui::Spacing();
+    ImGui::Separator();
+
     ImGui::Text("Choose Material");
     ImGui::Spacing();
 
@@ -1533,7 +1758,11 @@ void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
 
 void PropertyEditorPanel::RenderCreateMaterialView()
 {
-    ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiCond_Once);
+    // 텍스처 스캔
+    if (!bTexturesScanned)
+        ScanTextureFiles();
+
+    ImGui::SetNextWindowSize(ImVec2(300, 700), ImGuiCond_Once);
     ImGui::Begin("Create Material Viewer", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNav);
 
     static ImGuiSelectableFlags BaseFlag = ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_None | ImGuiColorEditFlags_NoAlpha;
@@ -1543,6 +1772,11 @@ void PropertyEditorPanel::RenderCreateMaterialView()
     static char MaterialName[256] = "New Material";
     // 기본 텍스트 입력 필드
     ImGui::SetNextItemWidth(128);
+
+
+    TArray<FTextureInfo>& TextureInfos = tempMaterialInfo.TextureInfos;
+    TextureInfos.SetNum(static_cast<uint32>(EMaterialTextureSlots::MTS_MAX));
+
     if (ImGui::InputText("##NewName", MaterialName, IM_ARRAYSIZE(MaterialName))) {
         tempMaterialInfo.MaterialName = MaterialName;
     }
@@ -1611,6 +1845,158 @@ void PropertyEditorPanel::RenderCreateMaterialView()
         tempMaterialInfo.EmissiveColor = NewColor;
     }
     ImGui::Unindent();
+
+    // 텍스처 섹션
+    ImGui::NewLine();
+    ImGui::Separator();
+    ImGui::Text("Textures");
+    ImGui::Spacing();
+
+    // 텍스처 필터링을 위한 입력 필드
+    static char createFilterBuffer[128] = "";
+    ImGui::InputText("Filter Textures", createFilterBuffer, IM_ARRAYSIZE(createFilterBuffer));
+    std::string createFilter = createFilterBuffer;
+    std::transform(createFilter.begin(), createFilter.end(), createFilter.begin(), ::tolower);
+    
+    if (AvailableTextures.Num() == 0)
+    {
+        ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "No textures found. Check Contents/Texture/ directory.");
+    }
+    else
+    {
+        // 각 텍스처 유형에 대한 드롭다운 메뉴
+        const struct TextureSlotUI
+        {
+            EMaterialTextureSlots Slot;
+            const char* Name;
+            ImVec4 LabelColor;  // 텍스처 유형별 색상
+        } TextureSlots[] = {
+            { EMaterialTextureSlots::MTS_Diffuse,   "Diffuse",   ImVec4(0.9f, 0.9f, 0.9f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Specular,    "Specular",    ImVec4(0.0f, 0.5f, 1.0f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Normal,  "Normal",  ImVec4(1.0f, 1.0f, 0.5f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Emissive,  "Emissive",  ImVec4(0.7f, 0.7f, 0.7f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Alpha, "Alpha", ImVec4(0.5f, 0.5f, 0.5f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Ambient,  "Ambient",  ImVec4(1.0f, 0.7f, 0.3f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Shininess,   "Shininess",   ImVec4(0.5f, 0.8f, 1.0f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Metallic,     "Metallic",     ImVec4(1.0f, 1.0f, 1.0f, 1.0f) },
+            { EMaterialTextureSlots::MTS_Roughness, "Roughness", ImVec4(0.7f, 0.7f, 0.5f, 1.0f) }
+        };
+
+        for (int j = 0; j < TextureInfos.Num(); ++j)
+        {
+            const int SlotIdx = static_cast<int>(TextureSlots[j].Slot);
+            const uint32 SlotFlag = 1 << SlotIdx;
+
+            // 현재 슬롯에 할당된 텍스처 찾기
+            FString CurrentTexturePath = "None";
+            int TextureIndex = j;
+            if ((tempMaterialInfo.TextureFlag & SlotFlag) != 0)
+            {
+                CurrentTexturePath = TextureInfos[j].TexturePath;
+            }
+            // 슬롯 이름 표시 (색상 적용)
+            ImGui::TextColored(TextureSlots[j].LabelColor, "%s:", TextureSlots[j].Name);
+            ImGui::SameLine();
+
+            // 드롭다운 메뉴 ID 생성
+            char comboID[64];
+            sprintf_s(comboID, "##Texture_%s", TextureSlots[j].Name);
+
+            // 드롭다운 메뉴 표시
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 10.0f);
+            if (ImGui::BeginCombo(comboID, *CurrentTexturePath))
+            {
+                // "None" 옵션
+                bool isNoneSelected = (CurrentTexturePath == "None");
+                if (ImGui::Selectable("None", isNoneSelected))
+                {
+                    tempMaterialInfo.TextureFlag &= ~SlotFlag;  // 해당 비트 지우기
+
+                    if (TextureIndex >= 0 && TextureIndex < TextureInfos.Num())
+                    {
+                        TextureInfos.RemoveAt(TextureIndex);
+                    }
+                }
+
+                // 필터 추가
+                static char filterBuffer[256] = "";
+                ImGui::InputText("Filter", filterBuffer, IM_ARRAYSIZE(filterBuffer));
+                std::string filter = filterBuffer;
+                std::transform(filter.begin(), filter.end(), filter.begin(), ::tolower);
+
+                // 사용 가능한 모든 텍스처 표시 (필터링 적용)
+                ImGui::BeginChild("TextureList", ImVec2(0, 200), true);
+                for (const FWString& TexturePath : AvailableTextures)
+                {
+                    // 경로에서 파일 이름만 추출
+                    FWString FileName = TexturePath;
+                    size_t lastSlash = FileName.find_last_of(L"/\\");
+                    if (lastSlash != std::wstring::npos)
+                    {
+                        FileName = FileName.substr(lastSlash + 1);
+                    }
+
+                    FString FileNameStr(FileName.c_str());
+
+                    // 필터링 적용
+                    if (!filter.empty())
+                    {
+                        std::string fileNameLower = std::string(FileNameStr);
+                        std::transform(fileNameLower.begin(), fileNameLower.end(), fileNameLower.begin(), ::tolower);
+
+                        if (fileNameLower.find(filter) == std::string::npos)
+                        {
+                            continue;  // 필터와 일치하지 않으면 건너뛰기
+                        }
+                    }
+
+                    bool isSelected = (FileNameStr == CurrentTexturePath);
+
+                    if (ImGui::Selectable(*FileNameStr, isSelected))
+                    {
+                        FTextureInfo NewTextureInfo;
+                        NewTextureInfo.TextureName = FileNameStr;
+                        NewTextureInfo.TexturePath = TexturePath;
+                        NewTextureInfo.bIsSRGB = true;  // 기본값
+
+                        if (TextureIndex >= 0 && TextureIndex < TextureInfos.Num())
+                        {
+                            TextureInfos[j] = NewTextureInfo;
+                            tempMaterialInfo.TextureFlag |= SlotFlag;  // 해당 비트 설정
+                        }
+
+                    }
+
+                    if (isSelected)
+                    {
+                        ImGui::SameLine();
+                        ImGui::Text("[Selected]");
+                        ImGui::SameLine();
+
+                    }
+                }
+                ImGui::EndChild();
+
+                ImGui::EndCombo();
+            }
+
+            // SRGB 체크박스 추가 (텍스처가 선택된 경우만)
+            if (CurrentTexturePath != "None" && TextureIndex >= 0 && TextureIndex < TextureInfos.Num())
+            {
+                ImGui::SameLine();
+                bool bIsSRGB = TextureInfos[TextureIndex].bIsSRGB;
+                if (ImGui::Checkbox(("sRGB##" + std::string(TextureSlots[j].Name)).c_str(), &bIsSRGB))
+                {
+                    TextureInfos[TextureIndex].bIsSRGB = bIsSRGB;
+                }
+
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::SetTooltip("sRGB color space (checked) or linear color space (unchecked)");
+                }
+            }
+        }
+    }
 
     ImGui::NewLine();
     if (ImGui::Button("Create Material")) {
