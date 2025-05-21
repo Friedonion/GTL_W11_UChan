@@ -73,9 +73,13 @@ void UAssetManager::InitDefaultParticleTemplate()
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSizeModule);
     
     UParticleModuleColor* SampleColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+    SampleColorModule->StartColor.Distribution->Constant = FVector(1.0f, 1.0f, 1.0f);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorModule);
     
     UParticleModuleVelocity* SampleVelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+    SampleVelocityModule->StartVelocity.Distribution->Constant = FVector(0.0f, 0.0f, 1.0f);
+    SampleVelocityModule->StartVelocity.MinValueVec = FVector(-1.0f, -1.0f, 0.0f);
+    SampleVelocityModule->StartVelocity.MaxValueVec = FVector(1.0f, 1.0f, 0.0f);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleVelocityModule);
     
     Template->Emitters.Add(SampleEmitter);

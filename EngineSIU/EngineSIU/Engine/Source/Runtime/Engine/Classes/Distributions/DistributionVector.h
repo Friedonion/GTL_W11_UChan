@@ -95,7 +95,7 @@ public:
 struct FRawDistributionVector : public FRawDistribution
 {
     DECLARE_STRUCT_WITH_SUPER(FRawDistributionVector, FRawDistribution)
-private:
+public:
     //UPROPERTY()
     UPROPERTY_WITH_FLAGS
     (EditAnywhere, float, MinValue)
