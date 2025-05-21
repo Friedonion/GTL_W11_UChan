@@ -30,9 +30,9 @@ FParticleRenderPass::FParticleRenderPass()
     , TransparentDepthState(nullptr)
     , MeshInstanceBuffer(nullptr)
     , SpriteInstanceBuffer(nullptr)
-    , SubImageCountX(6)
-    , SubImageCountY(6)
-    , ActiveTypes(0xFF) // 기본적으로 모든 타입 활성화
+    , SubImageCountX(1)
+    , SubImageCountY(1)
+    , ActiveTypes(0xFF) 
 {
 }
 
@@ -55,13 +55,7 @@ void FParticleRenderPass::Initialize(FDXDBufferManager* InBufferManager, FGraphi
     // 공통 상태 생성
     CreateBlendStates();
     CreateDepthStates();
-
-    // 메쉬 파티클 초기화
-    LoadMeshes();
     CreateMeshInstanceBuffer();
-
-    // 스프라이트 파티클 초기화
-    LoadTexture();
     CreateSpriteInstanceBuffer();
 }
 
@@ -81,21 +75,6 @@ void FParticleRenderPass::PrepareRenderArr()
             }
         }
     }
-
-    // 각 타입별 파티클 준비
-    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
-    {
-        PrepareMeshParticles();
-    }
-
-    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)))
-    {
-        PrepareSpriteParticles();
-    }
-    
-    // 반투명 파티클 정렬 (카메라와의 거리에 따라)
-    SortParticlesByDistance(TransparentMeshInstanceData);
-    SortParticlesByDistance(TransparentSpriteInstanceData);
 }
 
 void FParticleRenderPass::ClearRenderArr()
@@ -115,29 +94,46 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
     Graphics->DeviceContext->OMSetRenderTargets(1, &RenderTargetRHI->RTV, DepthStencilRHI->DSV);
     Graphics->DeviceContext->RSSetViewports(1, &ViewportResource->GetD3DViewport());
 
-    // 1. 먼저 불투명 파티클 렌더링 (깊이 쓰기 활성화)
-    
-    // 불투명 메쉬 파티클 렌더링
-    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && OpaqueMeshInstanceData.Num() > 0)
+    for (UParticleSystemComponent* Comp : ParticleSystemComponents)
     {
-        RenderMeshParticles(Viewport, false);
-    }
+        for (FParticleEmitterInstance* EmitterInstance : Comp->EmitterInstances)
+        {
+            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
+            {
+                PrepareMeshParticles(EmitterInstance);
+            }
 
-    // 불투명 스프라이트 파티클 렌더링
-    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && OpaqueSpriteInstanceData.Num() > 0)
-    {
-        RenderSpriteParticles(Viewport, false);
-    }
+            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)))
+            {
+                PrepareSpriteParticles(EmitterInstance);
+            }
 
-    
-    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && TransparentMeshInstanceData.Num() > 0)
-    {
-        RenderMeshParticles(Viewport, true);
-    }
+            SortParticlesByDistance(TransparentMeshInstanceData);
+            SortParticlesByDistance(TransparentSpriteInstanceData);
 
-    if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && TransparentSpriteInstanceData.Num() > 0)
-    {
-        RenderSpriteParticles(Viewport, true);
+            // 불투명 메쉬 파티클 렌더링
+            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && OpaqueMeshInstanceData.Num() > 0)
+            {
+                RenderMeshParticles(Viewport, false);
+            }
+
+            // 불투명 스프라이트 파티클 렌더링
+            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && OpaqueSpriteInstanceData.Num() > 0)
+            {
+                RenderSpriteParticles(Viewport, false);
+            }
+
+
+            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && TransparentMeshInstanceData.Num() > 0)
+            {
+                RenderMeshParticles(Viewport, true);
+            }
+
+            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && TransparentSpriteInstanceData.Num() > 0)
+            {
+                RenderSpriteParticles(Viewport, true);
+            }
+        }
     }
 
     // 렌더 타겟 및 상태 해제
@@ -239,21 +235,6 @@ void FParticleRenderPass::LoadMeshes()
     {
         MeshArray.Add(Mesh);
     }
-    
-    // 방법 2: AssetManager 사용 (GEngine이 유효할 때만)
-    if (MeshArray.Num() == 0 && GEngine)
-    {
-            const TMap<FName, UStaticMesh*>& StaticMeshMap = UAssetManager::Get().GetStaticMeshMap();
-            
-            for (const auto& Pair : StaticMeshMap)
-            {
-                UStaticMesh* Mesh = Pair.Value;
-                if (Mesh && Mesh->GetRenderData())
-                {
-                    MeshArray.Add(Mesh);
-                }
-            }
-    }
 }
 
 void FParticleRenderPass::LoadTexture()
@@ -317,7 +298,7 @@ void FParticleRenderPass::UpdateSpriteInstanceBuffer()
     }
 }
 
-void FParticleRenderPass::PrepareMeshParticles()
+void FParticleRenderPass::PrepareMeshParticles(FParticleEmitterInstance* EmitterInstance)
 {
     LoadMeshes();
     if (MeshArray.Num() == 0 || ParticleSystemComponents.Num() == 0)
@@ -338,18 +319,16 @@ void FParticleRenderPass::PrepareMeshParticles()
         }
     }
     
-    // 수집된 모든 파티클 시스템 컴포넌트에서 데이터 수집
-    for (UParticleSystemComponent* Component : ParticleSystemComponents)
-    {
-        if (!Component)
-            continue;
+    
+    if (!EmitterInstance)
+        return;
             
         // 임시 데이터 컨테이너
         TArray<FMeshParticleInstanceData> tempMeshData;
         TArray<FSpriteParticleInstanceData> tempSpriteData; // 사용하지 않지만 GatherParticleInstanceData 함수의 인자로 필요
         
         // 메시 파티클만 수집합니다
-        GatherParticleInstanceData(Component, tempMeshData, tempSpriteData);
+        GatherParticleInstanceData(EmitterInstance, tempMeshData, tempSpriteData);
         
         // 투명도에 따라 분류
         for (const auto& Instance : tempMeshData)
@@ -370,12 +349,10 @@ void FParticleRenderPass::PrepareMeshParticles()
                 OpaqueMeshInstanceData.Add(NewInstance);
             }
         }
-    }
-    
     UpdateMeshInstanceBuffer();
 }
 
-void FParticleRenderPass::PrepareSpriteParticles()
+void FParticleRenderPass::PrepareSpriteParticles(FParticleEmitterInstance* EmitterInstance)
 {
     LoadTexture();
     if (!ParticleTexture || ParticleSystemComponents.Num() == 0)
@@ -396,18 +373,15 @@ void FParticleRenderPass::PrepareSpriteParticles()
         }
     }
     
-    // 수집된 모든 파티클 시스템 컴포넌트에서 데이터 수집
-    for (UParticleSystemComponent* Component : ParticleSystemComponents)
-    {
-        if (!Component)
-            continue;
+    if (!EmitterInstance)
+        return;
             
         // 임시 데이터 컨테이너
         TArray<FMeshParticleInstanceData> tempMeshData; // 사용하지 않지만 GatherParticleInstanceData 함수의 인자로 필요
         TArray<FSpriteParticleInstanceData> tempSpriteData;
         
         // 스프라이트 파티클만 수집합니다
-        GatherParticleInstanceData(Component, tempMeshData, tempSpriteData);
+        GatherParticleInstanceData(EmitterInstance, tempMeshData, tempSpriteData);
         
         // 투명도에 따라 분류
         for (const auto& Instance : tempSpriteData)
@@ -428,8 +402,6 @@ void FParticleRenderPass::PrepareSpriteParticles()
                 OpaqueSpriteInstanceData.Add(NewInstance);
             }
         }
-    }
-    
     UpdateSpriteInstanceBuffer();
 }
 
@@ -490,7 +462,6 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
     
     Graphics->DeviceContext->RSSetState(rasterizerState);
     
-    // 각 메쉬 별로 렌더링
     for (int i = 0; i < MeshArray.Num(); ++i)
     {
         UStaticMesh* Mesh = MeshArray[i];
@@ -500,7 +471,6 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
             
         FStaticMeshRenderData* RenderData = Mesh->GetRenderData();
         
-        // 메쉬의 인스턴스만 필터링
         TArray<FMeshParticleInstanceData> FilteredInstances;
         for (const auto& Instance : InstanceData)
         {
@@ -519,7 +489,6 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
         
         // 머티리얼 설정
         TArray<FStaticMaterial*> Materials = Mesh->GetMaterials();
-        TArray<UMaterial*> OverrideMaterials; // 비어있음
         
         // 각 서브메쉬 렌더링
         for (int SubMeshIndex = 0; SubMeshIndex < RenderData->MaterialSubsets.Num(); SubMeshIndex++)
@@ -608,22 +577,15 @@ void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorVie
     Graphics->DeviceContext->DrawIndexedInstanced(QuadIB.NumIndices, InstanceData.Num(), 0, 0, 0);
 }
 
-bool FParticleRenderPass::GatherParticleInstanceData(UParticleSystemComponent* InComponent,
+bool FParticleRenderPass::GatherParticleInstanceData(FParticleEmitterInstance* EmitterInstance,
                                                        TArray<FMeshParticleInstanceData>& OutMeshInstanceData,
                                                        TArray<FSpriteParticleInstanceData>& OutSpriteInstanceData)
 {
-    if (!InComponent)
+    if (!EmitterInstance || !EmitterInstance->ActiveParticles)
         return false;
 
-    // 파티클 시스템 컴포넌트의 모든 이미터 인스턴스를 처리
-    for (FParticleEmitterInstance* EmitterInstance : InComponent->EmitterInstances)
-    {
-        if (!EmitterInstance || !EmitterInstance->ActiveParticles)
-            continue;
-
         // 데이터를 적절한 출력 배열에 수집하도록 매개변수 전달
-        ProcessParticleEmitter(EmitterInstance, OutMeshInstanceData, OutSpriteInstanceData);
-    }
+    ProcessParticleEmitter(EmitterInstance, OutMeshInstanceData, OutSpriteInstanceData);
 
     return OutMeshInstanceData.Num() > 0 || OutSpriteInstanceData.Num() > 0;
 }
@@ -645,7 +607,7 @@ void FParticleRenderPass::ProcessParticleEmitter(FParticleEmitterInstance* Emitt
     uint16* ParticleIndices = EmitterInstance->ParticleIndices;
 
     // 이미터 타입에 따라 처리
-    bool bIsMesh = EmitterInstance->bIsBeam; // 간단한 예제로, 빔 타입인지 확인하여 메시 파티클로 처리
+    bool bIsMesh = false;; // 메시인지 어떻게 확인하지
 
     // 각 파티클 처리
     for (int32 i = 0; i < ActiveParticles; i++)
@@ -665,9 +627,8 @@ void FParticleRenderPass::ProcessParticleEmitter(FParticleEmitterInstance* Emitt
             FMeshParticleInstanceData MeshInstance;
             MeshInstance.World = ParticleWorldMatrix;
             MeshInstance.Color = Particle->Color;
-            MeshInstance.MeshIndex = 0; // 간단한 구현을 위해 첫 번째 메시 사용
+            MeshInstance.MeshIndex =0;
 
-            // 수정: 멤버 변수 대신 출력 매개변수에 추가
             OutMeshInstanceData.Add(MeshInstance);
         }
         else

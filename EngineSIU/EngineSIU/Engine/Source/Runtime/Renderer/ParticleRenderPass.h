@@ -103,8 +103,8 @@ private:
     void SortParticlesByDistance(TArray<FMeshParticleInstanceData>& Particles);
     void SortParticlesByDistance(TArray<FSpriteParticleInstanceData>& Particles);
     
-    void PrepareMeshParticles();
-    void PrepareSpriteParticles();
+    void PrepareMeshParticles(FParticleEmitterInstance* Emitter);
+    void PrepareSpriteParticles(FParticleEmitterInstance* Emitter);
     void RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent);
     void RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent);
     
@@ -116,7 +116,7 @@ private:
     void LoadMeshes();
     void LoadTexture();
 
-    bool GatherParticleInstanceData(UParticleSystemComponent* InComponent,
+    bool GatherParticleInstanceData(FParticleEmitterInstance* Emitter,
                                     TArray<FMeshParticleInstanceData>& OutMeshInstanceData,
                                     TArray<FSpriteParticleInstanceData>& OutSpriteInstanceData);
     void ProcessParticleEmitter(FParticleEmitterInstance* EmitterInstance,
