@@ -873,18 +873,47 @@ void ParticleSystemEmittersPanel::OnRemoveEmitter(UParticleEmitter* Emitter, int
 // 파티클 시스템 이벤트 핸들러
 void ParticleSystemEmittersPanel::OnSelectParticleSystem()
 {
+    // 파티클 시스템 컴포넌트와 템플릿 가져오기
     UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
     if (!ParticleSystem)
     {
+        UE_LOG(ELogLevel::Warning, "Invalid ParticleSystemComponent or Template.");
         return;
     }
     
-    // 파티클 시스템 선택 로직
-    std::cout << "Select ParticleSystem" << std::endl;
-    
-    // 파티클 시스템 선택 시 모든 선택 초기화 후 전체 시스템 선택
     Selection.Reset();
     Selection.ParticleSystem = ParticleSystem;
+    
+    // 파티클 시스템의 모든 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
+    
+    // 에미터 인스턴스 업데이트
+    if (ParticleSystemComponent)
+    {
+        // 필요한 경우 파티클 시스템 컴포넌트의 에미터 인스턴스 상태 확인 및 업데이트
+        for (int32 EmitterIndex = 0; EmitterIndex < ParticleSystem->Emitters.Num(); ++EmitterIndex)
+        {
+            if (EmitterIndex >= ParticleSystemComponent->EmitterInstances.Num() ||
+                !ParticleSystemComponent->EmitterInstances[EmitterIndex])
+            {
+                // 필요시 인스턴스 초기화 로직을 여기에 추가할 수 있음
+                // 현재 구현은 ParticleSystemComponent에서 처리하는 것으로 가정
+            }
+        }
+    }
+    
+    // UE_LOG(ELogLevel::Display, TEXT("파티클 시스템 선택: %s (에미터 수: %d)"),
+    //      *ParticleSystem->GetName(), ParticleSystem->Emitters.Num());
+    
+    // for (int32 i = 0; i < ParticleSystem->Emitters.Num(); ++i)
+    // {
+    //     if (ParticleSystem->Emitters[i])
+    //     {
+    //         UE_LOG(ELogLevel::Display, TEXT("  에미터[%d]: %s"),
+    //             i, GetData(ParticleSystem->Emitters[i]->EmitterName.ToString()));
+    //     }
+    // }
+    
     OnSelectionChanged();
 }
 
