@@ -138,7 +138,7 @@ void ControlEditorPanel::Render()
         ImGui::SetNextWindowPos(Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     
         ImGui::OpenPopup("##Application Quit", ImGuiPopupFlags_AnyPopup);
-        if (ImGui::BeginPopupModal("##Application Quit", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        if (ImGui::BeginPopupModal("##Application Quit", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             ImGui::Text("정말 프로그램을 종료하시겠습니까?");
             ImGui::Separator();

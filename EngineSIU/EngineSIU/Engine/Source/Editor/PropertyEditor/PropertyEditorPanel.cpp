@@ -14,6 +14,7 @@
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleEmitter.h"
 #include "Particles/ParticleModule.h"
+#include "Particles/ParticleModuleRequired.h"
 #include "Components/ParticleSystemComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -71,7 +72,7 @@ void PropertyEditorPanel::Render()
 
     if (Engine->ActiveWorld)
     {
-        if (Engine->ActiveWorld->WorldType == EWorldType::Editor)
+        if (Engine->ActiveWorld->WorldType == EWorldType::Editor or Engine->ActiveWorld->WorldType == EWorldType::PIE)
         {
             PanelWidth = (Width) * 0.2f - 5.0f;
             PanelHeight = (Height)-((Height) * 0.3f + 10.0f) - 32.0f;
@@ -1742,6 +1743,10 @@ void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
     //if (currentMaterialIndex >= FManagerGetMaterialNum())
     //    currentMaterialIndex = 0;
 
+    // 드롭다운 너비 제한 설정
+    ImGui::SetNextItemWidth(200.0f);
+    
+    // ImGui::Combo 사용 시 고유한 ID 사용
     if (ImGui::Combo("##MaterialDropdown", &CurMaterialIndex, MaterialChars.data(), FObjManager::GetMaterialNum())) {
         UMaterial* Material = FObjManager::GetMaterial(MaterialChars[CurMaterialIndex]);
         SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, Material);
@@ -2227,6 +2232,165 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
             break;
         case EPMT_Required:
             ImGui::Text("Required Module");
+            
+            // UParticleModuleRequired의 Material 속성에 대한 특별 처리
+            if (UParticleModuleRequired* RequiredModule = Cast<UParticleModuleRequired>(Module))
+            {
+                ImGui::Separator();
+                ImGui::Text("Material Settings");
+                
+                UMaterial* CurrentMaterial = RequiredModule->Material;
+                const char* MaterialName = CurrentMaterial ? GetData(CurrentMaterial->GetMaterialInfo().MaterialName) : "None";
+                
+                // 머티리얼 미리보기 (100x100 크기로 확장)
+                if (CurrentMaterial)
+                {
+                    // 텍스처와 디퓨즈 색상 모두 처리
+                    bool bHasTexturePreview = false;
+                    
+                    // 머티리얼에서 텍스처 정보 가져오기
+                    const FMaterialInfo& MaterialInfo = CurrentMaterial->GetMaterialInfo();
+                    if (!MaterialInfo.TextureInfos.IsEmpty())
+                    {
+                        // 첫 번째 텍스처(보통 Diffuse 텍스처) 경로 확인
+                        const FTextureInfo& TextureInfo = MaterialInfo.TextureInfos[0];
+                        if (!TextureInfo.TexturePath.empty())
+                        {
+                            // 텍스처 이미지를 렌더링
+                            ID3D11ShaderResourceView* TextureSRV = FEngineLoop::ResourceManager.GetTexture(TextureInfo.TexturePath)->TextureSRV;
+                            if (TextureSRV)
+                            {
+                                ImGui::Image(reinterpret_cast<ImTextureID>(TextureSRV), ImVec2(100, 100));
+                                bHasTexturePreview = true;
+                            }
+                        }
+                    }
+                    
+                    // 텍스처가 없는 경우 디퓨즈 색상으로 미리보기 표시
+                    if (!bHasTexturePreview)
+                    {
+                        // 색상 기반 미리보기 표시
+                        FLinearColor PreviewColor(0.8f, 0.8f, 0.8f, 1.0f);
+                        if (MaterialInfo.DiffuseColor.X > 0 ||
+                            MaterialInfo.DiffuseColor.Y > 0 ||
+                            MaterialInfo.DiffuseColor.Z > 0)
+                        {
+                            PreviewColor = FLinearColor(
+                                MaterialInfo.DiffuseColor.X,
+                                MaterialInfo.DiffuseColor.Y,
+                                MaterialInfo.DiffuseColor.Z,
+                                1.0f
+                            );
+                        }
+                        
+                        ImGui::ColorButton("##MaterialPreview",
+                            ImVec4(PreviewColor.R, PreviewColor.G, PreviewColor.B, PreviewColor.A),
+                            ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
+                            ImVec2(100, 100));
+                    }
+                }
+                else
+                {
+                    ImGui::Dummy(ImVec2(100, 100));
+                }
+                ImGui::SameLine();
+                // 머티리얼 선택 드롭다운 - 고정 너비 설정
+                ImGui::SetNextItemWidth(250.0f);
+                
+                // 고유한 ID를 사용하여 중복 렌더링 문제 방지
+                if (ImGui::BeginCombo("##MaterialSelector", MaterialName, ImGuiComboFlags_HeightLarge))
+                {
+                    // None 옵션
+                    bool isNoneSelected = (CurrentMaterial == nullptr);
+                    if (ImGui::Selectable("None", isNoneSelected))
+                    {
+                        RequiredModule->Material = nullptr;
+                    }
+                    
+                    // 사용 가능한 모든 머티리얼 목록 표시 (특히 텍스처 중심)
+                    const TMap<FName, UMaterial*>& Materials = UAssetManager::Get().GetMaterialMap();
+                    
+                    // 중복된 렌더링을 방지하기 위해 이미 처리한 머티리얼 추적
+                    TSet<FName> ProcessedMaterials;
+                    
+                    for (const auto& MatEntry : Materials)
+                    {
+                        // 이미 처리된 머티리얼은 건너뛰기
+                        if (ProcessedMaterials.Contains(MatEntry.Key))
+                        {
+                            continue;
+                        }
+                        
+                        ProcessedMaterials.Add(MatEntry.Key);
+                        UMaterial* Material = MatEntry.Value;
+                        if (!Material)
+                        {
+                            continue;
+                        }
+                        
+                        // 머티리얼 이름과 미리보기 썸네일 표시
+                        bool isSelected = (Material == CurrentMaterial);
+                        
+                        // 머티리얼 썸네일과 이름을 함께 표시 (한 그룹으로 묶기)
+                        ImGui::BeginGroup();
+                        
+                        // 작은 색상 미리보기 사각형 표시
+                        bool bHasTexturePreview = false;
+                        const FMaterialInfo& MaterialInfo = Material->GetMaterialInfo();
+                        
+                        // 텍스처가 있는지 확인
+                        if (!MaterialInfo.TextureInfos.IsEmpty() && MaterialInfo.TextureInfos[0].TexturePath.length() > 0)
+                        {
+                            ID3D11ShaderResourceView* TextureSRV = FEngineLoop::ResourceManager.GetTexture(MaterialInfo.TextureInfos[0].TexturePath)->TextureSRV;
+                            if (TextureSRV)
+                            {
+                                ImGui::Image(reinterpret_cast<ImTextureID>(TextureSRV), ImVec2(20, 20));
+                                bHasTexturePreview = true;
+                            }
+                        }
+                        
+                        // 텍스처가 없으면 색상 버튼 표시
+                        if (!bHasTexturePreview)
+                        {
+                            FLinearColor MaterialColor(0.8f, 0.8f, 0.8f, 1.0f);
+                            if (MaterialInfo.DiffuseColor.X > 0 ||
+                                MaterialInfo.DiffuseColor.Y > 0 ||
+                                MaterialInfo.DiffuseColor.Z > 0)
+                            {
+                                MaterialColor = FLinearColor(
+                                    MaterialInfo.DiffuseColor.X,
+                                    MaterialInfo.DiffuseColor.Y,
+                                    MaterialInfo.DiffuseColor.Z,
+                                    1.0f
+                                );
+                            }
+                            
+                            ImGui::ColorButton("##MaterialItemPreview",
+                                ImVec4(MaterialColor.R, MaterialColor.G, MaterialColor.B, MaterialColor.A),
+                                ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
+                                ImVec2(20, 20));
+                        }
+                        ImGui::SameLine();
+                        
+                        // 각 머티리얼마다 고유한 ID 사용하여 텍스트 정보와 선택 가능하게 설정
+                        FString idString = "material_" + FString::FromInt(reinterpret_cast<intptr_t>(Material));
+                        if (ImGui::Selectable(GetData(Material->GetMaterialInfo().MaterialName), isSelected))
+                        {
+                            RequiredModule->Material = Material;
+                        }
+                        
+                        ImGui::EndGroup();
+                        
+                        // 선택된 항목 강조표시
+                        if (isSelected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    
+                    ImGui::EndCombo();
+                }
+            }
             break;
         case EPMT_TypeData:
             ImGui::Text("Type Data Module");
@@ -2264,6 +2428,14 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
 
             for (const FProperty* Prop : Properties)
             {
+                // UParticleModuleRequired의 Material 속성에 대한 ImGui 렌더링을 건너뜁니다.
+                // 이미 위에서 특별 처리했기 때문입니다.
+                if (Module->GetModuleType() == EPMT_Required &&
+                    strcmp(Prop->Name, "Material") == 0)
+                {
+                    continue;
+                }
+                
                 Prop->DisplayInImGui(Module);
             }
         }
@@ -2289,10 +2461,6 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
         {
             ImGui::Text("This module is used for GPU particles");
         }
-
-        // 모듈 특성에 따른 추가 속성
-        // 이 부분은 모듈 타입에 따라 더 많은 속성들을 표시할 수 있음
-        // 각 모듈 타입에 맞게 확장 필요
 
         ImGui::TreePop();
     }

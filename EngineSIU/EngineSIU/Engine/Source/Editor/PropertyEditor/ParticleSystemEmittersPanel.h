@@ -40,6 +40,50 @@ private:
     void RenderModuleCategory(const TArray<UParticleModule*>& Modules, int32 EmitterIndex);
     
     /**
+     * 에미터 컨텍스트 메뉴 표시
+     *
+     * @param Emitter 컨텍스트 메뉴를 표시할 에미터
+     * @param EmitterIndex 에미터 인덱스
+     */
+    void ShowEmitterContextMenu(UParticleEmitter* Emitter, int32 EmitterIndex);
+    
+    /**
+     * 모듈 컨텍스트 메뉴 표시
+     *
+     * @param Module 컨텍스트 메뉴를 표시할 모듈
+     * @param EmitterIndex 에미터 인덱스
+     * @param ModuleIndex 모듈 인덱스
+     */
+    void ShowModuleContextMenu(UParticleModule* Module, int32 EmitterIndex, int32 ModuleIndex);
+    
+    // 에미터 이벤트 핸들러
+    void OnRenameEmitter(UParticleEmitter* Emitter, int32 EmitterIndex);
+    void OnDuplicateEmitter(UParticleEmitter* Emitter, int32 EmitterIndex);
+    void OnRemoveEmitter(UParticleEmitter* Emitter, int32 EmitterIndex);
+    
+    // 파티클 시스템 이벤트 핸들러
+    void OnSelectParticleSystem();
+    void OnAddEmitterBefore(int32 EmitterIndex);
+    void OnAddEmitterAfter(int32 EmitterIndex);
+    void OnRemoveDuplicateModule(UParticleEmitter* Emitter);
+    
+    // 파티클 모듈 추가 이벤트 핸들러
+    void OnAddInitialColor(UParticleEmitter* Emitter);
+    void OnAddColorOverLife(UParticleEmitter* Emitter);
+    void OnAddLifetime(UParticleEmitter* Emitter);
+    void OnAddInitialSize(UParticleEmitter* Emitter);
+    void OnAddSizeByLife(UParticleEmitter* Emitter);
+    void OnAddSpawnPerUnit(UParticleEmitter* Emitter);
+    void OnAddInitialVelocity(UParticleEmitter* Emitter);
+    void OnAddVelocityOverLife(UParticleEmitter* Emitter);
+    
+    // 모듈 이벤트 핸들러
+    void OnDuplicateModule(UParticleModule* Module, int32 EmitterIndex, int32 ModuleIndex);
+    void OnRemoveModule(UParticleModule* Module, int32 EmitterIndex, int32 ModuleIndex);
+    void OnMoveModuleUp(int32 EmitterIndex, int32 ModuleIndex);
+    void OnMoveModuleDown(int32 EmitterIndex, int32 ModuleIndex);
+    
+    /**
      * 에미터 선택 처리
      *
      * @param Emitter 선택된 에미터
@@ -92,6 +136,13 @@ private:
     FSelectedObject Selection;
     std::function<void(const FSelectedObject&, UParticleSystemComponent*)> SelectionChangedCallback;
 
+    // 이미터 이름 변경 상태 관리
+    bool bShowRenameEmitterModal = false;
+    UParticleEmitter* EmitterToRename = nullptr;
+    int32 EmitterToRenameIndex = INDEX_NONE;
+    char EmitterNameBuffer[256] = {};
+
 private:
     float Width = 0, Height = 0;
+    const float ContentWidth = 300.0f;
 };

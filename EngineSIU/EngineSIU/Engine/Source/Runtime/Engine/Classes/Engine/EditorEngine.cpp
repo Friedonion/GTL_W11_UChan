@@ -344,7 +344,7 @@ void UEditorEngine::StartParticleSystemViewer(FName InParticleTemplateName)
 
     //ParticleActor->SetRootComponent(ParticleComponent);
     ParticleActor->SetActorLabel(TEXT("OBJ_PARTICLESYSTEM"));
-    UParticleSystemComponent* ParticleSystemComponent = Cast<UParticleSystemComponent>(ParticleActor->GetRootComponent());
+    UParticleSystemComponent* ParticleSystemComponent = ParticleActor->ParticleSystemComponent;
     ParticleSystemComponent->Template = UAssetManager::Get().GetParticleTemplate(InParticleTemplateName);
     ParticleSystemComponent->UpdateComponent();
 
@@ -364,27 +364,29 @@ void UEditorEngine::StartParticleSystemViewer(FName InParticleTemplateName)
     CameraLocation = Camera->GetLocation();
     CameraRotation = Camera->GetRotation();
 
-    Camera->SetRotation(FVector(0.0f, 30, 180));
-    //if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(ParticleComponent))
-    //{
-    //    float FOV = LevelEditor->GetActiveViewportClient()->GetCameraFOV();
+    // @note z회전 225도로 설정
+    Camera->SetRotation(FVector(0.0f, 30, 225));
 
-    //    // 로컬 바운딩 박스
-    //    FBoundingBox Box = Primitive->GetBoundingBox();
-    //    FVector LocalCenter = (Box.MinLocation + Box.MaxLocation) * 0.5f;
-    //    FVector LocalExtents = (Box.MaxLocation - Box.MinLocation) * 0.5f;
-    //    float Radius = LocalExtents.Length();
+    auto ParticleComponent = ParticleActor->ParticleSystemComponent;
+    if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(ParticleComponent))
+    {
+        float FOV = LevelEditor->GetActiveViewportClient()->GetCameraFOV();
 
-    //    FMatrix ComponentToWorld = Primitive->GetWorldMatrix();
-    //    FVector WorldCenter = ComponentToWorld.TransformPosition(LocalCenter);
+        // @note 임의 위치(원점), 크기 설정
+        FVector LocalCenter = FVector(0.f);
+        FVector LocalExtents = FVector(10.f);
+        float Radius = LocalExtents.Length();
 
-    //    // FOV 기반 거리 계산
-    //    float VerticalFOV = FMath::DegreesToRadians(FOV);
-    //    float Distance = Radius / FMath::Tan(VerticalFOV * 0.5f);
+        FMatrix ComponentToWorld = Primitive->GetWorldMatrix();
+        FVector WorldCenter = ComponentToWorld.TransformPosition(LocalCenter);
 
-    //    // 카메라 위치 설정
-    //    Camera->SetLocation(WorldCenter - Camera->GetForwardVector() * Distance);
-    //}
+        // FOV 기반 거리 계산
+        float VerticalFOV = FMath::DegreesToRadians(FOV);
+        float Distance = Radius / FMath::Tan(VerticalFOV * 0.5f);
+
+        // 카메라 위치 설정
+        Camera->SetLocation(WorldCenter - Camera->GetForwardVector() * Distance);
+    }
 
     if (AEditorPlayer* Player = GetEditorPlayer())
     {
@@ -400,7 +402,7 @@ void UEditorEngine::EndParticleSystemViewer()
 {
     if (ParticleSystemViewerWorld)
     {
-        UParticleSystemComponent* ParticleSystemComponent = Cast<UParticleSystemComponent>(this->GetHoveredActor()->GetRootComponent());
+        UParticleSystemComponent* ParticleSystemComponent = Cast<AParticleSystemActor>(this->GetHoveredActor())->ParticleSystemComponent;
         UAssetManager::Get().AddParticleTemplate(ParticleSystemComponent->TemplateName,ParticleSystemComponent->Template);
         this->ClearActorSelection();
         WorldList.Remove(GetWorldContextFromWorld(ParticleSystemViewerWorld));

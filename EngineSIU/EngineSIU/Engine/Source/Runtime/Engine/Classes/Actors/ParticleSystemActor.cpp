@@ -17,3 +17,11 @@ void AParticleSystemActor::Tick(float DeltaTime)
 
     ParticleSystemComponent->TickComponent(DeltaTime);
 }
+
+UObject* AParticleSystemActor::Duplicate(UObject* InOuter)
+{
+    ThisClass* NewActor = Cast<ThisClass>(Super::Duplicate(InOuter));
+    NewActor->ParticleSystemComponent = ParticleSystemComponent;
+
+    return NewActor;
+}

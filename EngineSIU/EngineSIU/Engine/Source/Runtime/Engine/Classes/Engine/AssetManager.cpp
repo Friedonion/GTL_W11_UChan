@@ -20,6 +20,7 @@
 #include "Particles/Lifetime/ParticleModuleLifetime.h"
 #include "Particles/Size/ParticleModuleSize.h"
 #include "Particles/Velocity/ParticleModuleVelocity.h"
+#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 
 #include "Serialization/MemoryArchive.h"
 #include "UObject/ObjectFactory.h"
@@ -65,7 +66,12 @@ void UAssetManager::InitDefaultParticleTemplate()
     
     UParticleSpriteEmitter* SampleEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
     SampleEmitter->CreateLODLevel(0);
-    
+    UParticleModuleTypeDataMesh* TypeDataModuleMesh = FObjectFactory::ConstructObject<UParticleModuleTypeDataMesh>(nullptr);
+    //TypeDataModuleMesh->Mesh = GetStaticMesh(L"Contents/Coin2/Coin2.obj");
+    TypeDataModuleMesh->Mesh = FObjManager::GetStaticMesh(L"Contents/Coin2/Coin2.obj");
+
+    SampleEmitter->GetLODLevel(0)->TypeDataModule = TypeDataModuleMesh;
+
     UParticleModuleLifetime* SampleLifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleLifetimeModule);
     

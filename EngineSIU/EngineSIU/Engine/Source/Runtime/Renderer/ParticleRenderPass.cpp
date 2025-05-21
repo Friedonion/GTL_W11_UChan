@@ -20,6 +20,9 @@
 #include "Editor/LevelEditor/SLevelEditor.h"
 #include "ParticleHelper.h"
 
+#include "Engine/ParticleEmitterInstances.h"
+#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
+
 FParticleRenderPass::FParticleRenderPass()
     : BufferManager(nullptr)
     , Graphics(nullptr)
@@ -113,10 +116,11 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
             SortParticlesByDistance(TransparentSpriteInstanceData);
 
 
-            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && OpaqueMeshInstanceData.Num() > 0)
+            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
             {
                 UpdateMeshInstanceBuffer(true);
-                RenderMeshParticles(Viewport, false);
+                FParticleMeshEmitterInstance* MeshInstance = static_cast<FParticleMeshEmitterInstance*>(EmitterInstance);
+                RenderMeshParticles(Viewport, false, MeshInstance->MeshTypeData->Mesh);
             }
 
             // 불투명 스프라이트 파티클 렌더링
@@ -127,10 +131,11 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
             }
 
 
-            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && TransparentMeshInstanceData.Num() > 0)
+            if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
             {
                 UpdateMeshInstanceBuffer(false);
-                RenderMeshParticles(Viewport, true);
+                FParticleMeshEmitterInstance* MeshInstance = static_cast<FParticleMeshEmitterInstance*>(EmitterInstance);
+                RenderMeshParticles(Viewport, true, MeshInstance->MeshTypeData->Mesh);
             }
 
             if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && TransparentSpriteInstanceData.Num() > 0)
@@ -406,7 +411,7 @@ void FParticleRenderPass::PrepareSpriteParticles(FParticleEmitterInstance* Emitt
         }
 }
 
-void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent)
+void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent, UStaticMesh* Mesh)
 {
     // 렌더링할 파티클 데이터 선택
     TArray<FMeshParticleInstanceData>& InstanceData = bIsTransparent ? TransparentMeshInstanceData : OpaqueMeshInstanceData;
@@ -463,66 +468,57 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
     
     Graphics->DeviceContext->RSSetState(rasterizerState);
     
-    for (int i = 0; i < MeshArray.Num(); ++i)
+    //UStaticMesh* Mesh = MeshArray[i];
+        
+    if (!Mesh || !Mesh->GetRenderData()) return;
+            
+    FStaticMeshRenderData* RenderData = Mesh->GetRenderData();
+        
+    TArray<FMeshParticleInstanceData> FilteredInstances;
+    for (const auto& Instance : InstanceData)
     {
-        UStaticMesh* Mesh = MeshArray[i];
+        FilteredInstances.Add(Instance);
+    }
         
-        if (!Mesh || !Mesh->GetRenderData())
-            continue;
+    if (FilteredInstances.Num() == 0) return;
+        
+    // 인스턴스 버퍼 바인딩
+    Graphics->DeviceContext->IASetVertexBuffers(1, 1, &MeshInstanceBuffer, &instanceStride, &instanceOffset);
+        
+    // 머티리얼 설정
+    TArray<FStaticMaterial*> Materials = Mesh->GetMaterials();
+        
+    // 각 서브메쉬 렌더링
+    for (int SubMeshIndex = 0; SubMeshIndex < RenderData->MaterialSubsets.Num(); SubMeshIndex++)
+    {
+        uint32 MaterialIndex = RenderData->MaterialSubsets[SubMeshIndex].MaterialIndex;
             
-        FStaticMeshRenderData* RenderData = Mesh->GetRenderData();
-        
-        TArray<FMeshParticleInstanceData> FilteredInstances;
-        for (const auto& Instance : InstanceData)
+        // 서브메쉬 상수 업데이트
+        FSubMeshConstants SubMeshData = FSubMeshConstants(false);
+        BufferManager->UpdateConstantBuffer(TEXT("FSubMeshConstants"), SubMeshData);
+            
+        if (!Materials.IsEmpty() && Materials.Num() > MaterialIndex && Materials[MaterialIndex] != nullptr)
         {
-            if (Instance.MeshIndex == i)
-            {
-                FilteredInstances.Add(Instance);
-            }
+            MaterialUtils::UpdateMaterial(BufferManager, Graphics, Materials[MaterialIndex]->Material->GetMaterialInfo());
         }
-        
-        if (FilteredInstances.Num() == 0)
-            continue;
-        
-        
-        // 인스턴스 버퍼 바인딩
-        Graphics->DeviceContext->IASetVertexBuffers(1, 1, &MeshInstanceBuffer, &instanceStride, &instanceOffset);
-        
-        // 머티리얼 설정
-        TArray<FStaticMaterial*> Materials = Mesh->GetMaterials();
-        
-        // 각 서브메쉬 렌더링
-        for (int SubMeshIndex = 0; SubMeshIndex < RenderData->MaterialSubsets.Num(); SubMeshIndex++)
+            
+        UINT vertexStride = sizeof(FStaticMeshVertex);
+        UINT vertexOffset = 0;
+            
+        FVertexInfo VertexInfo;
+        BufferManager->CreateVertexBuffer(RenderData->ObjectName, RenderData->Vertices, VertexInfo);
+        Graphics->DeviceContext->IASetVertexBuffers(0, 1, &VertexInfo.VertexBuffer, &vertexStride, &vertexOffset);
+            
+        FIndexInfo IndexInfo;
+        BufferManager->CreateIndexBuffer(RenderData->ObjectName, RenderData->Indices, IndexInfo);
+        if (IndexInfo.IndexBuffer)
         {
-            uint32 MaterialIndex = RenderData->MaterialSubsets[SubMeshIndex].MaterialIndex;
-            
-            // 서브메쉬 상수 업데이트
-            FSubMeshConstants SubMeshData = FSubMeshConstants(false);
-            BufferManager->UpdateConstantBuffer(TEXT("FSubMeshConstants"), SubMeshData);
-            
-            if (!Materials.IsEmpty() && Materials.Num() > MaterialIndex && Materials[MaterialIndex] != nullptr)
-            {
-                MaterialUtils::UpdateMaterial(BufferManager, Graphics, Materials[MaterialIndex]->Material->GetMaterialInfo());
-            }
-            
-            UINT vertexStride = sizeof(FStaticMeshVertex);
-            UINT vertexOffset = 0;
-            
-            FVertexInfo VertexInfo;
-            BufferManager->CreateVertexBuffer(RenderData->ObjectName, RenderData->Vertices, VertexInfo);
-            Graphics->DeviceContext->IASetVertexBuffers(0, 1, &VertexInfo.VertexBuffer, &vertexStride, &vertexOffset);
-            
-            FIndexInfo IndexInfo;
-            BufferManager->CreateIndexBuffer(RenderData->ObjectName, RenderData->Indices, IndexInfo);
-            if (IndexInfo.IndexBuffer)
-            {
-                Graphics->DeviceContext->IASetIndexBuffer(IndexInfo.IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-            }
-            
-            uint32 StartIndex = RenderData->MaterialSubsets[SubMeshIndex].IndexStart;
-            uint32 IndexCount = RenderData->MaterialSubsets[SubMeshIndex].IndexCount;
-            Graphics->DeviceContext->DrawIndexedInstanced(IndexCount, FilteredInstances.Num(), StartIndex, 0, 0);
+            Graphics->DeviceContext->IASetIndexBuffer(IndexInfo.IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
         }
+            
+        uint32 StartIndex = RenderData->MaterialSubsets[SubMeshIndex].IndexStart;
+        uint32 IndexCount = RenderData->MaterialSubsets[SubMeshIndex].IndexCount;
+        Graphics->DeviceContext->DrawIndexedInstanced(IndexCount, FilteredInstances.Num(), StartIndex, 0, 0);
     }
 }
 
@@ -608,7 +604,8 @@ void FParticleRenderPass::ProcessParticleEmitter(FParticleEmitterInstance* Emitt
     uint16* ParticleIndices = EmitterInstance->ParticleIndices;
 
     // 이미터 타입에 따라 처리
-    bool bIsMesh = false;; // 메시인지 어떻게 확인하지
+    FParticleMeshEmitterInstance* MeshInstance = static_cast<FParticleMeshEmitterInstance*>(EmitterInstance);
+    bool bIsMesh = MeshInstance->MeshTypeData->Mesh;
 
     // 각 파티클 처리
     for (int32 i = 0; i < ActiveParticles; i++)
