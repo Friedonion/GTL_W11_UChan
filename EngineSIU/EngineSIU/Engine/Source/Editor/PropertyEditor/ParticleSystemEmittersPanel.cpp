@@ -807,13 +807,13 @@ void ParticleSystemEmittersPanel::ShowModuleContextMenu(UParticleModule* Module,
         }
         
         // 모듈 복제
-        if (ImGui::MenuItem("[X] Duplicate Module"))
+        if (ImGui::MenuItem("Duplicate Module"))
         {
             OnDuplicateModule(Module, EmitterIndex, ModuleIndex);
         }
         
         // 모듈 제거
-        if (ImGui::MenuItem("[X] Remove Module"))
+        if (ImGui::MenuItem("Remove Module"))
         {
             OnRemoveModule(Module, EmitterIndex, ModuleIndex);
         }
@@ -1344,17 +1344,115 @@ void ParticleSystemEmittersPanel::OnDuplicateModule(UParticleModule* Module, int
     UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
     if (!ParticleSystem || !Module || EmitterIndex >= ParticleSystem->Emitters.Num())
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot duplicate module: Invalid ParticleSystem, Module, or EmitterIndex");
         return;
     }
 
     UParticleEmitter* Emitter = ParticleSystem->Emitters[EmitterIndex];
     if (!Emitter || Emitter->LODLevels.Num() == 0)
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot duplicate module: Invalid Emitter or no LOD levels");
         return;
     }
+
+    // LOD 레벨 가져오기 (현재 구현에서는 LOD 0만 사용)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot duplicate module: Invalid LOD level");
+        return;
+    }
+
+    // 모듈 인덱스 검증
+    if (ModuleIndex < 0 || ModuleIndex >= LODLevel->Modules.Num())
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot duplicate module: Invalid ModuleIndex %d", ModuleIndex);
+        return;
+    }
+
+    // 모듈 클래스 획득
+    UClass* ModuleClass = Module->GetClass();
+    if (!ModuleClass)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot duplicate module: Failed to get module class");
+        return;
+    }
+
+    // 새 모듈 인스턴스 생성
+    UParticleModule* NewModule = FObjectFactory::ConstructObject<UParticleModule>(ModuleClass);
+    if (!NewModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create duplicate module");
+        return;
+    }
+
+    // 원본 모듈의 속성 복사
+    // 간단한 복사 대신 실제로는 모듈 타입에 따라 특정 속성들을 복사해야 할 수 있음
+    NewModule->bEnabled = Module->bEnabled;
+
+    // 모듈 특성에 따른 추가 속성 복사
+    // 모듈 타입별 특수 처리
+    if (UParticleModuleLifetime* SourceLifetime = Cast<UParticleModuleLifetime>(Module))
+    {
+        UParticleModuleLifetime* DestLifetime = Cast<UParticleModuleLifetime>(NewModule);
+        if (DestLifetime)
+        {
+            DestLifetime->Lifetime = SourceLifetime->Lifetime;
+        }
+    }
+    else if (UParticleModuleSize* SourceSize = Cast<UParticleModuleSize>(Module))
+    {
+        UParticleModuleSize* DestSize = Cast<UParticleModuleSize>(NewModule);
+        if (DestSize)
+        {
+            DestSize->StartSize = SourceSize->StartSize;
+        }
+    }
+    else if (UParticleModuleVelocity* SourceVelocity = Cast<UParticleModuleVelocity>(Module))
+    {
+        UParticleModuleVelocity* DestVelocity = Cast<UParticleModuleVelocity>(NewModule);
+        if (DestVelocity)
+        {
+            DestVelocity->StartVelocity = SourceVelocity->StartVelocity;
+            DestVelocity->StartVelocityRadial = SourceVelocity->StartVelocityRadial;
+        }
+    }
+    else if (UParticleModuleColor* SourceColor = Cast<UParticleModuleColor>(Module))
+    {
+        UParticleModuleColor* DestColor = Cast<UParticleModuleColor>(NewModule);
+        if (DestColor)
+        {
+            DestColor->StartColor = SourceColor->StartColor;
+            DestColor->StartAlpha = SourceColor->StartAlpha;
+        }
+    }
+
+    // 새 모듈을 원본 모듈 바로 다음에 삽입
+    int32 NewModuleIndex = ModuleIndex + 1;
+    LODLevel->Modules.Insert(NewModule, NewModuleIndex);
+
+    // 선택 상태 업데이트
+    bool bUpdateSelectionIndices = (Selection.EmitterIndex == EmitterIndex &&
+                                     Selection.ModuleIndex >= NewModuleIndex);
     
-    // 모듈 복제 로직
-    // TODO: 실제 모듈 복제 구현
+    // 파티클 시스템 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
+    
+    // 선택 상태 업데이트
+    if (bUpdateSelectionIndices && Selection.ModuleIndex != INDEX_NONE)
+    {
+        // 추가된 모듈 이후의 인덱스를 가진 모듈이 선택되어 있었으면 인덱스 업데이트
+        Selection.ModuleIndex++;
+    }
+    
+    // 새 모듈을 선택 상태로 변경
+    Selection.SelectedModule = NewModule;
+    Selection.ModuleIndex = NewModuleIndex;
+    Selection.EmitterIndex = EmitterIndex;
+    Selection.SelectedEmitter = Emitter;
+    
+    // 선택 변경 이벤트 발생
+    OnSelectionChanged();
 }
 
 void ParticleSystemEmittersPanel::OnRemoveModule(UParticleModule* Module, int32 EmitterIndex, int32 ModuleIndex)
@@ -1362,17 +1460,66 @@ void ParticleSystemEmittersPanel::OnRemoveModule(UParticleModule* Module, int32 
     UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
     if (!ParticleSystem || !Module || EmitterIndex >= ParticleSystem->Emitters.Num())
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot remove module: Invalid ParticleSystem, Module, or EmitterIndex");
         return;
     }
 
     UParticleEmitter* Emitter = ParticleSystem->Emitters[EmitterIndex];
     if (!Emitter || Emitter->LODLevels.Num() == 0)
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot remove module: Invalid Emitter or no LOD levels");
         return;
     }
-    
-    // 모듈 제거 로직
-    // TODO: 실제 모듈 제거 구현
+
+    // LOD 레벨 가져오기 (현재 구현에서는 LOD 0만 사용)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot remove module: Invalid LOD level");
+        return;
+    }
+
+    // 모듈 인덱스 검증
+    if (ModuleIndex < 0 || ModuleIndex >= LODLevel->Modules.Num())
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot remove module: Invalid ModuleIndex %d", ModuleIndex);
+        return;
+    }
+
+    // Required 또는 Spawn 모듈인 경우 제거하지 않음
+    if (Cast<UParticleModuleRequired>(Module) || Cast<UParticleModuleSpawn>(Module))
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot remove Required or Spawn module: This module is essential for the emitter");
+        return;
+    }
+
+    // 선택 상태 확인 및 업데이트
+    bool bWasSelected = (Selection.SelectedModule == Module &&
+                          Selection.ModuleIndex == ModuleIndex &&
+                          Selection.EmitterIndex == EmitterIndex);
+    bool bUpdateSelectionIndices = (Selection.EmitterIndex == EmitterIndex &&
+                                     Selection.ModuleIndex > ModuleIndex);
+
+    // 모듈 제거
+    LODLevel->Modules.RemoveAt(ModuleIndex);
+    UE_LOG(ELogLevel::Display, "[PSV] Module removed from emitter '%s'", GetData(Emitter->EmitterName.ToString()));
+
+    // 선택 상태 업데이트
+    if (bWasSelected)
+    {
+        // 삭제된 모듈이 선택되어 있었으면 에미터만 선택 상태로 유지
+        Selection.SelectedModule = nullptr;
+        Selection.ModuleIndex = INDEX_NONE;
+        OnSelectionChanged();
+    }
+    else if (bUpdateSelectionIndices && Selection.ModuleIndex != INDEX_NONE)
+    {
+        // 삭제된 모듈 이후의 인덱스를 가진 모듈이 선택되어 있었으면 인덱스 업데이트
+        Selection.ModuleIndex--;
+    }
+
+    // 파티클 시스템 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
 }
 
 void ParticleSystemEmittersPanel::OnMoveModuleUp(int32 EmitterIndex, int32 ModuleIndex)
