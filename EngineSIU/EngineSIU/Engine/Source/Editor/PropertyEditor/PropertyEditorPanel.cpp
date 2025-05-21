@@ -2240,8 +2240,6 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
                 ImGui::Text("Material Settings");
                 
                 UMaterial* CurrentMaterial = RequiredModule->Material;
-                const char* MaterialName = CurrentMaterial ? GetData(CurrentMaterial->GetMaterialInfo().MaterialName) : "None";
-                
                 // 머티리얼 미리보기 (100x100 크기로 확장)
                 if (CurrentMaterial)
                 {
@@ -2294,101 +2292,86 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
                     ImGui::Dummy(ImVec2(100, 100));
                 }
                 ImGui::SameLine();
-                // 머티리얼 선택 드롭다운 - 고정 너비 설정
-                ImGui::SetNextItemWidth(250.0f);
-                
-                // 고유한 ID를 사용하여 중복 렌더링 문제 방지
-                if (ImGui::BeginCombo("##MaterialSelector", MaterialName, ImGuiComboFlags_HeightLarge))
                 {
-                    // None 옵션
-                    bool isNoneSelected = (CurrentMaterial == nullptr);
-                    if (ImGui::Selectable("None", isNoneSelected))
+                    FString PreviewName = FString("None");
+                    if (UMaterial* ModuleMaterial = RequiredModule->Material)
                     {
-                        RequiredModule->Material = nullptr;
-                    }
-                    
-                    // 사용 가능한 모든 머티리얼 목록 표시 (특히 텍스처 중심)
-                    const TMap<FName, UMaterial*>& Materials = UAssetManager::Get().GetMaterialMap();
-                    
-                    // 중복된 렌더링을 방지하기 위해 이미 처리한 머티리얼 추적
-                    TSet<FName> ProcessedMaterials;
-                    
-                    for (const auto& MatEntry : Materials)
-                    {
-                        // 이미 처리된 머티리얼은 건너뛰기
-                        if (ProcessedMaterials.Contains(MatEntry.Key))
+                        if (FMaterialInfo* MaterialInfo = &ModuleMaterial->GetMaterialInfo())
                         {
-                            continue;
-                        }
-                        
-                        ProcessedMaterials.Add(MatEntry.Key);
-                        UMaterial* Material = MatEntry.Value;
-                        if (!Material)
-                        {
-                            continue;
-                        }
-                        
-                        // 머티리얼 이름과 미리보기 썸네일 표시
-                        bool isSelected = (Material == CurrentMaterial);
-                        
-                        // 머티리얼 썸네일과 이름을 함께 표시 (한 그룹으로 묶기)
-                        ImGui::BeginGroup();
-                        
-                        // 작은 색상 미리보기 사각형 표시
-                        bool bHasTexturePreview = false;
-                        const FMaterialInfo& MaterialInfo = Material->GetMaterialInfo();
-                        
-                        // 텍스처가 있는지 확인
-                        if (!MaterialInfo.TextureInfos.IsEmpty() && MaterialInfo.TextureInfos[0].TexturePath.length() > 0)
-                        {
-                            ID3D11ShaderResourceView* TextureSRV = FEngineLoop::ResourceManager.GetTexture(MaterialInfo.TextureInfos[0].TexturePath)->TextureSRV;
-                            if (TextureSRV)
-                            {
-                                ImGui::Image(reinterpret_cast<ImTextureID>(TextureSRV), ImVec2(20, 20));
-                                bHasTexturePreview = true;
-                            }
-                        }
-                        
-                        // 텍스처가 없으면 색상 버튼 표시
-                        if (!bHasTexturePreview)
-                        {
-                            FLinearColor MaterialColor(0.8f, 0.8f, 0.8f, 1.0f);
-                            if (MaterialInfo.DiffuseColor.X > 0 ||
-                                MaterialInfo.DiffuseColor.Y > 0 ||
-                                MaterialInfo.DiffuseColor.Z > 0)
-                            {
-                                MaterialColor = FLinearColor(
-                                    MaterialInfo.DiffuseColor.X,
-                                    MaterialInfo.DiffuseColor.Y,
-                                    MaterialInfo.DiffuseColor.Z,
-                                    1.0f
-                                );
-                            }
-                            
-                            ImGui::ColorButton("##MaterialItemPreview",
-                                ImVec4(MaterialColor.R, MaterialColor.G, MaterialColor.B, MaterialColor.A),
-                                ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
-                                ImVec2(20, 20));
-                        }
-                        ImGui::SameLine();
-                        
-                        // 각 머티리얼마다 고유한 ID 사용하여 텍스트 정보와 선택 가능하게 설정
-                        FString idString = "material_" + FString::FromInt(reinterpret_cast<intptr_t>(Material));
-                        if (ImGui::Selectable(GetData(Material->GetMaterialInfo().MaterialName), isSelected))
-                        {
-                            RequiredModule->Material = Material;
-                        }
-                        
-                        ImGui::EndGroup();
-                        
-                        // 선택된 항목 강조표시
-                        if (isSelected)
-                        {
-                            ImGui::SetItemDefaultFocus();
+                            PreviewName = MaterialInfo->MaterialName;
                         }
                     }
-                    
-                    ImGui::EndCombo();
+
+                    const TMap<FName, FAssetInfo> Assets = UAssetManager::Get().GetAssetRegistry();
+
+                    if (ImGui::BeginCombo("##Material", GetData(PreviewName), ImGuiComboFlags_None))
+                    {
+                        for (const auto& Asset : Assets)
+                        {
+                            if (Asset.Value.AssetType != EAssetType::Material)
+                            {
+                                continue;
+                            }
+
+                            {
+                                // 머티리얼 애셋 준비
+                                FString MaterialAssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
+                                UMaterial* Material = FObjManager::GetMaterial(MaterialAssetName.ToWideString());
+                                if (!Material)
+                                {
+                                    Material = UAssetManager::Get().GetMaterial(MaterialAssetName);
+                                }
+
+                                // 작은 색상 미리보기 사각형 표시
+                                bool bHasTexturePreview = false;
+                                const FMaterialInfo& MaterialInfo = Material->GetMaterialInfo();
+                                {
+                                    // 텍스처가 있는지 확인
+                                    if (!MaterialInfo.TextureInfos.IsEmpty() && MaterialInfo.TextureInfos[0].TexturePath.length() > 0)
+                                    {
+                                        ID3D11ShaderResourceView* TextureSRV = FEngineLoop::ResourceManager.GetTexture(MaterialInfo.TextureInfos[0].TexturePath)->TextureSRV;
+                                        if (TextureSRV)
+                                        {
+                                            ImGui::Image(reinterpret_cast<ImTextureID>(TextureSRV), ImVec2(20, 20));
+                                            bHasTexturePreview = true;
+                                        }
+                                    }
+
+                                    // 텍스처가 없으면 색상 버튼 표시
+                                    if (!bHasTexturePreview)
+                                    {
+                                        FLinearColor MaterialColor(0.8f, 0.8f, 0.8f, 1.0f);
+                                        if (MaterialInfo.DiffuseColor.X > 0 ||
+                                            MaterialInfo.DiffuseColor.Y > 0 ||
+                                            MaterialInfo.DiffuseColor.Z > 0)
+                                        {
+                                            MaterialColor = FLinearColor(
+                                                MaterialInfo.DiffuseColor.X,
+                                                MaterialInfo.DiffuseColor.Y,
+                                                MaterialInfo.DiffuseColor.Z,
+                                                1.0f
+                                            );
+                                        }
+
+                                        ImGui::ColorButton("##MaterialItemPreview",
+                                            ImVec4(MaterialColor.R, MaterialColor.G, MaterialColor.B, MaterialColor.A),
+                                            ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
+                                            ImVec2(20, 20)
+                                        );
+                                    }
+                                }
+                                ImGui::SameLine();
+                                if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+                                {
+                                    if (Material)
+                                    {
+                                        RequiredModule->Material = Material;
+                                    }
+                                }
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
                 }
             }
             break;
