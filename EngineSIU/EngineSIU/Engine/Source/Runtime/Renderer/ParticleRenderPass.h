@@ -111,8 +111,8 @@ private:
     // 리소스 관리
     void CreateMeshInstanceBuffer();
     void CreateSpriteInstanceBuffer();
-    void UpdateMeshInstanceBuffer();
-    void UpdateSpriteInstanceBuffer();
+    void UpdateMeshInstanceBuffer(bool bIsOpaque);
+    void UpdateSpriteInstanceBuffer(bool bIsOpaque);
     void LoadMeshes();
     void LoadTexture();
 

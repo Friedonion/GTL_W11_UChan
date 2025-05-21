@@ -30,8 +30,8 @@ FParticleRenderPass::FParticleRenderPass()
     , TransparentDepthState(nullptr)
     , MeshInstanceBuffer(nullptr)
     , SpriteInstanceBuffer(nullptr)
-    , SubImageCountX(1)
-    , SubImageCountY(1)
+    , SubImageCountX(6)
+    , SubImageCountY(6)
     , ActiveTypes(0xFF) 
 {
 }
@@ -98,6 +98,7 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
     {
         for (FParticleEmitterInstance* EmitterInstance : Comp->EmitterInstances)
         {
+
             if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)))
             {
                 PrepareMeshParticles(EmitterInstance);
@@ -111,26 +112,30 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
             SortParticlesByDistance(TransparentMeshInstanceData);
             SortParticlesByDistance(TransparentSpriteInstanceData);
 
-            // 불투명 메쉬 파티클 렌더링
+
             if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && OpaqueMeshInstanceData.Num() > 0)
             {
+                UpdateMeshInstanceBuffer(true);
                 RenderMeshParticles(Viewport, false);
             }
 
             // 불투명 스프라이트 파티클 렌더링
             if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && OpaqueSpriteInstanceData.Num() > 0)
             {
+                UpdateSpriteInstanceBuffer(true);
                 RenderSpriteParticles(Viewport, false);
             }
 
 
             if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Mesh)) && TransparentMeshInstanceData.Num() > 0)
             {
+                UpdateMeshInstanceBuffer(false);
                 RenderMeshParticles(Viewport, true);
             }
 
             if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)) && TransparentSpriteInstanceData.Num() > 0)
             {
+                UpdateSpriteInstanceBuffer(false);
                 RenderSpriteParticles(Viewport, true);
             }
         }
@@ -262,38 +267,36 @@ void FParticleRenderPass::CreateSpriteInstanceBuffer()
     Graphics->Device->CreateBuffer(&desc, nullptr, &SpriteInstanceBuffer);
 }
 
-void FParticleRenderPass::UpdateMeshInstanceBuffer()
+void FParticleRenderPass::UpdateMeshInstanceBuffer(bool bIsOpaque)
 {
-    // 불투명 및 반투명 메쉬 인스턴스 데이터 합치기
-    TArray<FMeshParticleInstanceData> CombinedData;
-    CombinedData.Append(OpaqueMeshInstanceData);
-    CombinedData.Append(TransparentMeshInstanceData);
-    
-    if (CombinedData.Num() == 0)
-        return;
-        
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     if (SUCCEEDED(Graphics->DeviceContext->Map(MeshInstanceBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
     {
-        memcpy(mapped.pData, CombinedData.GetData(), sizeof(FMeshParticleInstanceData) * CombinedData.Num());
+        if (bIsOpaque = true) 
+        {
+        memcpy(mapped.pData, OpaqueMeshInstanceData.GetData(), sizeof(FMeshParticleInstanceData) * OpaqueMeshInstanceData.Num());
+        }
+        else
+        {
+        memcpy(mapped.pData, TransparentMeshInstanceData.GetData(), sizeof(FMeshParticleInstanceData) * TransparentMeshInstanceData.Num());
+        }
         Graphics->DeviceContext->Unmap(MeshInstanceBuffer, 0);
     }
 }
 
-void FParticleRenderPass::UpdateSpriteInstanceBuffer()
+void FParticleRenderPass::UpdateSpriteInstanceBuffer(bool bIsOpaque)
 {
-    // 불투명 및 반투명 스프라이트 인스턴스 데이터 합치기
-    TArray<FSpriteParticleInstanceData> CombinedData;
-    CombinedData.Append(OpaqueSpriteInstanceData);
-    CombinedData.Append(TransparentSpriteInstanceData);
-    
-    if (CombinedData.Num() == 0)
-        return;
-        
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     if (SUCCEEDED(Graphics->DeviceContext->Map(SpriteInstanceBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
     {
-        memcpy(mapped.pData, CombinedData.GetData(), sizeof(FSpriteParticleInstanceData) * CombinedData.Num());
+        if(bIsOpaque)
+        {
+            memcpy(mapped.pData, OpaqueSpriteInstanceData.GetData(), sizeof(FSpriteParticleInstanceData) * OpaqueSpriteInstanceData.Num());
+        }
+        else
+        {
+            memcpy(mapped.pData, TransparentSpriteInstanceData.GetData(), sizeof(FSpriteParticleInstanceData) * TransparentSpriteInstanceData.Num());
+        }
         Graphics->DeviceContext->Unmap(SpriteInstanceBuffer, 0);
     }
 }
@@ -349,7 +352,6 @@ void FParticleRenderPass::PrepareMeshParticles(FParticleEmitterInstance* Emitter
                 OpaqueMeshInstanceData.Add(NewInstance);
             }
         }
-    UpdateMeshInstanceBuffer();
 }
 
 void FParticleRenderPass::PrepareSpriteParticles(FParticleEmitterInstance* EmitterInstance)
@@ -402,7 +404,6 @@ void FParticleRenderPass::PrepareSpriteParticles(FParticleEmitterInstance* Emitt
                 OpaqueSpriteInstanceData.Add(NewInstance);
             }
         }
-    UpdateSpriteInstanceBuffer();
 }
 
 void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent)
