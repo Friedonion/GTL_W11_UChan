@@ -270,7 +270,7 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
             float ButtonHeight = 30.0f;
             {
                 // 파티클 시스템 시뮬레이션 버튼
-                if (ImGui::Button("Simulate", ImVec2(120, ButtonHeight)))
+                if (ImGui::Button("[X] Simulate", ImVec2(120, ButtonHeight)))
                 {
                     // 시뮬레이션 로직 구현
                 }
@@ -280,7 +280,24 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
                 // 새 에미터 추가 버튼
                 if (ImGui::Button("Add Emitter", ImVec2(120, ButtonHeight)))
                 {
-                    // 새 에미터 추가 로직 구현
+                    // Last EmitterIndex -> ParticleSystem->Emitters.Num() - 1
+                    OnAddEmitterAfter(ParticleSystem->Emitters.Num() - 1);
+                }
+            }
+            ImGui::SameLine();
+            {
+                // 에미터 복제 버튼
+                if (ImGui::Button("[X] Duplicate Emitter", ImVec2(120, ButtonHeight)))
+                {
+                    OnDuplicateEmitter(Selection.SelectedEmitter, Selection.EmitterIndex);
+                }
+            }
+            ImGui::SameLine();
+            {
+                // 에미터 삭제 버튼
+                if (ImGui::Button("Remove Emitter", ImVec2(120, ButtonHeight)))
+                {
+                    OnRemoveEmitter(Selection.SelectedEmitter, Selection.EmitterIndex);
                 }
             }
             ImGui::SameLine();
@@ -303,9 +320,19 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
         constexpr ImVec4 HeaderInactiveColor(0.2f, 0.2f, 0.2f, 0.7f);
         constexpr ImVec4 ModuleActiveColor(0.0f, 0.5f, 0.0f, 0.7f);
 
-        // 에미터 목록을 가로로 정렬
+        // 에미터 목록을 가로로 정렬하는 스크롤 영역 생성
         ImGui::BeginChild("EmittersScrollRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
         {
+            // 전체 에미터 레이아웃을 담을 그룹
+            ImGui::BeginGroup();
+            
+            // 에미터 항목의 고정 너비 설정 (에미터 헤더 + 모듈 영역)
+            constexpr float EmitterItemWidth = 300.0f;
+            constexpr float EmitterItemSpacing = 5.0f; // 에미터 간 간격 증가
+            
+            // 에미터 항목의 시작 위치에 커서 설정
+            ImVec2 StartPos = ImGui::GetCursorPos();
+
             // 각 에미터를 가로로 배치
             for (int32 EmitterIndex = 0; EmitterIndex < ParticleSystem->Emitters.Num(); ++EmitterIndex)
             {
@@ -320,12 +347,13 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
                 
                 // 현재 에미터에 속한 모듈이 선택되었는지 확인
                 bool bHasSelectedModule = (Selection.SelectedModule != nullptr && Selection.EmitterIndex == EmitterIndex);
-                
+
                 // 에미터 패널 크기 설정
+                ImGui::SetCursorPos(ImVec2(StartPos.x + static_cast<float>(EmitterIndex) * (EmitterItemWidth + EmitterItemSpacing), StartPos.y));
                 ImGui::BeginGroup();
                 {
                     ImVec2 CursorPos = ImGui::GetCursorScreenPos();
-                    ImVec2 AvailableRegion = ImVec2(300.0f, EmitterHeaderHeight); // 에미터 헤더 영역
+                    ImVec2 AvailableRegion = ImVec2(ContentWidth, EmitterHeaderHeight); // 에미터 헤더 영역
                     
                     // 에미터 헤더 배경 그리기 (선택/활성화 상태에 따라 색상 변경)
                     ImVec4 HeaderColor;
@@ -458,9 +486,16 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
                     }
                 }
                 ImGui::EndGroup();
-                ImGui::SameLine();
-                ImGui::Dummy(ImVec2(10.0f, 0)); // 에미터 간 간격
             }
+            // 전체 에미터 레이아웃 그룹 종료
+            ImGui::EndGroup();
+            
+            // 스크롤 영역에 필요한 총 너비 계산 (마지막 에미터까지의 너비)
+            float TotalContentWidth = static_cast<float>(ParticleSystem->Emitters.Num()) * (EmitterItemWidth + EmitterItemSpacing);
+            
+            // 스크롤 영역에 컨텐츠 크기 설정
+            ImGui::SetCursorPos(ImVec2(0, 0));
+            ImGui::Dummy(ImVec2(TotalContentWidth, 1)); // 가로 스크롤을 위한 더미 컨텐츠
         }
         ImGui::EndChild();
     }
@@ -480,8 +515,9 @@ void ParticleSystemEmittersPanel::RenderModules(UParticleEmitter* Emitter, int32
         return;
     }
 
-    // 모듈 목록 영역
-    ImGui::BeginChild(("ModulesRegion" + std::to_string(EmitterIndex)).c_str(), ImVec2(300.0f, 0.f), true);
+    // 모듈 목록 영역 - 에미터 헤더와 동일한 너비 사용
+    // 고정 너비를 사용하여 각 에미터의 모듈 영역이 일정하게 유지되도록 함
+    ImGui::BeginChild(("ModulesRegion" + std::to_string(EmitterIndex)).c_str(), ImVec2(ContentWidth, 0.f), true);
     ImGui::Text("Modules:");
     ImGui::Separator();
 
@@ -782,7 +818,11 @@ void ParticleSystemEmittersPanel::ShowModuleContextMenu(UParticleModule* Module,
     }
 
     UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
-    if (!ParticleSystem || EmitterIndex >= ParticleSystem->Emitters.Num())
+    if (!ParticleSystem)
+    {
+        return;
+    }
+    if (EmitterIndex >= ParticleSystem->Emitters.Num())
     {
         return;
     }
@@ -1055,12 +1095,15 @@ void ParticleSystemEmittersPanel::OnAddEmitterAfter(int32 EmitterIndex)
         UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid ParticleSystem");
         return;
     }
-    
-    // 인덱스 범위 검증
-    if (EmitterIndex < 0 || EmitterIndex >= ParticleSystem->Emitters.Num())
+
+    if (ParticleSystem->Emitters.Num() != 0)
     {
-        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid EmitterIndex %d", EmitterIndex);
-        return;
+        // 인덱스 범위 검증
+        if (EmitterIndex < 0 || EmitterIndex >= ParticleSystem->Emitters.Num())
+        {
+            UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid EmitterIndex %d", EmitterIndex);
+            return;
+        }
     }
     
     // 1. 새 에미터(UParticleSpriteEmitter) 생성
@@ -1098,7 +1141,7 @@ void ParticleSystemEmittersPanel::OnAddEmitterAfter(int32 EmitterIndex)
     LODLevel->Modules.Add(ColorModule);
 
     // 4. 에미터 이름 설정
-    FString NewEmitterName = TEXT("Particle Emitter_") + FString::Printf(TEXT("%d"), ParticleSystem->Emitters.Num());
+    FString NewEmitterName = TEXT("Particle Emitter");
     NewEmitter->EmitterName = NewEmitterName;
     
     // 5. 파티클 시스템에 에미터 추가 (뒤에 추가)
