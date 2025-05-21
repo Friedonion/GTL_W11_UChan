@@ -385,7 +385,11 @@ void FRenderer::Render(const std::shared_ptr<FEditorViewportClient>& Viewport)
 
     RenderWorldScene(Viewport);
 
-    UnifiedParticleRenderPass->Render(Viewport);
+    if (Viewport->GetShowFlag() & EEngineShowFlags::SF_Particle)
+    {
+        UnifiedParticleRenderPass->Render(Viewport);
+    }
+    
 
     RenderPostProcess(Viewport);
     RenderEditorOverlay(Viewport);
