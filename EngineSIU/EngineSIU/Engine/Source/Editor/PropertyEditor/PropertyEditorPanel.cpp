@@ -54,6 +54,7 @@
 #include "Actors/ParticleSystemActor.h"
 #include "Engine/Classes/Engine/ResourceMgr.h"
 #include "Define.h"
+#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 
 void PropertyEditorPanel::Render()
 {
@@ -2167,7 +2168,7 @@ void PropertyEditorPanel::RenderForParticleEmitter(UParticleEmitter* Emitter)
         if (ImGui::Combo("Lock Axis", &AxisLockIndex, AxisLockItems, IM_ARRAYSIZE(AxisLockItems)))
         {
             Emitter->LockAxisFlags = static_cast<EParticleAxisLock>(AxisLockIndex);
-            Emitter->bAxisLockEnabled = (Emitter->LockAxisFlags != EPAL_NONE);
+            Emitter->bAxisLockEnabled = (Emitter->LockAxisFlags != EParticleAxisLock::EPAL_NONE);
         }
 
         // 초기 할당 개수 설정
@@ -2232,7 +2233,6 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
             break;
         case EPMT_Required:
             ImGui::Text("Required Module");
-            
             // UParticleModuleRequired의 Material 속성에 대한 특별 처리
             if (UParticleModuleRequired* RequiredModule = Cast<UParticleModuleRequired>(Module))
             {
@@ -2394,6 +2394,52 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
             break;
         case EPMT_TypeData:
             ImGui::Text("Type Data Module");
+            // UParticleModuleTypeDataMesh의 Mesh 속성에 대한 특별 처리
+            if (UParticleModuleTypeDataMesh* TypeDataMeshModule = Cast<UParticleModuleTypeDataMesh>(Module))
+            {
+                ImGui::Separator();
+                ImGui::Text("Mesh");
+                ImGui::SameLine();
+                {
+                    FString PreviewName = FString("None");
+                    if (UStaticMesh* StaticMesh = TypeDataMeshModule->Mesh)
+                    {
+                        if (FStaticMeshRenderData* RenderData = StaticMesh->GetRenderData())
+                        {
+                            PreviewName = RenderData->DisplayName;
+                        }
+                    }
+
+                    const TMap<FName, FAssetInfo> Assets = UAssetManager::Get().GetAssetRegistry();
+
+                    if (ImGui::BeginCombo("##StaticMesh", GetData(PreviewName), ImGuiComboFlags_None))
+                    {
+                        for (const auto& Asset : Assets)
+                        {
+                            if (Asset.Value.AssetType != EAssetType::StaticMesh)
+                            {
+                                continue;
+                            }
+
+                            if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+                            {
+                                FString MeshName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
+                                UStaticMesh* StaticMesh = FObjManager::GetStaticMesh(MeshName.ToWideString());
+                                if (!StaticMesh)
+                                {
+                                    StaticMesh = UAssetManager::Get().GetStaticMesh(MeshName);
+                                }
+
+                                if (StaticMesh)
+                                {
+                                    TypeDataMeshModule->Mesh = StaticMesh;
+                                }
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                }
+            }
             break;
         case EPMT_Beam:
             ImGui::Text("Beam Module");

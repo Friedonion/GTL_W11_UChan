@@ -5,13 +5,14 @@
 #include "Core/Math/Vector.h"
 #include "Math/Matrix.h"
 #include "Math/Transform.h"
+#include "UObject/ObjectMacros.h"
 
 struct FBaseParticle;
 struct FParticleRandomSeedInstancePayload;
 class UParticleModule;
 class UWorld;
 class UMaterial;
-enum EParticleAxisLock : int;
+enum class EParticleAxisLock : int;
 class UParticleSystemComponent;
 class UParticleEmitter;
 class UParticleLODLevel;

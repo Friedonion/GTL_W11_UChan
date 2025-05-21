@@ -567,7 +567,7 @@ void UParticleEmitter::CacheEmitterModuleInfo()
 	bRequiresLoopNotification = false;
 	bAxisLockEnabled = false;
 	bMeshRotationActive = false;
-	LockAxisFlags = EPAL_NONE;
+	LockAxisFlags = EParticleAxisLock::EPAL_NONE;
 	ModuleOffsetMap.Empty();
 	ModuleInstanceOffsetMap.Empty();
 	ModuleRandomSeedInstanceOffsetMap.Empty();
