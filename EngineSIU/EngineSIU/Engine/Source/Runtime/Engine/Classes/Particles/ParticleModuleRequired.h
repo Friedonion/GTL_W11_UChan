@@ -118,8 +118,8 @@ public:
     
     /** The material to utilize for the emitter at this LOD level.						*/
     //// UPROPERTY(EditAnywhere, Category = Emitter)
-    UPROPERTY_WITH_FLAGS
-    (EditAnywhere, UMaterial*, Material)
+    UPROPERTY
+    (EditAnywhere, UMaterial*, Material, = nullptr)
 
     /** The distance at which PSA_FacingCameraDistanceBlend	is fully PSA_Square */
     //// UPROPERTY(EditAnywhere, Category = Emitter, meta = (UIMin = "0", DisplayAfter = "ScreenAlignment"))

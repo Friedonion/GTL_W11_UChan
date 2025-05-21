@@ -104,6 +104,8 @@ public:
         return StaticMeshMap;
     }
 
+    TMap<FName, UMaterial*> GetMaterialMap() { return MaterialMap; }
+
     TMap<FName, UParticleSystem*> GetParticleTemplateMap()
     {
         return ParticleTemplateMap;

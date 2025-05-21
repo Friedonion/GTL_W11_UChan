@@ -5,6 +5,7 @@
 #include "Particles/ParticleSpriteEmitter.h"
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModule.h"
+#include "Particles/ParticleModuleRequired.h"
 #include "Particles/Lifetime/ParticleModuleLifetime.h"
 #include "Particles/Size/ParticleModuleSize.h"
 #include "Particles/Velocity/ParticleModuleVelocity.h"
@@ -400,14 +401,52 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
                             // 파티클 카운트 표시
                             ImGui::Text("%d", Emitter->PeakActiveParticles);
                         }
-                        // @todo Load Material's Thumbnail
                         ImGui::SameLine(AvailableRegion.x - 50.0f);
                         {
-                            // 썸네일 위치
-                            ImGui::Dummy(ImVec2(40.0f, 40.0f));
+                            // 썸네일
+                            bool bHasTexture = false;
+                            if (auto Material = Emitter->LODLevels[0]->RequiredModule->Material)
+                            {
+
+                                if (auto TexturePath = Material->GetMaterialInfo().TextureInfos[0].TexturePath; !TexturePath.empty())
+                                {
+                                    ID3D11ShaderResourceView* TextureSRV = FEngineLoop::ResourceManager.GetTexture(Emitter->LODLevels[0]->RequiredModule->Material->GetMaterialInfo().TextureInfos[0].TexturePath)->TextureSRV;
+                                    if (TextureSRV)
+                                    {
+                                        ImGui::Image(reinterpret_cast<ImTextureID>(TextureSRV), ImVec2(40, 40));
+                                        bHasTexture = true;
+                                    }
+                                }
+                                else
+                                {
+                                    FLinearColor MaterialColor(0.8f, 0.8f, 0.8f, 1.0f);
+                                    if (Material->GetMaterialInfo().DiffuseColor.X > 0 ||
+                                        Material->GetMaterialInfo().DiffuseColor.Y > 0 ||
+                                        Material->GetMaterialInfo().DiffuseColor.Z > 0)
+                                    {
+                                        MaterialColor = FLinearColor(
+                                            Material->GetMaterialInfo().DiffuseColor.X,
+                                            Material->GetMaterialInfo().DiffuseColor.Y,
+                                            Material->GetMaterialInfo().DiffuseColor.Z,
+                                            1.0f
+                                        );
+                                    }
+
+                                    ImGui::ColorButton("##MaterialItemPreview",
+                                        ImVec4(MaterialColor.R, MaterialColor.G, MaterialColor.B, MaterialColor.A),
+                                        ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
+                                        ImVec2(40, 40));
+                                }
+                            }
+                            if (!bHasTexture)
+                            {
+                                ImGui::Dummy(ImVec2(40, 40));
+                            }
+
+                            // 테두리
                             ImGui::GetWindowDrawList()->AddRect(
-                                ImVec2(CursorPos.x + AvailableRegion.x - 50.0f, CursorPos.y + 10.0f),
-                                ImVec2(CursorPos.x + AvailableRegion.x - 10.0f, CursorPos.y + 50.0f),
+                                ImVec2(CursorPos.x + AvailableRegion.x - 50.0f, CursorPos.y + 22.0f),
+                                ImVec2(CursorPos.x + AvailableRegion.x - 10.0f, CursorPos.y + 62.0f),
                                 ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 1.0f, 1.0f, 0.5f))
                             );
                         }
