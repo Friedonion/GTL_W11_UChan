@@ -19,9 +19,11 @@
 #include "Particles/Color/ParticleModuleColor.h"
 #include "Particles/Lifetime/ParticleModuleLifetime.h"
 #include "Particles/Size/ParticleModuleSize.h"
+#include "Particles/SubUV/ParticleModuleSubUV.h"
 #include "Particles/Velocity/ParticleModuleVelocity.h"
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 #include "Particles/Color/ParticleModuleColorOverLife.h"
+#include "Particles/SubUVAnimation.h"
 
 #include "Serialization/MemoryArchive.h"
 #include "UObject/ObjectFactory.h"
@@ -57,6 +59,8 @@ void UAssetManager::InitAssetManager()
 
     LoadContentFiles();
 
+    LoadOBJMaterials();
+
     InitDefaultParticleTemplate();
 }
 
@@ -91,6 +95,13 @@ void UAssetManager::InitDefaultParticleTemplate()
 
     UParticleModuleColorOverLife* SampleColorOverLifeModule = FObjectFactory::ConstructObject<UParticleModuleColorOverLife>(nullptr);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorOverLifeModule);
+    
+    
+    UParticleModuleSubUV* SampleSubUVModule = FObjectFactory::ConstructObject<UParticleModuleSubUV>(nullptr);
+    SampleEmitter->SubUVAnimation = FObjectFactory::ConstructObject<USubUVAnimation>(nullptr);
+    SampleEmitter->SubUVAnimation->SubImages_Horizontal = 6;
+    SampleEmitter->SubUVAnimation->SubImages_Vertical = 6;
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSubUVModule);
     
     Template->Emitters.Add(SampleEmitter);
     
@@ -268,7 +279,7 @@ void UAssetManager::HandleFBX(const FAssetInfo& AssetInfo)
             bIsBinaryValid = true;
         }
     }
-    
+
     FAssetLoadResult Result;
     if (bIsBinaryValid)
     {
@@ -793,4 +804,13 @@ bool UAssetManager::SerializeAssetLoadResult(FArchive& Ar, FAssetLoadResult& Res
     }
 
     return true;
+}
+
+void UAssetManager::LoadOBJMaterials()
+{
+    auto OBJMaterialMap = FObjManager::GetMaterials();
+    for (auto Mat : OBJMaterialMap)
+    {
+        MaterialMap.Add(Mat.Key, Mat.Value);
+    }
 }

@@ -79,7 +79,7 @@ struct FRawDistributionFloat : public FRawDistribution
 {
     DECLARE_STRUCT_WITH_SUPER(FRawDistributionFloat, FRawDistribution)
     //GENERATED_USTRUCT_BODY()
-private:
+public:
     //UPROPERTY()
     UPROPERTY_WITH_FLAGS
     (EditAnywhere, float, MinValue)

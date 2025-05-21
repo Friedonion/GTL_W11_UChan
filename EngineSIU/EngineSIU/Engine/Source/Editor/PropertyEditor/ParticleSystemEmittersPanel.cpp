@@ -1231,6 +1231,7 @@ void ParticleSystemEmittersPanel::OnAddMeshData(UParticleEmitter* Emitter)
     TypeDataMeshModule->bEnabled = true;
 
     // LOD 레벨에 모듈 추가
+    LODLevel->TypeDataModule = TypeDataMeshModule;
     LODLevel->Modules.Add(TypeDataMeshModule);
 
     UE_LOG(ELogLevel::Display, "[PSV] Added Type Data Mesh module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
@@ -1581,6 +1582,12 @@ void ParticleSystemEmittersPanel::OnRemoveModule(UParticleModule* Module, int32 
         UE_LOG(ELogLevel::Warning, "[PSV] Cannot remove Required or Spawn module: This module is essential for the emitter");
         return;
     }
+
+	if (Cast<UParticleModuleTypeDataMesh>(Module))
+	{
+		// MeshTypedata 인 경우 TypeDataModule 제거하여 스프라이트로 돌아오도록 함
+		Emitter->GetLODLevel(0)->TypeDataModule = nullptr;
+	}
 
     // 선택 상태 확인 및 업데이트
     bool bWasSelected = (Selection.SelectedModule == Module &&

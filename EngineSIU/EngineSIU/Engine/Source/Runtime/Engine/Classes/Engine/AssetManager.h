@@ -138,4 +138,6 @@ private:
     bool SerializeVersion(FArchive& Ar);
 
     bool SerializeAssetLoadResult(FArchive& Ar, FAssetLoadResult& Result, const FString& BaseName, const FString& FolderPath);
+
+    void LoadOBJMaterials();
 };

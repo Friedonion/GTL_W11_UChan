@@ -20,9 +20,9 @@
 #include "Editor/LevelEditor/SLevelEditor.h"
 #include "ParticleHelper.h"
 
-#include "Engine/ParticleEmitterInstances.h"
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
+#include "Particles/ParticleModuleRequired.h"
 
 FParticleRenderPass::FParticleRenderPass()
     : BufferManager(nullptr)
@@ -34,8 +34,8 @@ FParticleRenderPass::FParticleRenderPass()
     , TransparentDepthState(nullptr)
     , MeshInstanceBuffer(nullptr)
     , SpriteInstanceBuffer(nullptr)
-    , SubImageCountX(6)
-    , SubImageCountY(6)
+    , SubImageCountX(1)
+    , SubImageCountY(1)
     , ActiveTypes(0xFF) 
 {
 }
@@ -102,6 +102,8 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
     {
         for (FParticleEmitterInstance* EmitterInstance : Comp->EmitterInstances)
         {
+            SubImageCountX = EmitterInstance->CurrentLODLevel->RequiredModule->SubImages_Horizontal;
+            SubImageCountY = EmitterInstance->CurrentLODLevel->RequiredModule->SubImages_Vertical;
             if (EmitterInstance->CurrentLODLevel->TypeDataModule && CastChecked<UParticleModuleTypeDataMesh>(EmitterInstance->CurrentLODLevel->TypeDataModule))
             {
                 // 메쉬
@@ -110,17 +112,23 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
                     PrepareMeshParticles(EmitterInstance);
 
                     SortParticlesByDistance(TransparentMeshInstanceData);
-
-                    FParticleMeshEmitterInstance* MeshInstance = (FParticleMeshEmitterInstance*)(EmitterInstance);
+                    UParticleModuleTypeDataMesh* TypeDataMesh = (UParticleModuleTypeDataMesh*)(EmitterInstance->CurrentLODLevel->TypeDataModule);
+                    if (!TypeDataMesh->Mesh) return;
                     UpdateMeshInstanceBuffer(true);
-                    RenderMeshParticles(Viewport, false, MeshInstance->MeshTypeData->Mesh);
+                    RenderMeshParticles(Viewport, false, TypeDataMesh->Mesh);
 
                     UpdateMeshInstanceBuffer(false);
-                    RenderMeshParticles(Viewport, true, MeshInstance->MeshTypeData->Mesh);
+                    RenderMeshParticles(Viewport, true, TypeDataMesh->Mesh);
                 }
             }
             else
             {
+                if (!EmitterInstance->CurrentLODLevel->RequiredModule->Material) return;
+                if (EmitterInstance->CurrentLODLevel->RequiredModule->Material->GetMaterialInfo().TextureInfos.IsEmpty()) return;
+
+                std::shared_ptr<FTexture> SpriteTexture = FEngineLoop::ResourceManager.GetTexture(EmitterInstance->CurrentLODLevel->RequiredModule->Material->GetMaterialInfo().TextureInfos[0].TexturePath);
+                
+                if (!SpriteTexture) return;
                 // 일반적인 스프라이트
                 if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)))
                 {
@@ -129,10 +137,10 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
                     SortParticlesByDistance(TransparentSpriteInstanceData);
 
                     UpdateSpriteInstanceBuffer(true);
-                    RenderSpriteParticles(Viewport, false);
+                    RenderSpriteParticles(Viewport, false, SpriteTexture);
 
                     UpdateSpriteInstanceBuffer(false);
-                    RenderSpriteParticles(Viewport, true);
+                    RenderSpriteParticles(Viewport, true, SpriteTexture);
                 }
             }
         }
@@ -216,34 +224,6 @@ void FParticleRenderPass::CreateDepthStates()
     Graphics->Device->CreateDepthStencilState(&transparentDesc, &TransparentDepthState);
 }
 
-void FParticleRenderPass::LoadMeshes()
-{
-    // 기존 메쉬 데이터 초기화
-    MeshArray.Empty();
-    
-    // 방법 1: StaticMeshComponent에서 고유한 StaticMesh 얻기
-    TSet<UStaticMesh*> UniqueMeshes;
-    
-    for (const auto Iter : TObjectRange<UStaticMeshComponent>())
-    {
-        if (Iter && Iter->GetStaticMesh() && Iter->GetStaticMesh()->GetRenderData())
-        {
-            UniqueMeshes.Add(Iter->GetStaticMesh());
-        }
-    }
-    
-    // Set에서 배열로 변환
-    for (UStaticMesh* Mesh : UniqueMeshes)
-    {
-        MeshArray.Add(Mesh);
-    }
-}
-
-void FParticleRenderPass::LoadTexture()
-{
-    ParticleTexture = FEngineLoop::ResourceManager.GetTexture(L"Assets/Texture/T_Explosion_SubUV.png");
-}
-
 void FParticleRenderPass::CreateMeshInstanceBuffer()
 {
     D3D11_BUFFER_DESC desc = {};
@@ -300,10 +280,6 @@ void FParticleRenderPass::UpdateSpriteInstanceBuffer(bool bIsOpaque)
 
 void FParticleRenderPass::PrepareMeshParticles(FParticleEmitterInstance* EmitterInstance)
 {
-    LoadMeshes();
-    if (MeshArray.Num() == 0 || ParticleSystemComponents.Num() == 0)
-        return;
-        
     // 파티클 시스템 컴포넌트에서 데이터 수집
     OpaqueMeshInstanceData.Empty();
     TransparentMeshInstanceData.Empty();
@@ -320,43 +296,38 @@ void FParticleRenderPass::PrepareMeshParticles(FParticleEmitterInstance* Emitter
     }
     
     
-    if (!EmitterInstance)
-        return;
+    if (!EmitterInstance) return;
             
-        // 임시 데이터 컨테이너
-        TArray<FMeshParticleInstanceData> tempMeshData;
-        TArray<FSpriteParticleInstanceData> tempSpriteData; // 사용하지 않지만 GatherParticleInstanceData 함수의 인자로 필요
+    // 임시 데이터 컨테이너
+    TArray<FMeshParticleInstanceData> tempMeshData;
+    TArray<FSpriteParticleInstanceData> tempSpriteData; // 사용하지 않지만 GatherParticleInstanceData 함수의 인자로 필요
         
-        // 메시 파티클만 수집합니다
-        GatherParticleInstanceData(EmitterInstance, tempMeshData, tempSpriteData);
+    // 메시 파티클만 수집합니다
+    GatherParticleInstanceData(EmitterInstance, tempMeshData, tempSpriteData);
         
-        // 투명도에 따라 분류
-        for (const auto& Instance : tempMeshData)
+    // 투명도에 따라 분류
+    for (const auto& Instance : tempMeshData)
+    {
+        // 파티클 위치 추출 (월드 행렬의 이동 벡터)
+        FVector ParticleLocation = FVector(Instance.World.M[3][0], Instance.World.M[3][1], Instance.World.M[3][2]);
+            
+        // 불투명/반투명 판단 및 분류
+        FMeshParticleInstanceData NewInstance = Instance;
+        NewInstance.DistanceToCamera = CalculateDistanceToCamera(ParticleLocation, CameraLocation);
+            
+        if (IsTransparent(Instance.Color))
         {
-            // 파티클 위치 추출 (월드 행렬의 이동 벡터)
-            FVector ParticleLocation = FVector(Instance.World.M[3][0], Instance.World.M[3][1], Instance.World.M[3][2]);
-            
-            // 불투명/반투명 판단 및 분류
-            FMeshParticleInstanceData NewInstance = Instance;
-            NewInstance.DistanceToCamera = CalculateDistanceToCamera(ParticleLocation, CameraLocation);
-            
-            if (IsTransparent(Instance.Color))
-            {
-                TransparentMeshInstanceData.Add(NewInstance);
-            }
-            else
-            {
-                OpaqueMeshInstanceData.Add(NewInstance);
-            }
+            TransparentMeshInstanceData.Add(NewInstance);
         }
+        else
+        {
+            OpaqueMeshInstanceData.Add(NewInstance);
+        }
+    }
 }
 
 void FParticleRenderPass::PrepareSpriteParticles(FParticleEmitterInstance* EmitterInstance)
 {
-    LoadTexture();
-    if (!ParticleTexture || ParticleSystemComponents.Num() == 0)
-        return;
-        
     // 파티클 시스템 컴포넌트에서 데이터 수집
     OpaqueSpriteInstanceData.Empty();
     TransparentSpriteInstanceData.Empty();
@@ -372,44 +343,40 @@ void FParticleRenderPass::PrepareSpriteParticles(FParticleEmitterInstance* Emitt
         }
     }
     
-    if (!EmitterInstance)
-        return;
+    if (!EmitterInstance) return;
             
-        // 임시 데이터 컨테이너
-        TArray<FMeshParticleInstanceData> tempMeshData; // 사용하지 않지만 GatherParticleInstanceData 함수의 인자로 필요
-        TArray<FSpriteParticleInstanceData> tempSpriteData;
+    // 임시 데이터 컨테이너
+    TArray<FMeshParticleInstanceData> tempMeshData; // 사용하지 않지만 GatherParticleInstanceData 함수의 인자로 필요
+    TArray<FSpriteParticleInstanceData> tempSpriteData;
         
-        // 스프라이트 파티클만 수집합니다
-        GatherParticleInstanceData(EmitterInstance, tempMeshData, tempSpriteData);
+    // 스프라이트 파티클만 수집합니다
+    GatherParticleInstanceData(EmitterInstance, tempMeshData, tempSpriteData);
         
-        // 투명도에 따라 분류
-        for (const auto& Instance : tempSpriteData)
+    // 투명도에 따라 분류
+    for (const auto& Instance : tempSpriteData)
+    {
+        // 파티클 위치 추출 (월드 행렬의 이동 벡터)
+        FVector ParticleLocation = FVector(Instance.World.M[3][0], Instance.World.M[3][1], Instance.World.M[3][2]);
+            
+        // 불투명/반투명 판단 및 분류
+        FSpriteParticleInstanceData NewInstance = Instance;
+        NewInstance.DistanceToCamera = CalculateDistanceToCamera(ParticleLocation, CameraLocation);
+            
+        if (IsTransparent(Instance.Color))
         {
-            // 파티클 위치 추출 (월드 행렬의 이동 벡터)
-            FVector ParticleLocation = FVector(Instance.World.M[3][0], Instance.World.M[3][1], Instance.World.M[3][2]);
-            
-            // 불투명/반투명 판단 및 분류
-            FSpriteParticleInstanceData NewInstance = Instance;
-            NewInstance.DistanceToCamera = CalculateDistanceToCamera(ParticleLocation, CameraLocation);
-            
-            if (IsTransparent(Instance.Color))
-            {
-                TransparentSpriteInstanceData.Add(NewInstance);
-            }
-            else
-            {
-                OpaqueSpriteInstanceData.Add(NewInstance);
-            }
+            TransparentSpriteInstanceData.Add(NewInstance);
         }
+        else
+        {
+            OpaqueSpriteInstanceData.Add(NewInstance);
+        }
+    }
 }
 
 void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent, UStaticMesh* Mesh)
 {
     // 렌더링할 파티클 데이터 선택
     TArray<FMeshParticleInstanceData>& InstanceData = bIsTransparent ? TransparentMeshInstanceData : OpaqueMeshInstanceData;
-    
-    if (MeshArray.Num() == 0 || InstanceData.Num() == 0)
-        return;
         
     // 투명도에 따른 렌더 상태 설정
     SetupPipeline(bIsTransparent);
@@ -460,8 +427,6 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
     
     Graphics->DeviceContext->RSSetState(rasterizerState);
     
-    //UStaticMesh* Mesh = MeshArray[i];
-        
     if (!Mesh || !Mesh->GetRenderData()) return;
             
     FStaticMeshRenderData* RenderData = Mesh->GetRenderData();
@@ -514,15 +479,10 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
     }
 }
 
-void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent)
+void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent, std::shared_ptr<FTexture> SpriteTexture)
 {
-    LoadTexture();
-    
     TArray<FSpriteParticleInstanceData>& InstanceData = bIsTransparent ? TransparentSpriteInstanceData : OpaqueSpriteInstanceData;
     
-    if (!ParticleTexture || InstanceData.Num() == 0)
-        return;
-        
     // 투명도에 따른 렌더 상태 설정
     SetupPipeline(bIsTransparent);
 
@@ -560,8 +520,8 @@ void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorVie
     BufferManager->BindConstantBuffer(TEXT("FParticleConstant"), 7, EShaderStage::Vertex);
     BufferManager->BindConstantBuffer(TEXT("FCameraConstantBuffer"), 13, EShaderStage::Vertex);
 
-    Graphics->DeviceContext->PSSetShaderResources(0, 1, &ParticleTexture->TextureSRV);
-    Graphics->DeviceContext->PSSetSamplers(0, 1, &ParticleTexture->SamplerState);
+    Graphics->DeviceContext->PSSetShaderResources(0, 1, &SpriteTexture->TextureSRV);
+    Graphics->DeviceContext->PSSetSamplers(0, 1, &SpriteTexture->SamplerState);
     
     Graphics->DeviceContext->DrawIndexedInstanced(QuadIB.NumIndices, InstanceData.Num(), 0, 0, 0);
 }
@@ -632,9 +592,15 @@ void FParticleRenderPass::ProcessParticleEmitter(FParticleEmitterInstance* Emitt
             SpriteInstance.World = ParticleWorldMatrix;
             SpriteInstance.Color = Particle->Color;
             
+            // SubUV계산
+            const uint8* ParticleBase	= ParticleData + CurrentIndex * ParticleStride;
+            uint32 CurrentOffset = sizeof(FBaseParticle);
+            PARTICLE_ELEMENT(FFullSubUVPayload, SubUVPayload)
+            SpriteInstance.SubImageIndex = SubUVPayload.ImageIndex;
+            
             // 간단한 구현을 위해 SubImageIndex를 상대적 시간을 기반으로 설정
-            int TotalFrames = SubImageCountX * SubImageCountY;
-            SpriteInstance.SubImageIndex = static_cast<int>(Particle->RelativeTime * TotalFrames) % TotalFrames;
+            // int TotalFrames = SubImageCountX * SubImageCountY;
+            // SpriteInstance.SubImageIndex = static_cast<int>(Particle->RelativeTime * TotalFrames) % TotalFrames;
 
             // 수정: 멤버 변수 대신 출력 매개변수에 추가
             OutSpriteInstanceData.Add(SpriteInstance);

@@ -1489,7 +1489,9 @@ void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
 {
     // 텍스처 스캔
     if (!bTexturesScanned)
+    {
         ScanTextureFiles();
+    }
 
     ImGui::SetNextWindowSize(ImVec2(380, 600), ImGuiCond_Once);
     ImGui::Begin("Material Viewer", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNav);
@@ -1722,41 +1724,44 @@ void PropertyEditorPanel::RenderMaterialView(UMaterial* Material)
    
 
     ImGui::Spacing();
-    ImGui::Separator();
+    // @note 머티리얼 뷰어에 부합하지 않는 기능임. 따로 분리할 것.
+    //ImGui::Separator();
 
-    ImGui::Text("Choose Material");
-    ImGui::Spacing();
+    //ImGui::Text("Choose Material");
+    //ImGui::Spacing();
 
-    ImGui::Text("Material Slot Name |");
-    ImGui::SameLine();
-    ImGui::Text(GetData(SelectedStaticMeshComp->GetMaterialSlotNames()[SelectedMaterialIndex].ToString()));
+    //ImGui::Text("Material Slot Name |");
+    //ImGui::SameLine();
+    //ImGui::Text(GetData(SelectedStaticMeshComp->GetMaterialSlotNames()[SelectedMaterialIndex].ToString()));
 
-    ImGui::Text("Override Material |");
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(160);
-    // 메테리얼 이름 목록을 const char* 배열로 변환
-    std::vector<const char*> MaterialChars;
-    for (const auto& Material : FObjManager::GetMaterials()) {
-        MaterialChars.push_back(*Material.Value->GetMaterialInfo().MaterialName);
-    }
+    //ImGui::Text("Override Material |");
+    //ImGui::SameLine();
+    //ImGui::SetNextItemWidth(160);
+    //// 메테리얼 이름 목록을 const char* 배열로 변환
+    //std::vector<const char*> MaterialChars;
+    //for (const auto& Material : FObjManager::GetMaterials())
+    //{
+    //    MaterialChars.push_back(*Material.Value->GetMaterialInfo().MaterialName);
+    //}
 
-    //// 드롭다운 표시 (currentMaterialIndex가 범위를 벗어나지 않도록 확인)
-    //if (currentMaterialIndex >= FManagerGetMaterialNum())
-    //    currentMaterialIndex = 0;
+    ////// 드롭다운 표시 (currentMaterialIndex가 범위를 벗어나지 않도록 확인)
+    ////if (currentMaterialIndex >= FManagerGetMaterialNum())
+    ////    currentMaterialIndex = 0;
 
-    // 드롭다운 너비 제한 설정
-    ImGui::SetNextItemWidth(200.0f);
-    
-    // ImGui::Combo 사용 시 고유한 ID 사용
-    if (ImGui::Combo("##MaterialDropdown", &CurMaterialIndex, MaterialChars.data(), FObjManager::GetMaterialNum())) {
-        UMaterial* Material = FObjManager::GetMaterial(MaterialChars[CurMaterialIndex]);
-        SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, Material);
-    }
+    //// 드롭다운 너비 제한 설정
+    //ImGui::SetNextItemWidth(200.0f);
+    //
+    //// ImGui::Combo 사용 시 고유한 ID 사용
+    //if (ImGui::Combo("##MaterialDropdown", &CurMaterialIndex, MaterialChars.data(), FObjManager::GetMaterialNum())) {
+    //    UMaterial* Material = FObjManager::GetMaterial(MaterialChars[CurMaterialIndex]);
+    //    SelectedStaticMeshComp->SetMaterial(SelectedMaterialIndex, Material);
+    //}
 
     if (ImGui::Button("Close"))
     {
         SelectedMaterialIndex = -1;
         SelectedStaticMeshComp = nullptr;
+        bShowMaterialView = false;
     }
 
     ImGui::End();
@@ -2240,8 +2245,6 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
                 ImGui::Text("Material Settings");
                 
                 UMaterial* CurrentMaterial = RequiredModule->Material;
-                const char* MaterialName = CurrentMaterial ? GetData(CurrentMaterial->GetMaterialInfo().MaterialName) : "None";
-                
                 // 머티리얼 미리보기 (100x100 크기로 확장)
                 if (CurrentMaterial)
                 {
@@ -2288,107 +2291,93 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
                             ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
                             ImVec2(100, 100));
                     }
+
+                    if (ImGui::IsMouseDoubleClicked(0))
+                    {
+                        bShowMaterialView = true;
+                        // @note RenderMaterialView의 Close에서 false로 변경해줌
+                    }
+
+                    if (bShowMaterialView)
+                    {
+                        RenderMaterialView(CurrentMaterial);
+                    }
                 }
                 else
                 {
                     ImGui::Dummy(ImVec2(100, 100));
                 }
                 ImGui::SameLine();
-                // 머티리얼 선택 드롭다운 - 고정 너비 설정
-                ImGui::SetNextItemWidth(250.0f);
-                
-                // 고유한 ID를 사용하여 중복 렌더링 문제 방지
-                if (ImGui::BeginCombo("##MaterialSelector", MaterialName, ImGuiComboFlags_HeightLarge))
                 {
-                    // None 옵션
-                    bool isNoneSelected = (CurrentMaterial == nullptr);
-                    if (ImGui::Selectable("None", isNoneSelected))
+                    FString PreviewName = FString("None");
+                    if (UMaterial* ModuleMaterial = RequiredModule->Material)
                     {
-                        RequiredModule->Material = nullptr;
-                    }
-                    
-                    // 사용 가능한 모든 머티리얼 목록 표시 (특히 텍스처 중심)
-                    const TMap<FName, UMaterial*>& Materials = UAssetManager::Get().GetMaterialMap();
-                    
-                    // 중복된 렌더링을 방지하기 위해 이미 처리한 머티리얼 추적
-                    TSet<FName> ProcessedMaterials;
-                    
-                    for (const auto& MatEntry : Materials)
-                    {
-                        // 이미 처리된 머티리얼은 건너뛰기
-                        if (ProcessedMaterials.Contains(MatEntry.Key))
+                        if (FMaterialInfo* MaterialInfo = &ModuleMaterial->GetMaterialInfo())
                         {
-                            continue;
-                        }
-                        
-                        ProcessedMaterials.Add(MatEntry.Key);
-                        UMaterial* Material = MatEntry.Value;
-                        if (!Material)
-                        {
-                            continue;
-                        }
-                        
-                        // 머티리얼 이름과 미리보기 썸네일 표시
-                        bool isSelected = (Material == CurrentMaterial);
-                        
-                        // 머티리얼 썸네일과 이름을 함께 표시 (한 그룹으로 묶기)
-                        ImGui::BeginGroup();
-                        
-                        // 작은 색상 미리보기 사각형 표시
-                        bool bHasTexturePreview = false;
-                        const FMaterialInfo& MaterialInfo = Material->GetMaterialInfo();
-                        
-                        // 텍스처가 있는지 확인
-                        if (!MaterialInfo.TextureInfos.IsEmpty() && MaterialInfo.TextureInfos[0].TexturePath.length() > 0)
-                        {
-                            ID3D11ShaderResourceView* TextureSRV = FEngineLoop::ResourceManager.GetTexture(MaterialInfo.TextureInfos[0].TexturePath)->TextureSRV;
-                            if (TextureSRV)
-                            {
-                                ImGui::Image(reinterpret_cast<ImTextureID>(TextureSRV), ImVec2(20, 20));
-                                bHasTexturePreview = true;
-                            }
-                        }
-                        
-                        // 텍스처가 없으면 색상 버튼 표시
-                        if (!bHasTexturePreview)
-                        {
-                            FLinearColor MaterialColor(0.8f, 0.8f, 0.8f, 1.0f);
-                            if (MaterialInfo.DiffuseColor.X > 0 ||
-                                MaterialInfo.DiffuseColor.Y > 0 ||
-                                MaterialInfo.DiffuseColor.Z > 0)
-                            {
-                                MaterialColor = FLinearColor(
-                                    MaterialInfo.DiffuseColor.X,
-                                    MaterialInfo.DiffuseColor.Y,
-                                    MaterialInfo.DiffuseColor.Z,
-                                    1.0f
-                                );
-                            }
-                            
-                            ImGui::ColorButton("##MaterialItemPreview",
-                                ImVec4(MaterialColor.R, MaterialColor.G, MaterialColor.B, MaterialColor.A),
-                                ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
-                                ImVec2(20, 20));
-                        }
-                        ImGui::SameLine();
-                        
-                        // 각 머티리얼마다 고유한 ID 사용하여 텍스트 정보와 선택 가능하게 설정
-                        FString idString = "material_" + FString::FromInt(reinterpret_cast<intptr_t>(Material));
-                        if (ImGui::Selectable(GetData(Material->GetMaterialInfo().MaterialName), isSelected))
-                        {
-                            RequiredModule->Material = Material;
-                        }
-                        
-                        ImGui::EndGroup();
-                        
-                        // 선택된 항목 강조표시
-                        if (isSelected)
-                        {
-                            ImGui::SetItemDefaultFocus();
+                            PreviewName = MaterialInfo->MaterialName;
                         }
                     }
-                    
-                    ImGui::EndCombo();
+
+                    const auto MaterialMap = UAssetManager::Get().GetMaterialMap();
+
+                    if (ImGui::BeginCombo("##Material", GetData(PreviewName), ImGuiComboFlags_None))
+                    {
+                        for (const auto& MaterialElement : MaterialMap)
+                        {
+                            {
+                                // 머티리얼 애셋 준비
+                                UMaterial* Material = MaterialElement.Value;
+
+                                // 작은 색상 미리보기 사각형 표시
+                                bool bHasTexturePreview = false;
+                                const FMaterialInfo& MaterialInfo = Material->GetMaterialInfo();
+                                {
+                                    // 텍스처가 있는지 확인
+                                    if (!MaterialInfo.TextureInfos.IsEmpty() && MaterialInfo.TextureInfos[0].TexturePath.length() > 0)
+                                    {
+                                        ID3D11ShaderResourceView* TextureSRV = FEngineLoop::ResourceManager.GetTexture(MaterialInfo.TextureInfos[0].TexturePath)->TextureSRV;
+                                        if (TextureSRV)
+                                        {
+                                            ImGui::Image(reinterpret_cast<ImTextureID>(TextureSRV), ImVec2(20, 20));
+                                            bHasTexturePreview = true;
+                                        }
+                                    }
+
+                                    // 텍스처가 없으면 색상 버튼 표시
+                                    if (!bHasTexturePreview)
+                                    {
+                                        FLinearColor MaterialColor(0.8f, 0.8f, 0.8f, 1.0f);
+                                        if (MaterialInfo.DiffuseColor.X > 0 ||
+                                            MaterialInfo.DiffuseColor.Y > 0 ||
+                                            MaterialInfo.DiffuseColor.Z > 0)
+                                        {
+                                            MaterialColor = FLinearColor(
+                                                MaterialInfo.DiffuseColor.X,
+                                                MaterialInfo.DiffuseColor.Y,
+                                                MaterialInfo.DiffuseColor.Z,
+                                                1.0f
+                                            );
+                                        }
+
+                                        ImGui::ColorButton("##MaterialItemPreview",
+                                            ImVec4(MaterialColor.R, MaterialColor.G, MaterialColor.B, MaterialColor.A),
+                                            ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
+                                            ImVec2(20, 20)
+                                        );
+                                    }
+                                }
+                                ImGui::SameLine();
+                                if (ImGui::Selectable(GetData(MaterialElement.Key.ToString()), false))
+                                {
+                                    if (Material)
+                                    {
+                                        RequiredModule->Material = Material;
+                                    }
+                                }
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
                 }
             }
             break;

@@ -6,6 +6,8 @@
 #include "Components/ParticleSystemComponent.h"
 #include "Components/Light/PointLightComponent.h"
 #include "Particles/ParticleModuleRequired.h"
+#include "Particles/SubUVAnimation.h"
+#include "Particles/SubUV/ParticleModuleSubUV.h"
 #include "Userinterface/Console.h"
 #include "World/World.h"
 
@@ -99,9 +101,9 @@ FParticleEmitterBuildInfo::FParticleEmitterBuildInfo()
 const float FParticleEmitterInstance::PeakActiveParticleUpdateDelta = 0.05f;
 
 FParticleEmitterInstance::FParticleEmitterInstance() :
-      SpriteTemplate(nullptr)
-    , Component(nullptr)
-    , CurrentLODLevel(nullptr)
+      SpriteTemplate(NULL)
+    , Component(NULL)
+    , CurrentLODLevel(NULL)
     , CurrentLODLevelIndex(0)
     , TypeDataOffset(0)
     , TypeDataInstanceOffset(-1)
@@ -161,7 +163,7 @@ FParticleEmitterInstance::~FParticleEmitterInstance()
     delete ParticleData;
     delete ParticleIndices;
     delete InstanceData;
-    BurstFired.Empty();
+    // BurstFired.Empty();
 }
 
 void FParticleEmitterInstance::InitParameters(UParticleEmitter* InTemplate, UParticleSystemComponent* InComponent)
@@ -312,48 +314,47 @@ void FParticleEmitterInstance::Init()
 		//SortMode = HighLODLevel->RequiredModule->SortMode;
 
 	// Reset the burst lists
-	if (BurstFired.Num() < SpriteTemplate->LODLevels.Num())
-	{
-		BurstFired.AddZeroed(SpriteTemplate->LODLevels.Num() - BurstFired.Num());
-	}
-
-	for (int32 LODIndex = 0; LODIndex < SpriteTemplate->LODLevels.Num(); LODIndex++)
-	{
-			UParticleLODLevel* LODLevel = SpriteTemplate->LODLevels[LODIndex];
-		//check(LODLevel);
-		FLODBurstFired& LocalBurstFired = BurstFired[LODIndex];
-		if (LocalBurstFired.Fired.Num() < LODLevel->SpawnModule->BurstList.Num())
-		{
-			LocalBurstFired.Fired.AddZeroed(LODLevel->SpawnModule->BurstList.Num() - LocalBurstFired.Fired.Num());
-		}
-	}
+	// if (BurstFired.Num() < SpriteTemplate->LODLevels.Num())
+	// {
+	// 	BurstFired.AddZeroed(SpriteTemplate->LODLevels.Num() - BurstFired.Num());
+	// }
+	//
+	// for (int32 LODIndex = 0; LODIndex < SpriteTemplate->LODLevels.Num(); LODIndex++)
+	// {
+	// 		UParticleLODLevel* LODLevel = SpriteTemplate->LODLevels[LODIndex];
+	// 	//check(LODLevel);
+	// 	FLODBurstFired& LocalBurstFired = BurstFired[LODIndex];
+	// 	if (LocalBurstFired.Fired.Num() < LODLevel->SpawnModule->BurstList.Num())
+	// 	{
+	// 		LocalBurstFired.Fired.AddZeroed(LODLevel->SpawnModule->BurstList.Num() - LocalBurstFired.Fired.Num());
+	// 	}
+	// }
 	}
 
 	ResetBurstList();
 
-#if WITH_EDITORONLY_DATA
+
 	//Check for SubUV module to see if it has SubUVAnimation to move data to required module
-	for (auto CurrModule : HighLODLevel->Modules)
-	{
-		if (CurrModule->IsA(UParticleModuleSubUV::StaticClass()))
-		{
-			UParticleModuleSubUV* SubUVModule = (UParticleModuleSubUV*)CurrModule;
-
-			if (SubUVModule->Animation)
-			{
-				HighLODLevel->RequiredModule->AlphaThreshold = SubUVModule->Animation->AlphaThreshold;
-				HighLODLevel->RequiredModule->BoundingMode = SubUVModule->Animation->BoundingMode;
-				HighLODLevel->RequiredModule->OpacitySourceMode = SubUVModule->Animation->OpacitySourceMode;
-				HighLODLevel->RequiredModule->CutoutTexture = SubUVModule->Animation->SubUVTexture;
-
-				SubUVModule->Animation = nullptr;
-
-				HighLODLevel->RequiredModule->CacheDerivedData();
-				HighLODLevel->RequiredModule->InitBoundingGeometryBuffer();
-			}
-		}
-	}
-#endif //WITH_EDITORONLY_DATA
+	// for (auto CurrModule : HighLODLevel->Modules)
+	// {
+	// 	if (CurrModule->IsA(UParticleModuleSubUV::StaticClass()))
+	// 	{
+	// 		UParticleModuleSubUV* SubUVModule = (UParticleModuleSubUV*)CurrModule;
+	//
+	// 		if (SubUVModule->Animation)
+	// 		{
+	// 			HighLODLevel->RequiredModule->AlphaThreshold = SubUVModule->Animation->AlphaThreshold;
+	// 			//HighLODLevel->RequiredModule->BoundingMode = SubUVModule->Animation->BoundingMode;
+	// 			//HighLODLevel->RequiredModule->OpacitySourceMode = SubUVModule->Animation->OpacitySourceMode;
+	// 			//HighLODLevel->RequiredModule->CutoutTexture = SubUVModule->Animation->SubUVTexture;
+	//
+	// 			SubUVModule->Animation = nullptr;
+	//
+	// 			//HighLODLevel->RequiredModule->CacheDerivedData();
+	// 			//HighLODLevel->RequiredModule->InitBoundingGeometryBuffer();
+	// 		}
+	// 	}
+	// }
 
 	// Tag it as dirty w.r.t. the renderer
 	IsRenderDataDirty	= 1;
@@ -720,8 +721,54 @@ void FParticleEmitterInstance::ForceUpdateBoundingBox()
 
 uint32 FParticleEmitterInstance::RequiredBytes()
 {
-    //SubUV Particle있으면 구현필요할듯
-    return 0;
+    // If ANY LOD level has subUV, the size must be taken into account.
+    uint32 uiBytes = 0;
+    bool bHasSubUV = false;
+    for (int32 LODIndex = 0; (LODIndex < SpriteTemplate->LODLevels.Num()) && !bHasSubUV; LODIndex++)
+    {
+        // This code assumes that the module stacks are identical across LOD levevls...
+        UParticleLODLevel* LODLevel = SpriteTemplate->GetLODLevel(LODIndex);
+		  
+        if (LODLevel)
+        {
+            EParticleSubUVInterpMethod	InterpolationMethod	= (EParticleSubUVInterpMethod)LODLevel->RequiredModule->InterpolationMethod;
+            // if (LODIndex > 0)
+            // {
+            //     if ((InterpolationMethod != EParticleSubUVInterpMethod::PSUVIM_None) && (bHasSubUV == false))
+            //     {
+            //         UE_LOG(LogParticles, Warning, TEXT("Emitter w/ mismatched SubUV settings: %s"),
+            //             Component ? 
+            //                 Component->Template ? 
+            //                     *(Component->Template->GetPathName()) :
+            //                     *(Component->GetFullName()) :
+            //                 TEXT("INVALID PSYS!"));
+            //     }
+            //
+            //     if ((InterpolationMethod == PSUVIM_None) && (bHasSubUV == true))
+            //     {
+            //         UE_LOG(LogParticles, Warning, TEXT("Emitter w/ mismatched SubUV settings: %s"),
+            //             Component ? 
+            //             Component->Template ? 
+            //             *(Component->Template->GetPathName()) :
+            //         *(Component->GetFullName()) :
+            //         TEXT("INVALID PSYS!"));
+            //     }
+            // }
+            // Check for SubUV utilization, and update the required bytes accordingly
+            if (InterpolationMethod != EParticleSubUVInterpMethod::PSUVIM_None)
+            {
+                bHasSubUV = true;
+            }
+        }
+    }
+
+    if (bHasSubUV)
+    {
+        SubUVDataOffset = PayloadOffset;
+        uiBytes	= sizeof(FFullSubUVPayload);
+    }
+
+    return uiBytes;
 }
 
 uint32 FParticleEmitterInstance::GetModuleDataOffset(UParticleModule* Module)
@@ -1596,7 +1643,7 @@ UMaterial* FParticleEmitterInstance::GetCurrentMaterial()
  /** Constructor	*/
 FParticleMeshEmitterInstance::FParticleMeshEmitterInstance() :
     FParticleEmitterInstance()
-    , MeshTypeData(NULL)
+    , MeshTypeData(nullptr)
     , MeshRotationActive(false)
     , MeshRotationOffset(0)
     , MeshMotionBlurOffset(0)

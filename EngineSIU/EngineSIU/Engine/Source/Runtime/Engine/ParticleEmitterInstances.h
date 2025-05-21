@@ -4,6 +4,7 @@
 #include "Container/Array.h"
 #include "Core/Math/Vector.h"
 #include "Math/Matrix.h"
+#include "Math/RandomStream.h"
 #include "Math/Transform.h"
 #include "UObject/ObjectMacros.h"
 
@@ -135,7 +136,7 @@ public:
     /** The bounding box for the particles.								*/
     FBoundingBox ParticleBoundingBox;
     /** The BurstFire information.										*/
-    TArray<struct FLODBurstFired> BurstFired;
+    // TArray<struct FLODBurstFired> BurstFired;
     /** The number of loops completed by the instance.					*/
     int32 LoopCount;
     /** Flag indicating if the render data is dirty.					*/

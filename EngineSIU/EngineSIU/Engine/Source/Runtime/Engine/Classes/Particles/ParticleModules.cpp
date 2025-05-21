@@ -1,3 +1,5 @@
+#include "ParticleLODLevel.h"
+#include "SubUVAnimation.h"
 #include "Components/ParticleSystemComponent.h"
 #include "Lifetime/ParticleModuleLifetime.h"
 #include "Lifetime/ParticleModuleLifetime_Seeded.h"
@@ -6,6 +8,8 @@
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 #include "Particles/ParticleModuleRequired.h"
 #include "Particles/ParticleEmitter.h"
+#include "SubUV/ParticleModuleSubUV.h"
+#include "SubUV/ParticleModuleSubUVBase.h"
 #include "UObject/Casts.h"
 #include "UObject/ObjectFactory.h"
 
@@ -240,8 +244,6 @@ void UParticleModuleLifetime::Update(FParticleEmitterInstance* Owner, int32 Offs
     END_UPDATE_LOOP
 }
 
-//TO DO : Frawdistributionfloat인가 뭔가 어떻게 해야할듯.
-
 /*-----------------------------------------------------------------------------
     UParticleModuleLifetime_Seeded implementation.
 -----------------------------------------------------------------------------*/
@@ -264,6 +266,163 @@ void UParticleModuleLifetime_Seeded::EmitterLoopingNotify(FParticleEmitterInstan
 float UParticleModuleLifetime_Seeded::GetLifetimeValue(FParticleEmitterInstance* Owner, float InTime, UObject* Data )
 {
     return Lifetime;//.GetValue(InTime, Data, &GetRandomStream(Owner));
+}
+
+/*-----------------------------------------------------------------------------
+    UParticleModuleSubUVBase implementation.
+-----------------------------------------------------------------------------*/
+UParticleModuleSubUVBase::UParticleModuleSubUVBase()
+{
+}
+
+/*-----------------------------------------------------------------------------
+    UParticleModuleSubUV implementation.
+-----------------------------------------------------------------------------*/
+UParticleModuleSubUV::UParticleModuleSubUV()
+{
+    bSpawnModule = true;
+    bUpdateModule = true;
+    InitializeDefaults();
+}
+
+void UParticleModuleSubUV::InitializeDefaults()
+{
+    if (!SubImageIndex.IsCreated())
+    {
+        SubImageIndex.Distribution = FObjectFactory::ConstructObject<UDistributionFloat>(nullptr);
+    }
+}
+
+void UParticleModuleSubUV::Spawn(FParticleEmitterInstance* Owner, int32 Offset, float SpawnTime, FBaseParticle* ParticleBase)
+{
+	//check(Owner->SpriteTemplate);
+
+	UParticleLODLevel* LODLevel	= Owner->SpriteTemplate->GetCurrentLODLevel(Owner);
+	//check(LODLevel);
+	// Grab the interpolation method...
+	EParticleSubUVInterpMethod InterpMethod = (EParticleSubUVInterpMethod)(LODLevel->RequiredModule->InterpolationMethod);
+	const int32 PayloadOffset = Owner->SubUVDataOffset;
+	if ((InterpMethod == EParticleSubUVInterpMethod::PSUVIM_None) || (PayloadOffset == 0))
+	{
+		return;
+	}
+
+	if (!LODLevel->TypeDataModule || LODLevel->TypeDataModule->SupportsSubUV())
+	{
+		SPAWN_INIT
+		{
+			int32	TempOffset	= CurrentOffset;
+			CurrentOffset	= PayloadOffset;
+			PARTICLE_ELEMENT(FFullSubUVPayload, SubUVPayload);
+			CurrentOffset	= TempOffset;
+
+			SubUVPayload.ImageIndex = DetermineImageIndex(Owner, Offset, &Particle, InterpMethod, SubUVPayload, SpawnTime);
+		}
+	}
+}
+
+void UParticleModuleSubUV::Update(FParticleEmitterInstance* Owner, int32 Offset, float DeltaTime)
+{
+	//check(Owner->SpriteTemplate);
+
+	UParticleLODLevel* LODLevel	= Owner->SpriteTemplate->GetCurrentLODLevel(Owner);
+	// Grab the interpolation method...
+	EParticleSubUVInterpMethod InterpMethod = 
+		(EParticleSubUVInterpMethod)(LODLevel->RequiredModule->InterpolationMethod);
+	const int32 PayloadOffset = Owner->SubUVDataOffset;
+	if ((InterpMethod == EParticleSubUVInterpMethod::PSUVIM_None) || (PayloadOffset == 0))
+	{
+		return;
+	}
+
+	// Quick-out in case of Random that only uses a single image for the whole lifetime...
+	if ((InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Random) || (InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Random_Blend))
+	{
+		if (LODLevel->RequiredModule->RandomImageChanges == 0)
+		{
+			// Never change the random image...
+			return;
+		}
+	}
+
+	if (!LODLevel->TypeDataModule || LODLevel->TypeDataModule->SupportsSubUV())
+	{
+		BEGIN_UPDATE_LOOP
+			if (Particle.RelativeTime > 1.0f)
+			{
+				CONTINUE_UPDATE_LOOP
+			}
+
+			int32	TempOffset	= CurrentOffset;
+			CurrentOffset	= PayloadOffset;
+			PARTICLE_ELEMENT(FFullSubUVPayload, SubUVPayload)
+			CurrentOffset	= TempOffset;
+
+			SubUVPayload.ImageIndex = DetermineImageIndex(Owner, Offset, &Particle, InterpMethod, SubUVPayload, DeltaTime);
+		END_UPDATE_LOOP
+	}
+}
+
+float UParticleModuleSubUV::DetermineImageIndex(FParticleEmitterInstance* Owner, int32 Offset, FBaseParticle* Particle, 
+	EParticleSubUVInterpMethod InterpMethod, FFullSubUVPayload& SubUVPayload, float DeltaTime)
+{
+	UParticleLODLevel* LODLevel	= Owner->SpriteTemplate->GetCurrentLODLevel(Owner);
+	//check(LODLevel);
+
+	USubUVAnimation* __restrict SubUVAnimation = Owner->SpriteTemplate->SubUVAnimation;
+
+	const int32 TotalSubImages = SubUVAnimation 
+		? SubUVAnimation->SubImages_Horizontal * SubUVAnimation->SubImages_Vertical
+		: LODLevel->RequiredModule->SubImages_Horizontal * LODLevel->RequiredModule->SubImages_Vertical;
+
+	float ImageIndex = SubUVPayload.ImageIndex;
+
+	if ((InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Linear) || (InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Linear_Blend))
+	{
+		if (bUseRealTime == false)
+		{
+			ImageIndex = SubImageIndex.GetValue(Particle->RelativeTime);
+		}
+		else
+		{
+			UWorld* World = Owner->Component->GetWorld();
+			// if ((World != NULL))
+			// {
+			// 	ImageIndex = SubImageIndex.GetValue(Particle->RelativeTime / World->GetWorldSettings()->GetEffectiveTimeDilation(), Owner->Component);
+			// }
+			// else
+			// {
+			// ImageIndex = SubImageIndex.GetValue(Particle->RelativeTime);
+			// }
+		    ImageIndex = (SubUVAnimation->SubImages_Horizontal) * (SubUVAnimation->SubImages_Vertical) * (Particle->RelativeTime);
+		}
+
+		if (InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Linear)
+		{
+			ImageIndex = FMath::TruncToFloat(ImageIndex);
+		}
+	}
+	else if ((InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Random) || (InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Random_Blend))
+	{
+		if ((LODLevel->RequiredModule->RandomImageTime == 0.0f) ||
+			((Particle->RelativeTime - SubUVPayload.RandomImageTime) > LODLevel->RequiredModule->RandomImageTime) ||
+			(SubUVPayload.RandomImageTime == 0.0f))
+		{
+			ImageIndex = GetRandomStream(Owner).RandHelper(TotalSubImages);
+			SubUVPayload.RandomImageTime	= Particle->RelativeTime;
+		}
+
+		if (InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Random)
+		{
+			ImageIndex = FMath::TruncToFloat(ImageIndex);
+		}
+	}
+	else
+	{
+		ImageIndex	= 0;
+	}
+
+	return ImageIndex;
 }
 
 UParticleModuleTypeDataMesh::UParticleModuleTypeDataMesh()
