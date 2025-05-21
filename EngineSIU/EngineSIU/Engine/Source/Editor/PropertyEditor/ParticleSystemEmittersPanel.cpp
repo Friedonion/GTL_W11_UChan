@@ -1,9 +1,15 @@
 #include "ParticleSystemEmittersPanel.h"
 
-#include "Particles/ParticleEmitter.h"
-#include "Particles/ParticleModule.h"
-#include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleSystem.h"
+#include "Particles/ParticleEmitter.h"
+#include "Particles/ParticleSpriteEmitter.h"
+#include "Particles/ParticleLODLevel.h"
+#include "Particles/ParticleModule.h"
+#include "Particles/ParticleModuleRequired.h"
+#include "Particles/Lifetime/ParticleModuleLifetime.h"
+#include "Particles/Size/ParticleModuleSize.h"
+#include "Particles/Velocity/ParticleModuleVelocity.h"
+#include "Particles/Color/ParticleModuleColor.h"
 
 // 선택 상태 변경 처리 함수
 bool ParticleSystemEmittersPanel::HandleEmitterSelection(UParticleEmitter* Emitter, int32 EmitterIndex)
@@ -125,6 +131,55 @@ void ParticleSystemEmittersPanel::Render()
                     // Add your particle system editor UI elements here
                     // ...
                     RenderEmitters(ParticleSystem);
+                    
+                    // 이미터 이름 변경 모달 처리
+                    // ImGui 팝업 중첩 문제를 해결하기 위한 처리
+                    // bShowRenameEmitterModal이 true일 때 OpenPopup을 호출하고, 다음 프레임에서 BeginPopupModal로 확인
+                    if (bShowRenameEmitterModal)
+                    {
+                        // OpenPopup은 매 프레임 호출해야 함
+                        ImGui::OpenPopup("RenameEmitter");
+                    }
+                    
+                    // BeginPopupModal은 OpenPopup 상태에 관계없이 항상 호출 (팝업 상태 확인용)
+                    if (ImGui::BeginPopupModal("RenameEmitter", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+                    {
+                        ImGui::Text("에미터 이름 변경:");
+                        ImGui::InputText("##EmitterName", EmitterNameBuffer, sizeof(EmitterNameBuffer));
+                        
+                        if (ImGui::Button("확인", ImVec2(120, 0)))
+                        {
+                            // 새 이름이 비어있지 않으면 적용
+                            if (strlen(EmitterNameBuffer) > 0 && EmitterToRename)
+                            {
+                                // 이전 이름 저장 (로그용)
+                                FString OldName = EmitterToRename->EmitterName.ToString();
+                                
+                                // 에미터 이름 업데이트
+                                EmitterToRename->EmitterName = EmitterNameBuffer;
+                                
+                                // 로그 출력
+                                UE_LOG(ELogLevel::Display, "[PSV] Rename Emitter : %s -> %s", GetData(OldName), EmitterNameBuffer);
+                            }
+                            
+                            bShowRenameEmitterModal = false;
+                            EmitterToRename = nullptr;
+                            EmitterToRenameIndex = INDEX_NONE;
+                            ImGui::CloseCurrentPopup();
+                        }
+                        
+                        ImGui::SameLine();
+                        
+                        if (ImGui::Button("취소", ImVec2(120, 0)))
+                        {
+                            bShowRenameEmitterModal = false;
+                            EmitterToRename = nullptr;
+                            EmitterToRenameIndex = INDEX_NONE;
+                            ImGui::CloseCurrentPopup();
+                        }
+                        
+                        ImGui::EndPopup();
+                    }
                 }
                 ImGui::End();
             }
@@ -146,7 +201,13 @@ void ParticleSystemEmittersPanel::SetParticleSystemComponent(UParticleSystemComp
     
     // 컴포넌트가 변경되면 선택 상태 초기화
     Selection.Reset();
-    Selection.ParticleSystem = InParticleSystemComponent->Template;
+    Selection.ParticleSystem = InParticleSystemComponent ? InParticleSystemComponent->Template : nullptr;
+    
+    // 이름 변경 모달 상태도 초기화
+    bShowRenameEmitterModal = false;
+    EmitterToRename = nullptr;
+    EmitterToRenameIndex = INDEX_NONE;
+    
     OnSelectionChanged();
 }
 
@@ -311,11 +372,21 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
                         // 에미터 이름
                         ImGui::Text("%s", GetData(Emitter->EmitterName.ToString()));
                         
-                        // 클릭 영역 확인 (헤더 영역 전체)
+                        // 좌클릭 - 영역 확인 (헤더 영역 전체)
                         if (ImGui::IsItemClicked() || ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseClicked(0))
                         {
                             HandleEmitterSelection(Emitter, EmitterIndex);
                         }
+                        
+                        // 우클릭 - 컨텍스트 메뉴 표시
+                        if (ImGui::IsItemClicked(1) || ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseClicked(1))
+                        {
+                            HandleEmitterSelection(Emitter, EmitterIndex);
+                            ImGui::OpenPopup(("EmitterContextMenu##" + std::to_string(EmitterIndex)).c_str());
+                        }
+                        
+                        // 에미터 컨텍스트 메뉴 렌더링
+                        ShowEmitterContextMenu(Emitter, EmitterIndex);
                         
                         {
                             // 에미터 활성화 체크박스
@@ -330,14 +401,52 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
                             // 파티클 카운트 표시
                             ImGui::Text("%d", Emitter->PeakActiveParticles);
                         }
-                        // @todo Load Material's Thumbnail
                         ImGui::SameLine(AvailableRegion.x - 50.0f);
                         {
-                            // 썸네일 위치
-                            ImGui::Dummy(ImVec2(40.0f, 40.0f));
+                            // 썸네일
+                            bool bHasTexture = false;
+                            if (auto Material = Emitter->LODLevels[0]->RequiredModule->Material)
+                            {
+
+                                if (auto TexturePath = Material->GetMaterialInfo().TextureInfos[0].TexturePath; !TexturePath.empty())
+                                {
+                                    ID3D11ShaderResourceView* TextureSRV = FEngineLoop::ResourceManager.GetTexture(Emitter->LODLevels[0]->RequiredModule->Material->GetMaterialInfo().TextureInfos[0].TexturePath)->TextureSRV;
+                                    if (TextureSRV)
+                                    {
+                                        ImGui::Image(reinterpret_cast<ImTextureID>(TextureSRV), ImVec2(40, 40));
+                                        bHasTexture = true;
+                                    }
+                                }
+                                else
+                                {
+                                    FLinearColor MaterialColor(0.8f, 0.8f, 0.8f, 1.0f);
+                                    if (Material->GetMaterialInfo().DiffuseColor.X > 0 ||
+                                        Material->GetMaterialInfo().DiffuseColor.Y > 0 ||
+                                        Material->GetMaterialInfo().DiffuseColor.Z > 0)
+                                    {
+                                        MaterialColor = FLinearColor(
+                                            Material->GetMaterialInfo().DiffuseColor.X,
+                                            Material->GetMaterialInfo().DiffuseColor.Y,
+                                            Material->GetMaterialInfo().DiffuseColor.Z,
+                                            1.0f
+                                        );
+                                    }
+
+                                    ImGui::ColorButton("##MaterialItemPreview",
+                                        ImVec4(MaterialColor.R, MaterialColor.G, MaterialColor.B, MaterialColor.A),
+                                        ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop,
+                                        ImVec2(40, 40));
+                                }
+                            }
+                            if (!bHasTexture)
+                            {
+                                ImGui::Dummy(ImVec2(40, 40));
+                            }
+
+                            // 테두리
                             ImGui::GetWindowDrawList()->AddRect(
-                                ImVec2(CursorPos.x + AvailableRegion.x - 50.0f, CursorPos.y + 10.0f),
-                                ImVec2(CursorPos.x + AvailableRegion.x - 10.0f, CursorPos.y + 50.0f),
+                                ImVec2(CursorPos.x + AvailableRegion.x - 50.0f, CursorPos.y + 22.0f),
+                                ImVec2(CursorPos.x + AvailableRegion.x - 10.0f, CursorPos.y + 62.0f),
                                 ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 1.0f, 1.0f, 0.5f))
                             );
                         }
@@ -455,6 +564,16 @@ void ParticleSystemEmittersPanel::RenderModuleCategory(const TArray<UParticleMod
             {
                 HandleModuleSelection(Module, EmitterIndex, ModuleIndex);
             }
+            
+            // 우클릭 - 모듈 컨텍스트 메뉴
+            if (ImGui::IsItemClicked(1))
+            {
+                HandleModuleSelection(Module, EmitterIndex, ModuleIndex);
+                ImGui::OpenPopup(("ModuleContextMenu##" + std::to_string(EmitterIndex) + "_" + std::to_string(ModuleIndex)).c_str());
+            }
+            
+            // 모듈 컨텍스트 메뉴 렌더링
+            ShowModuleContextMenu(Module, EmitterIndex, ModuleIndex);
         }
         ImGui::SameLine(ImGui::GetWindowWidth() - 60.0f - ImGui::GetStyle().WindowPadding.x);
         {
@@ -494,4 +613,820 @@ void ParticleSystemEmittersPanel::RenderModuleCategory(const TArray<UParticleMod
     }
 
     ImGui::Separator();
+}
+
+// 에미터 컨텍스트 메뉴
+void ParticleSystemEmittersPanel::ShowEmitterContextMenu(UParticleEmitter* Emitter, int32 EmitterIndex)
+{
+    if (!Emitter)
+    {
+        return;
+    }
+
+    if (ImGui::BeginPopup(("EmitterContextMenu##" + std::to_string(EmitterIndex)).c_str()))
+    {
+        ImGui::Text("Emitter: %s", GetData(Emitter->EmitterName.ToString()));
+        ImGui::Separator();
+
+        // Emitter 카테고리
+        if (ImGui::BeginMenu("Emitter"))
+        {
+            if (ImGui::MenuItem("Rename Emitter"))
+            {
+                // 이미터 이름변경 모달을 위한 상태 설정
+                // 현재 컨텍스트 메뉴를 닫고 다음 프레임에서 모달이 열리도록 함
+                ImGui::CloseCurrentPopup();
+                OnRenameEmitter(Emitter, EmitterIndex);
+            }
+            
+            if (ImGui::MenuItem("[X] Duplicate Emitter"))
+            {
+                // 이미터 복제
+                OnDuplicateEmitter(Emitter, EmitterIndex);
+            }
+            
+            if (ImGui::MenuItem("Remove Emitter"))
+            {
+                // 이미터 삭제
+                OnRemoveEmitter(Emitter, EmitterIndex);
+            }
+            
+            ImGui::EndMenu();
+        }
+        
+        ImGui::Separator();
+        
+        // ParticleSystem 카테고리
+        if (ImGui::BeginMenu("ParticleSystem"))
+        {
+            if (ImGui::MenuItem("Select ParticleSystem"))
+            {
+                // 파티클 시스템 선택
+                OnSelectParticleSystem();
+            }
+            
+            if (ImGui::MenuItem("Add New Emitter Before"))
+            {
+                // 앞에 새 이미터 추가
+                OnAddEmitterBefore(EmitterIndex);
+            }
+            
+            if (ImGui::MenuItem("Add New Emitter After"))
+            {
+                // 뒤에 새 이미터 추가
+                OnAddEmitterAfter(EmitterIndex);
+            }
+            
+            if (ImGui::MenuItem("[X] Remove Duplicate Module"))
+            {
+                // 중복 모듈 제거
+                OnRemoveDuplicateModule(Emitter);
+            }
+            
+            ImGui::EndMenu();
+        }
+        
+        ImGui::Separator();
+        
+        // Modules
+        {
+            // 컬러 카테고리
+            if (ImGui::BeginMenu("Color"))
+            {
+                if (ImGui::MenuItem("Initial Color"))
+                {
+                    // 초기 컬러 모듈 추가
+                    OnAddInitialColor(Emitter);
+                }
+                
+                if (ImGui::MenuItem("[X] Color Over Life"))
+                {
+                    // 컬러 오버 라이프 모듈 추가
+                    OnAddColorOverLife(Emitter);
+                }
+                
+                ImGui::EndMenu();
+            }
+            
+            // 수명 카테고리
+            if (ImGui::BeginMenu("Lifetime"))
+            {
+                if (ImGui::MenuItem("LifeTime"))
+                {
+                    // 수명 모듈 추가
+                    OnAddLifetime(Emitter);
+                }
+                
+                ImGui::EndMenu();
+            }
+            
+            // 크기 카테고리
+            if (ImGui::BeginMenu("Size"))
+            {
+                if (ImGui::MenuItem("Initial Size"))
+                {
+                    // 초기 크기 모듈 추가
+                    OnAddInitialSize(Emitter);
+                }
+                
+                if (ImGui::MenuItem("[X] Size By Life"))
+                {
+                    // 라이프 기준 크기 모듈 추가
+                    OnAddSizeByLife(Emitter);
+                }
+                
+                ImGui::EndMenu();
+            }
+            
+            // 스폰 카테고리
+            if (ImGui::BeginMenu("Spawn"))
+            {
+                if (ImGui::MenuItem("[X] Spawn Per Unit"))
+                {
+                    // 단위당 스폰 모듈 추가
+                    OnAddSpawnPerUnit(Emitter);
+                }
+                
+                ImGui::EndMenu();
+            }
+            
+            // 속도 카테고리
+            if (ImGui::BeginMenu("Velocity"))
+            {
+                if (ImGui::MenuItem("Initial Velocity"))
+                {
+                    // 초기 속도 모듈 추가
+                    OnAddInitialVelocity(Emitter);
+                }
+                
+                if (ImGui::MenuItem("[X] Velocity/Life"))
+                {
+                    // 속도/라이프 모듈 추가
+                    OnAddVelocityOverLife(Emitter);
+                }
+                
+                ImGui::EndMenu();
+            }
+        }
+        
+        ImGui::EndPopup();
+    }
+}
+
+// 모듈 컨텍스트 메뉴
+void ParticleSystemEmittersPanel::ShowModuleContextMenu(UParticleModule* Module, int32 EmitterIndex, int32 ModuleIndex)
+{
+    if (!Module)
+    {
+        return;
+    }
+
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem || EmitterIndex >= ParticleSystem->Emitters.Num())
+    {
+        return;
+    }
+
+    UParticleEmitter* Emitter = ParticleSystem->Emitters[EmitterIndex];
+    if (!Emitter)
+    {
+        return;
+    }
+
+    if (ImGui::BeginPopup(("ModuleContextMenu##" + std::to_string(EmitterIndex) + "_" + std::to_string(ModuleIndex)).c_str()))
+    {
+        FString ModuleTypeName = Module->GetClass()->GetName();
+        ImGui::Text("Module: %s", GetData(ModuleTypeName));
+        ImGui::Separator();
+
+        // 모듈 활성화/비활성화
+        bool bEnabled = Module->bEnabled;
+        if (ImGui::MenuItem(bEnabled ? "Disable Module" : "Enable Module"))
+        {
+            Module->bEnabled = !bEnabled;
+        }
+        
+        // 모듈 복제
+        if (ImGui::MenuItem("[X] Duplicate Module"))
+        {
+            OnDuplicateModule(Module, EmitterIndex, ModuleIndex);
+        }
+        
+        // 모듈 제거
+        if (ImGui::MenuItem("[X] Remove Module"))
+        {
+            OnRemoveModule(Module, EmitterIndex, ModuleIndex);
+        }
+        
+        ImGui::Separator();
+        
+        // 모듈 이동
+        if (ImGui::MenuItem("Move Up", nullptr, false, ModuleIndex > 0))
+        {
+            OnMoveModuleUp(EmitterIndex, ModuleIndex);
+        }
+        
+        if (ImGui::MenuItem("Move Down", nullptr, false, ModuleIndex < Emitter->LODLevels[0]->Modules.Num() - 1))
+        {
+            OnMoveModuleDown(EmitterIndex, ModuleIndex);
+        }
+        
+        ImGui::EndPopup();
+    }
+}
+
+// 에미터 이벤트 핸들러
+void ParticleSystemEmittersPanel::OnRenameEmitter(UParticleEmitter* Emitter, int32 EmitterIndex)
+{
+    if (!Emitter)
+    {
+        return;
+    }
+    
+    // 다음 프레임에서 모달을 표시하기 위한 상태 설정만 함
+    // ImGui는 중첩된 팝업 컨텍스트를 지원하지 않으므로 OpenPopup을 직접 호출하지 않음
+    bShowRenameEmitterModal = true;
+    EmitterToRename = Emitter;
+    EmitterToRenameIndex = EmitterIndex;
+    
+    // 현재 에미터 이름으로 버퍼 초기화
+    strcpy_s(EmitterNameBuffer, sizeof(EmitterNameBuffer), GetData(Emitter->EmitterName.ToString()));
+}
+
+void ParticleSystemEmittersPanel::OnDuplicateEmitter(UParticleEmitter* Emitter, int32 EmitterIndex)
+{
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem || !Emitter)
+    {
+        return;
+    }
+    
+    // 에미터 복제 로직
+    // TODO: 실제 복제 구현
+}
+
+void ParticleSystemEmittersPanel::OnRemoveEmitter(UParticleEmitter* Emitter, int32 EmitterIndex)
+{
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem || !Emitter || EmitterIndex < 0 || EmitterIndex >= ParticleSystem->Emitters.Num())
+    {
+        return;
+    }
+
+    // 1. 선택 상태 확인 및 업데이트
+    bool bWasSelected = (Selection.SelectedEmitter == Emitter && Selection.EmitterIndex == EmitterIndex);
+    bool bUpdateSelectionIndices = (Selection.EmitterIndex > EmitterIndex);
+
+    // 2. 에미터 인스턴스 제거
+    // ParticleSystemComponent에서 에미터 인스턴스 제거
+    if (ParticleSystemComponent && EmitterIndex < ParticleSystemComponent->EmitterInstances.Num())
+    {
+        // 인스턴스 메모리 해제
+        FParticleEmitterInstance* Instance = ParticleSystemComponent->EmitterInstances[EmitterIndex];
+        if (Instance)
+        {
+            // 메모리 해제
+            delete Instance;
+        }
+
+        // 배열에서 인스턴스 제거
+        ParticleSystemComponent->EmitterInstances.RemoveAt(EmitterIndex);
+    }
+
+    // 3. 파티클 시스템에서 에미터 제거
+    ParticleSystem->Emitters.RemoveAt(EmitterIndex);
+    
+    // 4. 변경사항 반영을 위해 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
+
+    // 5. 선택 상태 업데이트
+    if (bWasSelected)
+    {
+        // 삭제된 에미터가 선택되어 있었으면 선택 해제
+        Selection.Reset();
+        OnSelectionChanged();
+    }
+    else if (bUpdateSelectionIndices && Selection.EmitterIndex != INDEX_NONE)
+    {
+        // 삭제된 에미터 이후의 인덱스를 가진 에미터가 선택되어 있었으면 인덱스 업데이트
+        Selection.EmitterIndex--;
+    }
+}
+
+// 파티클 시스템 이벤트 핸들러
+void ParticleSystemEmittersPanel::OnSelectParticleSystem()
+{
+    // 파티클 시스템 컴포넌트와 템플릿 가져오기
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem)
+    {
+        UE_LOG(ELogLevel::Warning, "Invalid ParticleSystemComponent or Template.");
+        return;
+    }
+    
+    Selection.Reset();
+    Selection.ParticleSystem = ParticleSystem;
+    
+    // 파티클 시스템의 모든 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
+    
+    // 에미터 인스턴스 업데이트
+    if (ParticleSystemComponent)
+    {
+        // 필요한 경우 파티클 시스템 컴포넌트의 에미터 인스턴스 상태 확인 및 업데이트
+        for (int32 EmitterIndex = 0; EmitterIndex < ParticleSystem->Emitters.Num(); ++EmitterIndex)
+        {
+            if (EmitterIndex >= ParticleSystemComponent->EmitterInstances.Num() ||
+                !ParticleSystemComponent->EmitterInstances[EmitterIndex])
+            {
+                // 필요시 인스턴스 초기화 로직을 여기에 추가할 수 있음
+                // 현재 구현은 ParticleSystemComponent에서 처리하는 것으로 가정
+            }
+        }
+    }
+    
+    // UE_LOG(ELogLevel::Display, TEXT("파티클 시스템 선택: %s (에미터 수: %d)"),
+    //      *ParticleSystem->GetName(), ParticleSystem->Emitters.Num());
+    
+    // for (int32 i = 0; i < ParticleSystem->Emitters.Num(); ++i)
+    // {
+    //     if (ParticleSystem->Emitters[i])
+    //     {
+    //         UE_LOG(ELogLevel::Display, TEXT("  에미터[%d]: %s"),
+    //             i, GetData(ParticleSystem->Emitters[i]->EmitterName.ToString()));
+    //     }
+    // }
+    
+    OnSelectionChanged();
+}
+
+void ParticleSystemEmittersPanel::OnAddEmitterBefore(int32 EmitterIndex)
+{
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid ParticleSystem");
+        return;
+    }
+    
+    // 인덱스 범위 검증
+    if (EmitterIndex < 0 || EmitterIndex > ParticleSystem->Emitters.Num())
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid EmitterIndex %d", EmitterIndex);
+        return;
+    }
+    
+    // 1. 새 에미터(UParticleSpriteEmitter) 생성
+    UParticleSpriteEmitter* NewEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
+    if (!NewEmitter)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create new emitter");
+        return;
+    }
+    
+    // 2. LOD 레벨 생성
+    NewEmitter->CreateLODLevel(0);
+    UParticleLODLevel* LODLevel = NewEmitter->GetLODLevel(0);
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create LOD level for new emitter");
+        return;
+    }
+    
+    // 3. 기본 모듈 추가
+    // Lifetime 모듈 추가
+    UParticleModuleLifetime* LifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
+    LODLevel->Modules.Add(LifetimeModule);
+    
+    // Initial Size 모듈 추가
+    UParticleModuleSize* SizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
+    LODLevel->Modules.Add(SizeModule);
+    
+    // Initial Velocity 모듈 추가
+    UParticleModuleVelocity* VelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+    LODLevel->Modules.Add(VelocityModule);
+
+    // Color Over Life 모듈 추가
+    UParticleModuleColor* ColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+    LODLevel->Modules.Add(ColorModule);
+    
+    // 4. 에미터 이름 설정
+    FString NewEmitterName = TEXT("Particle Emitter_") + FString::Printf(TEXT("%d"), ParticleSystem->Emitters.Num());
+    NewEmitter->EmitterName = NewEmitterName;
+    
+    // 5. 파티클 시스템에 에미터 추가 (앞에 추가)
+    ParticleSystem->Emitters.Insert(NewEmitter, EmitterIndex);
+    
+    // 선택 상태 업데이트
+    bool bUpdateSelectionIndices = (Selection.EmitterIndex >= EmitterIndex);
+    
+    // 6. 에미터 인스턴스 생성 및 추가
+    FParticleEmitterInstance* NewInstance = NewEmitter->CreateInstance(ParticleSystemComponent);
+    if (NewInstance)
+    {
+        ParticleSystemComponent->EmitterInstances.Insert(NewInstance, EmitterIndex);
+    }
+    
+    // 7. 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
+    
+    // 8. 선택 상태 업데이트
+    if (bUpdateSelectionIndices && Selection.EmitterIndex != INDEX_NONE)
+    {
+        // 추가된 에미터 이후의 인덱스를 가진 에미터가 선택되어 있었으면 인덱스 업데이트
+        Selection.EmitterIndex++;
+    }
+    
+    // 9. 새 에미터를 선택 상태로 변경
+    Selection.SelectedEmitter = NewEmitter;
+    Selection.EmitterIndex = EmitterIndex;
+    Selection.SelectedModule = nullptr;
+    Selection.ModuleIndex = INDEX_NONE;
+    
+    // 선택 변경 이벤트 발생
+    OnSelectionChanged();
+}
+
+void ParticleSystemEmittersPanel::OnAddEmitterAfter(int32 EmitterIndex)
+{
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid ParticleSystem");
+        return;
+    }
+    
+    // 인덱스 범위 검증
+    if (EmitterIndex < 0 || EmitterIndex >= ParticleSystem->Emitters.Num())
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid EmitterIndex %d", EmitterIndex);
+        return;
+    }
+    
+    // 1. 새 에미터(UParticleSpriteEmitter) 생성
+    UParticleSpriteEmitter* NewEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
+    if (!NewEmitter)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create new emitter");
+        return;
+    }
+    
+    // 2. LOD 레벨 생성
+    NewEmitter->CreateLODLevel(0);
+    UParticleLODLevel* LODLevel = NewEmitter->GetLODLevel(0);
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create LOD level for new emitter");
+        return;
+    }
+    
+    // 3. 기본 모듈 추가
+    // Lifetime 모듈 추가
+    UParticleModuleLifetime* LifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
+    LODLevel->Modules.Add(LifetimeModule);
+    
+    // Initial Size 모듈 추가
+    UParticleModuleSize* SizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
+    LODLevel->Modules.Add(SizeModule);
+    
+    // Initial Velocity 모듈 추가
+    UParticleModuleVelocity* VelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+    LODLevel->Modules.Add(VelocityModule);
+
+    // Color 모듈 추가
+    UParticleModuleColor* ColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+    LODLevel->Modules.Add(ColorModule);
+
+    // 4. 에미터 이름 설정
+    FString NewEmitterName = TEXT("Particle Emitter_") + FString::Printf(TEXT("%d"), ParticleSystem->Emitters.Num());
+    NewEmitter->EmitterName = NewEmitterName;
+    
+    // 5. 파티클 시스템에 에미터 추가 (뒤에 추가)
+    int32 NewEmitterIndex = EmitterIndex + 1;
+    ParticleSystem->Emitters.Insert(NewEmitter, NewEmitterIndex);
+    
+    // 선택 상태 업데이트
+    bool bUpdateSelectionIndices = (Selection.EmitterIndex >= NewEmitterIndex);
+    
+    // 6. 에미터 인스턴스 생성 및 추가
+    FParticleEmitterInstance* NewInstance = NewEmitter->CreateInstance(ParticleSystemComponent);
+    if (NewInstance)
+    {
+        ParticleSystemComponent->EmitterInstances.Insert(NewInstance, NewEmitterIndex);
+    }
+    
+    // 7. 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
+    
+    // 8. 선택 상태 업데이트
+    if (bUpdateSelectionIndices && Selection.EmitterIndex != INDEX_NONE)
+    {
+        // 추가된 에미터 이후의 인덱스를 가진 에미터가 선택되어 있었으면 인덱스 업데이트
+        Selection.EmitterIndex++;
+    }
+    
+    // 9. 새 에미터를 선택 상태로 변경
+    Selection.SelectedEmitter = NewEmitter;
+    Selection.EmitterIndex = NewEmitterIndex;
+    Selection.SelectedModule = nullptr;
+    Selection.ModuleIndex = INDEX_NONE;
+    
+    // 선택 변경 이벤트 발생
+    OnSelectionChanged();
+}
+
+void ParticleSystemEmittersPanel::OnRemoveDuplicateModule(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        return;
+    }
+    
+    // TODO: 실제 중복 모듈 찾기 및 제거 구현
+}
+
+// 파티클 속성 이벤트 핸들러
+void ParticleSystemEmittersPanel::OnAddInitialColor(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add Initial Color module: Invalid Emitter or no LOD levels");
+        return;
+    }
+    
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add Initial Color module: Invalid LOD level");
+        return;
+    }
+    
+    // 초기 색상 모듈 생성
+    UParticleModuleColor* ColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+    if (!ColorModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create Initial Color module");
+        return;
+    }
+    
+    // 기본 속성 설정
+    //ColorModule->StartColor.Distribution.Mode = EDistributionParamMode::DPM_Constant;
+    ColorModule->StartColor.Distribution->Constant = FVector(1.0f, 1.0f, 1.0f); // 흰색
+    
+    //ColorModule->StartAlpha.Distribution.Mode = EDistributionParamMode::DPM_Constant;
+    ColorModule->StartAlpha.Distribution->Constant = 1.0f;
+    
+    // 모듈 활성화
+    ColorModule->bEnabled = true;
+    
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(ColorModule);
+    
+    UE_LOG(ELogLevel::Display, "[PSV] Added Initial Color module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
+}
+
+void ParticleSystemEmittersPanel::OnAddColorOverLife(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        return;
+    }
+    
+    // TODO: 색상/수명 모듈 추가
+}
+
+void ParticleSystemEmittersPanel::OnAddLifetime(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add Lifetime module: Invalid Emitter or no LOD levels");
+        return;
+    }
+    
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add Lifetime module: Invalid LOD level");
+        return;
+    }
+    
+    // 수명 모듈 생성
+    UParticleModuleLifetime* LifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
+    if (!LifetimeModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create Lifetime module");
+        return;
+    }
+    
+    // 기본 속성 설정 - 기본 파티클 수명은 1초로 설정
+    LifetimeModule->Lifetime = 1.0f;
+    
+    // 모듈 활성화
+    LifetimeModule->bEnabled = true;
+    
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(LifetimeModule);
+    
+    UE_LOG(ELogLevel::Display, "[PSV] Added Lifetime module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
+}
+
+void ParticleSystemEmittersPanel::OnAddInitialSize(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add Initial Size module: Invalid Emitter or no LOD levels");
+        return;
+    }
+    
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add Initial Size module: Invalid LOD level");
+        return;
+    }
+    
+    // 초기 크기 모듈 생성
+    UParticleModuleSize* SizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
+    if (!SizeModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create Initial Size module");
+        return;
+    }
+    
+    // 기본 속성 설정 - 기본 크기는 (10, 10, 10) 벡터로 설정
+    SizeModule->StartSize = FVector(1.0f, 1.0f, 1.0f);
+    
+    // 모듈 활성화
+    SizeModule->bEnabled = true;
+    
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(SizeModule);
+    
+    UE_LOG(ELogLevel::Display, "[PSV] Added Initial Size module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
+}
+
+void ParticleSystemEmittersPanel::OnAddSizeByLife(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        return;
+    }
+    
+    // TODO: 크기/수명 모듈 추가
+}
+
+void ParticleSystemEmittersPanel::OnAddSpawnPerUnit(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        return;
+    }
+    
+    // TODO: 단위당 스폰 모듈 추가
+}
+
+void ParticleSystemEmittersPanel::OnAddInitialVelocity(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add Initial Velocity module: Invalid Emitter or no LOD levels");
+        return;
+    }
+    
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add Initial Velocity module: Invalid LOD level");
+        return;
+    }
+    
+    // 초기 속도 모듈 생성
+    UParticleModuleVelocity* VelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+    if (!VelocityModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create Initial Velocity module");
+        return;
+    }
+    
+    // 기본 속성 설정
+    //VelocityModule->StartVelocity.Mode = EDistributionParamMode::DPM_Constant;
+    VelocityModule->StartVelocity.Distribution->Constant = FVector(1.0f, 1.0f, 1.0f);
+    
+    //VelocityModule->StartVelocityRadial.Mode = EDistributionParamMode::DPM_Constant;
+    VelocityModule->StartVelocityRadial = 0.0f;
+    
+    // 모듈 활성화
+    VelocityModule->bEnabled = true;
+    
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(VelocityModule);
+    
+    UE_LOG(ELogLevel::Display, "[PSV] Added Initial Velocity module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
+}
+
+void ParticleSystemEmittersPanel::OnAddVelocityOverLife(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        return;
+    }
+
+    // TODO: 속도/수명 모듈 추가
+}
+
+// 모듈 이벤트 핸들러
+void ParticleSystemEmittersPanel::OnDuplicateModule(UParticleModule* Module, int32 EmitterIndex, int32 ModuleIndex)
+{
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem || !Module || EmitterIndex >= ParticleSystem->Emitters.Num())
+    {
+        return;
+    }
+
+    UParticleEmitter* Emitter = ParticleSystem->Emitters[EmitterIndex];
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        return;
+    }
+    
+    // 모듈 복제 로직
+    // TODO: 실제 모듈 복제 구현
+}
+
+void ParticleSystemEmittersPanel::OnRemoveModule(UParticleModule* Module, int32 EmitterIndex, int32 ModuleIndex)
+{
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem || !Module || EmitterIndex >= ParticleSystem->Emitters.Num())
+    {
+        return;
+    }
+
+    UParticleEmitter* Emitter = ParticleSystem->Emitters[EmitterIndex];
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        return;
+    }
+    
+    // 모듈 제거 로직
+    // TODO: 실제 모듈 제거 구현
+}
+
+void ParticleSystemEmittersPanel::OnMoveModuleUp(int32 EmitterIndex, int32 ModuleIndex)
+{
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem || EmitterIndex >= ParticleSystem->Emitters.Num() || ModuleIndex <= 0)
+    {
+        return;
+    }
+
+    UParticleEmitter* Emitter = ParticleSystem->Emitters[EmitterIndex];
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        return;
+    }
+
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel || ModuleIndex >= LODLevel->Modules.Num())
+    {
+        return;
+    }
+    
+    // 모듈을 위로 이동
+    UParticleModule* CurrentModule = LODLevel->Modules[ModuleIndex];
+    UParticleModule* PrevModule = LODLevel->Modules[ModuleIndex - 1];
+    
+    LODLevel->Modules[ModuleIndex] = PrevModule;
+    LODLevel->Modules[ModuleIndex - 1] = CurrentModule;
+}
+
+void ParticleSystemEmittersPanel::OnMoveModuleDown(int32 EmitterIndex, int32 ModuleIndex)
+{
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    if (!ParticleSystem || EmitterIndex >= ParticleSystem->Emitters.Num())
+    {
+        return;
+    }
+
+    UParticleEmitter* Emitter = ParticleSystem->Emitters[EmitterIndex];
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        return;
+    }
+
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel || ModuleIndex >= LODLevel->Modules.Num() - 1)
+    {
+        return;
+    }
+    
+    // 모듈을 아래로 이동
+    UParticleModule* CurrentModule = LODLevel->Modules[ModuleIndex];
+    UParticleModule* NextModule = LODLevel->Modules[ModuleIndex + 1];
+    
+    LODLevel->Modules[ModuleIndex] = NextModule;
+    LODLevel->Modules[ModuleIndex + 1] = CurrentModule;
 }
