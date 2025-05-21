@@ -1245,6 +1245,9 @@ void ParticleSystemEmittersPanel::OnAddMeshData(UParticleEmitter* Emitter)
     // LOD 레벨에 모듈 추가
     LODLevel->TypeDataModule = TypeDataMeshModule;
     LODLevel->Modules.Add(TypeDataMeshModule);
+    
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    ParticleSystem->UpdateAllModuleLists();
 
     UE_LOG(ELogLevel::Display, "[PSV] Added Type Data Mesh module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
@@ -1284,6 +1287,9 @@ void ParticleSystemEmittersPanel::OnAddInitialColor(UParticleEmitter* Emitter)
     
     // LOD 레벨에 모듈 추가
     LODLevel->Modules.Add(ColorModule);
+
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    ParticleSystem->UpdateAllModuleLists();
     
     UE_LOG(ELogLevel::Display, "[PSV] Added Initial Color module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
@@ -1330,6 +1336,9 @@ void ParticleSystemEmittersPanel::OnAddLifetime(UParticleEmitter* Emitter)
     
     // LOD 레벨에 모듈 추가
     LODLevel->Modules.Add(LifetimeModule);
+
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    ParticleSystem->UpdateAllModuleLists();
     
     UE_LOG(ELogLevel::Display, "[PSV] Added Lifetime module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
@@ -1366,6 +1375,9 @@ void ParticleSystemEmittersPanel::OnAddInitialSize(UParticleEmitter* Emitter)
     
     // LOD 레벨에 모듈 추가
     LODLevel->Modules.Add(SizeModule);
+
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    ParticleSystem->UpdateAllModuleLists();
     
     UE_LOG(ELogLevel::Display, "[PSV] Added Initial Size module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
@@ -1426,6 +1438,9 @@ void ParticleSystemEmittersPanel::OnAddInitialVelocity(UParticleEmitter* Emitter
     
     // LOD 레벨에 모듈 추가
     LODLevel->Modules.Add(VelocityModule);
+
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    ParticleSystem->UpdateAllModuleLists();
     
     UE_LOG(ELogLevel::Display, "[PSV] Added Initial Velocity module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
@@ -1472,6 +1487,9 @@ void ParticleSystemEmittersPanel::OnAddSubUV(UParticleEmitter* Emitter)
 
     // LOD 레벨에 모듈 추가
     LODLevel->Modules.Add(SubUVModule);
+
+    UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
+    ParticleSystem->UpdateAllModuleLists();
 
     UE_LOG(ELogLevel::Display, "[PSV] Added SubUV module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
