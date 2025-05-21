@@ -6,6 +6,7 @@
 
 #include "Particles/ParticleEmitter.h"
 #include "Particles/ParticleSystem.h"
+#include "SubUV/ParticleModuleSubUV.h"
 #include "TypeData/ParticleModuleTypeDataBase.h"
 #include "UObject/Casts.h"
 #include "UObject/ObjectFactory.h"
@@ -336,6 +337,7 @@ void UParticleEmitter::UpdateModuleLists()
         }
     }
     Build();
+    //USubUVAnimation* ModuleSubUVAnimation = Cast<UParticleModuleSubUV>(ParticleModule)->Animation;
 }
 
 void UParticleEmitter::SetEmitterName(FName Name)
@@ -470,14 +472,14 @@ int32 UParticleEmitter::CreateLODLevel(int32 LODLevel, bool bGenerateModuleData)
 #if WITH_EDITORONLY_DATA
 		RequiredModule->ModuleEditorColor		= FColor::MakeRandomColor();
 #endif // WITH_EDITORONLY_DATA
-		RequiredModule->InterpolationMethod		= EParticleSubUVInterpMethod::PSUVIM_None;
-		RequiredModule->SubImages_Horizontal	= 1;
-		RequiredModule->SubImages_Vertical		= 1;
+		RequiredModule->InterpolationMethod		= EParticleSubUVInterpMethod::PSUVIM_Linear;
+		RequiredModule->SubImages_Horizontal	= 6;
+		RequiredModule->SubImages_Vertical		= 6;
 		RequiredModule->bScaleUV				= false;
 		RequiredModule->RandomImageTime			= 0.0f;
 		RequiredModule->RandomImageChanges		= 0;
 		RequiredModule->bEnabled				= true;
-
+	    
 		RequiredModule->LODValidity = (1 << LODLevel);
 
 		// There must be a spawn module as well...

@@ -20,7 +20,6 @@
 #include "Editor/LevelEditor/SLevelEditor.h"
 #include "ParticleHelper.h"
 
-#include "Engine/ParticleEmitterInstances.h"
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
 #include "Particles/ParticleModuleRequired.h"
@@ -35,8 +34,8 @@ FParticleRenderPass::FParticleRenderPass()
     , TransparentDepthState(nullptr)
     , MeshInstanceBuffer(nullptr)
     , SpriteInstanceBuffer(nullptr)
-    , SubImageCountX(6)
-    , SubImageCountY(6)
+    , SubImageCountX(1)
+    , SubImageCountY(1)
     , ActiveTypes(0xFF) 
 {
 }
@@ -103,6 +102,8 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
     {
         for (FParticleEmitterInstance* EmitterInstance : Comp->EmitterInstances)
         {
+            SubImageCountX = EmitterInstance->CurrentLODLevel->RequiredModule->SubImages_Horizontal;
+            SubImageCountY = EmitterInstance->CurrentLODLevel->RequiredModule->SubImages_Vertical;
             if (EmitterInstance->CurrentLODLevel->TypeDataModule && CastChecked<UParticleModuleTypeDataMesh>(EmitterInstance->CurrentLODLevel->TypeDataModule))
             {
                 // 메쉬
@@ -591,9 +592,15 @@ void FParticleRenderPass::ProcessParticleEmitter(FParticleEmitterInstance* Emitt
             SpriteInstance.World = ParticleWorldMatrix;
             SpriteInstance.Color = Particle->Color;
             
+            // SubUV계산
+            const uint8* ParticleBase	= ParticleData + CurrentIndex * ParticleStride;
+            uint32 CurrentOffset = sizeof(FBaseParticle);
+            PARTICLE_ELEMENT(FFullSubUVPayload, SubUVPayload)
+            SpriteInstance.SubImageIndex = SubUVPayload.ImageIndex;
+            
             // 간단한 구현을 위해 SubImageIndex를 상대적 시간을 기반으로 설정
-            int TotalFrames = SubImageCountX * SubImageCountY;
-            SpriteInstance.SubImageIndex = static_cast<int>(Particle->RelativeTime * TotalFrames) % TotalFrames;
+            // int TotalFrames = SubImageCountX * SubImageCountY;
+            // SpriteInstance.SubImageIndex = static_cast<int>(Particle->RelativeTime * TotalFrames) % TotalFrames;
 
             // 수정: 멤버 변수 대신 출력 매개변수에 추가
             OutSpriteInstanceData.Add(SpriteInstance);

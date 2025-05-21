@@ -19,8 +19,9 @@
 #include "Particles/Color/ParticleModuleColor.h"
 #include "Particles/Lifetime/ParticleModuleLifetime.h"
 #include "Particles/Size/ParticleModuleSize.h"
+#include "Particles/SubUV/ParticleModuleSubUV.h"
 #include "Particles/Velocity/ParticleModuleVelocity.h"
-#include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
+#include "Particles/SubUVAnimation.h"
 
 #include "Serialization/MemoryArchive.h"
 #include "UObject/ObjectFactory.h"
@@ -89,6 +90,12 @@ void UAssetManager::InitDefaultParticleTemplate()
     SampleVelocityModule->StartVelocity.MinValueVec = FVector(-1.0f, -1.0f, 0.0f);
     SampleVelocityModule->StartVelocity.MaxValueVec = FVector(1.0f, 1.0f, 0.0f);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleVelocityModule);
+    
+    UParticleModuleSubUV* SampleSubUVModule = FObjectFactory::ConstructObject<UParticleModuleSubUV>(nullptr);
+    SampleEmitter->SubUVAnimation = FObjectFactory::ConstructObject<USubUVAnimation>(nullptr);
+    SampleEmitter->SubUVAnimation->SubImages_Horizontal = 6;
+    SampleEmitter->SubUVAnimation->SubImages_Vertical = 6;
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSubUVModule);
     
     Template->Emitters.Add(SampleEmitter);
     
