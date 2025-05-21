@@ -21,6 +21,7 @@
 #include "Particles/Size/ParticleModuleSize.h"
 #include "Particles/Velocity/ParticleModuleVelocity.h"
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
+#include "Particles/Color/ParticleModuleColorOverLife.h"
 
 #include "Serialization/MemoryArchive.h"
 #include "UObject/ObjectFactory.h"
@@ -87,6 +88,9 @@ void UAssetManager::InitDefaultParticleTemplate()
     SampleVelocityModule->StartVelocity.MinValueVec = FVector(-1.0f, -1.0f, 0.0f);
     SampleVelocityModule->StartVelocity.MaxValueVec = FVector(1.0f, 1.0f, 0.0f);
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleVelocityModule);
+
+    UParticleModuleColorOverLife* SampleColorOverLifeModule = FObjectFactory::ConstructObject<UParticleModuleColorOverLife>(nullptr);
+    SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorOverLifeModule);
     
     Template->Emitters.Add(SampleEmitter);
     

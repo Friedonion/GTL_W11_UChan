@@ -16,7 +16,6 @@ class FName
     uint32 ComparisonIndex; // 비교시 사용되는 Hash
 
     #if defined(_DEBUG)
-    // .natvis에서 사용하는 디버그용 FNameEntry 포인터
     const void* DebugEntryPtr = nullptr;
     #endif
 

@@ -399,7 +399,7 @@ struct FNameHelper
 		FName Result;
 		Result.DisplayIndex = DisplayId.Value;
 		Result.ComparisonIndex = ResolveComparisonId(DisplayId).Value;
-		#if defined(_DEBUG)
+#if defined(_DEBUG)
         Result.DebugEntryPtr = &FNamePool::Get().Resolve(DisplayId.Value);
 #endif
 		return Result;
@@ -414,11 +414,6 @@ struct FNameHelper
 		return FNamePool::Get().Resolve(DisplayId.Value).ComparisonId;
 	}
 };
-
-#if defined(_DEBUG)
-// .natvis에서 사용하는 디버그용 변수
-namespace { [[maybe_unused]] const FNamePool& GDebugNamePool = FNamePool::Get(); }
-#endif
 
 FName::FName(const WIDECHAR* Name)
 	: FName(FNameHelper::MakeFName(Name))

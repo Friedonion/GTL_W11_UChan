@@ -15,7 +15,7 @@ enum class ERawDistributionOperation
     RDO_Uninitialized,
     RDO_None,
     RDO_Random,
-    RDO_Extreme,
+    //RDO_Extreme,
 };
 
 // Helper macro for retrieving random value
