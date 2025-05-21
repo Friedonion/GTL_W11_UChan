@@ -77,7 +77,6 @@ private:
     ID3D11DepthStencilState* TransparentDepthState;// 반투명 객체용 깊이 상태
     
     // 메쉬 파티클 관련 리소스
-    TArray<UStaticMesh*> MeshArray;
     TArray<FMeshParticleInstanceData> OpaqueMeshInstanceData;     // 불투명 메쉬 파티클
     TArray<FMeshParticleInstanceData> TransparentMeshInstanceData;// 반투명 메쉬 파티클
     ID3D11Buffer* MeshInstanceBuffer;
@@ -113,7 +112,6 @@ private:
     void CreateSpriteInstanceBuffer();
     void UpdateMeshInstanceBuffer(bool bIsOpaque);
     void UpdateSpriteInstanceBuffer(bool bIsOpaque);
-    void LoadMeshes();
     void LoadTexture();
 
     bool GatherParticleInstanceData(FParticleEmitterInstance* Emitter,
