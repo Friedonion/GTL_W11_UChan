@@ -2,9 +2,13 @@
 
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleEmitter.h"
+#include "Particles/ParticleSpriteEmitter.h"
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleModule.h"
-#include "Particles/ParticleModuleRequired.h"
+#include "Particles/Lifetime/ParticleModuleLifetime.h"
+#include "Particles/Size/ParticleModuleSize.h"
+#include "Particles/Velocity/ParticleModuleVelocity.h"
+#include "Particles/Color/ParticleModuleColor.h"
 
 // 선택 상태 변경 처리 함수
 bool ParticleSystemEmittersPanel::HandleEmitterSelection(UParticleEmitter* Emitter, int32 EmitterIndex)
@@ -922,10 +926,86 @@ void ParticleSystemEmittersPanel::OnAddEmitterBefore(int32 EmitterIndex)
     UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
     if (!ParticleSystem)
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid ParticleSystem");
         return;
     }
     
-    // TODO: 실제 에미터 추가 구현
+    // 인덱스 범위 검증
+    if (EmitterIndex < 0 || EmitterIndex > ParticleSystem->Emitters.Num())
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid EmitterIndex %d", EmitterIndex);
+        return;
+    }
+    
+    // 1. 새 에미터(UParticleSpriteEmitter) 생성
+    UParticleSpriteEmitter* NewEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
+    if (!NewEmitter)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create new emitter");
+        return;
+    }
+    
+    // 2. LOD 레벨 생성
+    NewEmitter->CreateLODLevel(0);
+    UParticleLODLevel* LODLevel = NewEmitter->GetLODLevel(0);
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create LOD level for new emitter");
+        return;
+    }
+    
+    // 3. 기본 모듈 추가
+    // Lifetime 모듈 추가
+    UParticleModuleLifetime* LifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
+    LODLevel->Modules.Add(LifetimeModule);
+    
+    // Initial Size 모듈 추가
+    UParticleModuleSize* SizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
+    LODLevel->Modules.Add(SizeModule);
+    
+    // Initial Velocity 모듈 추가
+    UParticleModuleVelocity* VelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+    LODLevel->Modules.Add(VelocityModule);
+
+    // Color Over Life 모듈 추가
+    UParticleModuleColor* ColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+    LODLevel->Modules.Add(ColorModule);
+    
+    // 4. 에미터 이름 설정
+    FString NewEmitterName = TEXT("Particle Emitter_") + FString::Printf(TEXT("%d"), ParticleSystem->Emitters.Num());
+    NewEmitter->EmitterName = NewEmitterName;
+    
+    // 5. 파티클 시스템에 에미터 추가 (앞에 추가)
+    ParticleSystem->Emitters.Insert(NewEmitter, EmitterIndex);
+    
+    // 선택 상태 업데이트
+    bool bUpdateSelectionIndices = (Selection.EmitterIndex >= EmitterIndex);
+    
+    // 6. 에미터 인스턴스 생성 및 추가
+    FParticleEmitterInstance* NewInstance = NewEmitter->CreateInstance(ParticleSystemComponent);
+    if (NewInstance)
+    {
+        ParticleSystemComponent->EmitterInstances.Insert(NewInstance, EmitterIndex);
+    }
+    
+    // 7. 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
+    
+    // 8. 선택 상태 업데이트
+    if (bUpdateSelectionIndices && Selection.EmitterIndex != INDEX_NONE)
+    {
+        // 추가된 에미터 이후의 인덱스를 가진 에미터가 선택되어 있었으면 인덱스 업데이트
+        Selection.EmitterIndex++;
+    }
+    
+    // 9. 새 에미터를 선택 상태로 변경
+    Selection.SelectedEmitter = NewEmitter;
+    Selection.EmitterIndex = EmitterIndex;
+    Selection.SelectedModule = nullptr;
+    Selection.ModuleIndex = INDEX_NONE;
+    
+    // 선택 변경 이벤트 발생
+    OnSelectionChanged();
 }
 
 void ParticleSystemEmittersPanel::OnAddEmitterAfter(int32 EmitterIndex)
@@ -933,10 +1013,87 @@ void ParticleSystemEmittersPanel::OnAddEmitterAfter(int32 EmitterIndex)
     UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
     if (!ParticleSystem)
     {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid ParticleSystem");
         return;
     }
     
-    // TODO: 실제 에미터 추가 구현
+    // 인덱스 범위 검증
+    if (EmitterIndex < 0 || EmitterIndex >= ParticleSystem->Emitters.Num())
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add emitter: Invalid EmitterIndex %d", EmitterIndex);
+        return;
+    }
+    
+    // 1. 새 에미터(UParticleSpriteEmitter) 생성
+    UParticleSpriteEmitter* NewEmitter = FObjectFactory::ConstructObject<UParticleSpriteEmitter>(nullptr);
+    if (!NewEmitter)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create new emitter");
+        return;
+    }
+    
+    // 2. LOD 레벨 생성
+    NewEmitter->CreateLODLevel(0);
+    UParticleLODLevel* LODLevel = NewEmitter->GetLODLevel(0);
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create LOD level for new emitter");
+        return;
+    }
+    
+    // 3. 기본 모듈 추가
+    // Lifetime 모듈 추가
+    UParticleModuleLifetime* LifetimeModule = FObjectFactory::ConstructObject<UParticleModuleLifetime>(nullptr);
+    LODLevel->Modules.Add(LifetimeModule);
+    
+    // Initial Size 모듈 추가
+    UParticleModuleSize* SizeModule = FObjectFactory::ConstructObject<UParticleModuleSize>(nullptr);
+    LODLevel->Modules.Add(SizeModule);
+    
+    // Initial Velocity 모듈 추가
+    UParticleModuleVelocity* VelocityModule = FObjectFactory::ConstructObject<UParticleModuleVelocity>(nullptr);
+    LODLevel->Modules.Add(VelocityModule);
+
+    // Color 모듈 추가
+    UParticleModuleColor* ColorModule = FObjectFactory::ConstructObject<UParticleModuleColor>(nullptr);
+    LODLevel->Modules.Add(ColorModule);
+
+    // 4. 에미터 이름 설정
+    FString NewEmitterName = TEXT("Particle Emitter_") + FString::Printf(TEXT("%d"), ParticleSystem->Emitters.Num());
+    NewEmitter->EmitterName = NewEmitterName;
+    
+    // 5. 파티클 시스템에 에미터 추가 (뒤에 추가)
+    int32 NewEmitterIndex = EmitterIndex + 1;
+    ParticleSystem->Emitters.Insert(NewEmitter, NewEmitterIndex);
+    
+    // 선택 상태 업데이트
+    bool bUpdateSelectionIndices = (Selection.EmitterIndex >= NewEmitterIndex);
+    
+    // 6. 에미터 인스턴스 생성 및 추가
+    FParticleEmitterInstance* NewInstance = NewEmitter->CreateInstance(ParticleSystemComponent);
+    if (NewInstance)
+    {
+        ParticleSystemComponent->EmitterInstances.Insert(NewInstance, NewEmitterIndex);
+    }
+    
+    // 7. 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
+    
+    // 8. 선택 상태 업데이트
+    if (bUpdateSelectionIndices && Selection.EmitterIndex != INDEX_NONE)
+    {
+        // 추가된 에미터 이후의 인덱스를 가진 에미터가 선택되어 있었으면 인덱스 업데이트
+        Selection.EmitterIndex++;
+    }
+    
+    // 9. 새 에미터를 선택 상태로 변경
+    Selection.SelectedEmitter = NewEmitter;
+    Selection.EmitterIndex = NewEmitterIndex;
+    Selection.SelectedModule = nullptr;
+    Selection.ModuleIndex = INDEX_NONE;
+    
+    // 선택 변경 이벤트 발생
+    OnSelectionChanged();
 }
 
 void ParticleSystemEmittersPanel::OnRemoveDuplicateModule(UParticleEmitter* Emitter)
