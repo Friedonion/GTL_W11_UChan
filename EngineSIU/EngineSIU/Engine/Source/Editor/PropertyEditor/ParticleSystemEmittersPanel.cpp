@@ -1583,6 +1583,12 @@ void ParticleSystemEmittersPanel::OnRemoveModule(UParticleModule* Module, int32 
         return;
     }
 
+	if (Cast<UParticleModuleTypeDataMesh>(Module))
+	{
+		// MeshTypedata 인 경우 TypeDataModule 제거하여 스프라이트로 돌아오도록 함
+		Emitter->GetLODLevel(0)->TypeDataModule = nullptr;
+	}
+
     // 선택 상태 확인 및 업데이트
     bool bWasSelected = (Selection.SelectedModule == Module &&
                           Selection.ModuleIndex == ModuleIndex &&
