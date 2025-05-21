@@ -110,13 +110,13 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
                     PrepareMeshParticles(EmitterInstance);
 
                     SortParticlesByDistance(TransparentMeshInstanceData);
-
-                    FParticleMeshEmitterInstance* MeshInstance = (FParticleMeshEmitterInstance*)(EmitterInstance);
+                    UParticleModuleTypeDataMesh* TypeDataMesh = (UParticleModuleTypeDataMesh*)(EmitterInstance->CurrentLODLevel->TypeDataModule);
+                    if (!TypeDataMesh->Mesh) return;
                     UpdateMeshInstanceBuffer(true);
-                    RenderMeshParticles(Viewport, false, MeshInstance->MeshTypeData->Mesh);
+                    RenderMeshParticles(Viewport, false, TypeDataMesh->Mesh);
 
                     UpdateMeshInstanceBuffer(false);
-                    RenderMeshParticles(Viewport, true, MeshInstance->MeshTypeData->Mesh);
+                    RenderMeshParticles(Viewport, true, TypeDataMesh->Mesh);
                 }
             }
             else

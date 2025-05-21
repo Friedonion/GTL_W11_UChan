@@ -1231,6 +1231,7 @@ void ParticleSystemEmittersPanel::OnAddMeshData(UParticleEmitter* Emitter)
     TypeDataMeshModule->bEnabled = true;
 
     // LOD 레벨에 모듈 추가
+    LODLevel->TypeDataModule = TypeDataMeshModule;
     LODLevel->Modules.Add(TypeDataMeshModule);
 
     UE_LOG(ELogLevel::Display, "[PSV] Added Type Data Mesh module to emitter: %s", GetData(Emitter->EmitterName.ToString()));

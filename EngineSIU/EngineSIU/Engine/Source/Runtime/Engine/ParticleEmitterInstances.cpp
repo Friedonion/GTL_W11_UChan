@@ -1596,7 +1596,7 @@ UMaterial* FParticleEmitterInstance::GetCurrentMaterial()
  /** Constructor	*/
 FParticleMeshEmitterInstance::FParticleMeshEmitterInstance() :
     FParticleEmitterInstance()
-    , MeshTypeData(NULL)
+    , MeshTypeData(nullptr)
     , MeshRotationActive(false)
     , MeshRotationOffset(0)
     , MeshMotionBlurOffset(0)
