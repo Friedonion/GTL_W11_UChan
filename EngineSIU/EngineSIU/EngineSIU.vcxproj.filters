@@ -1695,6 +1695,7 @@
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Actors\ParticleSystemActor.cpp" />
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\ParticleSystemEmittersPanel.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModules_ColorOverLife.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\SubUVAnimation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="EngineSIU.natvis" />
@@ -1709,6 +1710,8 @@
     <FxCompile Include="Shaders\MeshParticlePixelShader.hlsl" />
     <FxCompile Include="Shaders\MeshParticleVertexShader.hlsl" />
     <FxCompile Include="Shaders\SpriteParticlePixelShader.hlsl" />
+    <FxCompile Include="Shaders\StaticMeshPixelShaderWorldTangent.hlsl" />
+    <FxCompile Include="Shaders\SpriteParticleVertexShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\SkeletalMeshComponent.h" />
@@ -1808,6 +1811,9 @@
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\ParticleSystemEmittersPanel.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\TypeData\ParticleModuleTypeDataMesh.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModuleColorOverLife.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\SubUVAnimation.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\SubUV\ParticleModuleSubUV.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\SubUV\ParticleModuleSubUVBase.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\CompositingShader.hlsl" />
@@ -1836,7 +1842,6 @@
     <None Include="Shaders\ShaderConstants.hlsli" />
     <None Include="cpp.hint" />
     <None Include="Shaders\CameraEffectShader.hlsl" />
-    <None Include="Shaders\StaticMeshPixelShaderWorldTangent.hlsl" />
     <None Include="Shaders\SkeletalMeshPixelShader.hlsl" />
     <None Include="Shaders\SkeletalMeshVertexShader.hlsl" />
   </ItemGroup>
