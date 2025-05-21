@@ -23,6 +23,7 @@
 #include "Engine/ParticleEmitterInstances.h"
 #include "Particles/ParticleLODLevel.h"
 #include "Particles/TypeData/ParticleModuleTypeDataMesh.h"
+#include "Particles/ParticleModuleRequired.h"
 
 FParticleRenderPass::FParticleRenderPass()
     : BufferManager(nullptr)
@@ -121,6 +122,12 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
             }
             else
             {
+                if (!EmitterInstance->CurrentLODLevel->RequiredModule->Material) return;
+                if (EmitterInstance->CurrentLODLevel->RequiredModule->Material->GetMaterialInfo().TextureInfos.IsEmpty()) return;
+
+                std::shared_ptr<FTexture> SpriteTexture = FEngineLoop::ResourceManager.GetTexture(EmitterInstance->CurrentLODLevel->RequiredModule->Material->GetMaterialInfo().TextureInfos[0].TexturePath);
+                
+                if (!SpriteTexture) return;
                 // 일반적인 스프라이트
                 if (ActiveTypes & (1 << static_cast<uint32>(EParticleSystemType::Sprite)))
                 {
@@ -129,10 +136,10 @@ void FParticleRenderPass::Render(const std::shared_ptr<FEditorViewportClient>& V
                     SortParticlesByDistance(TransparentSpriteInstanceData);
 
                     UpdateSpriteInstanceBuffer(true);
-                    RenderSpriteParticles(Viewport, false);
+                    RenderSpriteParticles(Viewport, false, SpriteTexture);
 
                     UpdateSpriteInstanceBuffer(false);
-                    RenderSpriteParticles(Viewport, true);
+                    RenderSpriteParticles(Viewport, true, SpriteTexture);
                 }
             }
         }
@@ -214,11 +221,6 @@ void FParticleRenderPass::CreateDepthStates()
     transparentDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;  // 깊이 쓰기 비활성화
     transparentDesc.DepthFunc = D3D11_COMPARISON_LESS;
     Graphics->Device->CreateDepthStencilState(&transparentDesc, &TransparentDepthState);
-}
-
-void FParticleRenderPass::LoadTexture()
-{
-    ParticleTexture = FEngineLoop::ResourceManager.GetTexture(L"Assets/Texture/T_Explosion_SubUV.png");
 }
 
 void FParticleRenderPass::CreateMeshInstanceBuffer()
@@ -325,9 +327,6 @@ void FParticleRenderPass::PrepareMeshParticles(FParticleEmitterInstance* Emitter
 
 void FParticleRenderPass::PrepareSpriteParticles(FParticleEmitterInstance* EmitterInstance)
 {
-    LoadTexture();
-    if (!ParticleTexture || ParticleSystemComponents.Num() == 0) return;
-        
     // 파티클 시스템 컴포넌트에서 데이터 수집
     OpaqueSpriteInstanceData.Empty();
     TransparentSpriteInstanceData.Empty();
@@ -479,15 +478,10 @@ void FParticleRenderPass::RenderMeshParticles(const std::shared_ptr<FEditorViewp
     }
 }
 
-void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent)
+void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent, std::shared_ptr<FTexture> SpriteTexture)
 {
-    LoadTexture();
-    
     TArray<FSpriteParticleInstanceData>& InstanceData = bIsTransparent ? TransparentSpriteInstanceData : OpaqueSpriteInstanceData;
     
-    if (!ParticleTexture || InstanceData.Num() == 0)
-        return;
-        
     // 투명도에 따른 렌더 상태 설정
     SetupPipeline(bIsTransparent);
 
@@ -525,8 +519,8 @@ void FParticleRenderPass::RenderSpriteParticles(const std::shared_ptr<FEditorVie
     BufferManager->BindConstantBuffer(TEXT("FParticleConstant"), 7, EShaderStage::Vertex);
     BufferManager->BindConstantBuffer(TEXT("FCameraConstantBuffer"), 13, EShaderStage::Vertex);
 
-    Graphics->DeviceContext->PSSetShaderResources(0, 1, &ParticleTexture->TextureSRV);
-    Graphics->DeviceContext->PSSetSamplers(0, 1, &ParticleTexture->SamplerState);
+    Graphics->DeviceContext->PSSetShaderResources(0, 1, &SpriteTexture->TextureSRV);
+    Graphics->DeviceContext->PSSetSamplers(0, 1, &SpriteTexture->SamplerState);
     
     Graphics->DeviceContext->DrawIndexedInstanced(QuadIB.NumIndices, InstanceData.Num(), 0, 0, 0);
 }
