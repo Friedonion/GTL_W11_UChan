@@ -2302,25 +2302,15 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
                         }
                     }
 
-                    const TMap<FName, FAssetInfo> Assets = UAssetManager::Get().GetAssetRegistry();
+                    const auto MaterialMap = UAssetManager::Get().GetMaterialMap();
 
                     if (ImGui::BeginCombo("##Material", GetData(PreviewName), ImGuiComboFlags_None))
                     {
-                        for (const auto& Asset : Assets)
+                        for (const auto& MaterialElement : MaterialMap)
                         {
-                            if (Asset.Value.AssetType != EAssetType::Material)
-                            {
-                                continue;
-                            }
-
                             {
                                 // 머티리얼 애셋 준비
-                                FString MaterialAssetName = Asset.Value.PackagePath.ToString() + "/" + Asset.Value.AssetName.ToString();
-                                UMaterial* Material = FObjManager::GetMaterial(MaterialAssetName.ToWideString());
-                                if (!Material)
-                                {
-                                    Material = UAssetManager::Get().GetMaterial(MaterialAssetName);
-                                }
+                                UMaterial* Material = MaterialElement.Value;
 
                                 // 작은 색상 미리보기 사각형 표시
                                 bool bHasTexturePreview = false;
@@ -2361,7 +2351,7 @@ void PropertyEditorPanel::RenderForParticleModule(UParticleModule* Module)
                                     }
                                 }
                                 ImGui::SameLine();
-                                if (ImGui::Selectable(GetData(Asset.Value.AssetName.ToString()), false))
+                                if (ImGui::Selectable(GetData(MaterialElement.Key.ToString()), false))
                                 {
                                     if (Material)
                                     {
