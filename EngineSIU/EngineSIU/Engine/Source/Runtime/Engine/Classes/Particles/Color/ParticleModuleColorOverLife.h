@@ -14,8 +14,10 @@ public:
     UParticleModuleColorOverLife();
     ~UParticleModuleColorOverLife() = default;
 
-    UPROPERTY_WITH_FLAGS(EditAnywhere, FRawDistributionVector, ColorOverLife)
-    UPROPERTY_WITH_FLAGS(EditAnywhere, FRawDistributionFloat, AlphaOverLife)
+    UPROPERTY_WITH_FLAGS(EditAnywhere, FVector, StartColor)
+    UPROPERTY_WITH_FLAGS(EditAnywhere, FVector, EndColor)
+    UPROPERTY_WITH_FLAGS(EditAnywhere, float, AlphaStart)
+    UPROPERTY_WITH_FLAGS(EditAnywhere, float, AlphaEnd)
     UPROPERTY(EditAnywhere, uint8, bClampAlpha, = 1)
 
     virtual void InitializeDefaults();

@@ -16,7 +16,7 @@ UParticleModuleColorOverLife::UParticleModuleColorOverLife()
 
 void UParticleModuleColorOverLife::InitializeDefaults()
 {
-    if (!ColorOverLife.IsCreated())
+    /*if (!ColorOverLife.IsCreated())
     {
         ColorOverLife.Distribution = FObjectFactory::ConstructObject<UDistributionVector>(this);
         ColorOverLife.Distribution->Constant = FVector(1.0f, 1.0f, 1.0f);
@@ -26,37 +26,27 @@ void UParticleModuleColorOverLife::InitializeDefaults()
     {
         AlphaOverLife.Distribution = FObjectFactory::ConstructObject<UDistributionFloat>(this);
         AlphaOverLife.Distribution->Constant = 1.0f;
-    }
+    }*/
 }
 
 
 void UParticleModuleColorOverLife::Update(FParticleEmitterInstance* Owner, int32 Offset, float DeltaTime)
 {
     BEGIN_UPDATE_LOOP
-    for (int32 i = 0; i < Owner->ActiveParticles; ++i)
-    {
-        DECLARE_PARTICLE(Particle, Owner->ParticleData + Owner->ParticleStride * Owner->ParticleIndices[i]);
-        float LifeRatio = Particle.RelativeTime;
+        float LerpFactor = Particle.RelativeTime;
+        FVector CurrentColorVec = FMath::Lerp(StartColor, EndColor, LerpFactor);
+        float CurrentAlpha = FMath::Lerp(AlphaStart, AlphaEnd, LerpFactor);
 
-        FVector ColorVec = ColorOverLife.GetValue(LifeRatio); 
-        float Alpha = AlphaOverLife.GetValue(LifeRatio);
-
-        if (bClampAlpha)
-        {
-            Alpha = FMath::Clamp(Alpha, 0.0f, 1.0f);
-        }
-
-        Particle.Color.R = Particle.BaseColor.R * ColorVec.X;
-        Particle.Color.G = Particle.BaseColor.G * ColorVec.Y;
-        Particle.Color.B = Particle.BaseColor.B * ColorVec.Z;
-        Particle.Color.A = Particle.BaseColor.A * Alpha;
-    }
+        Particle.Color.R = CurrentColorVec.X;
+        Particle.Color.G = CurrentColorVec.Y;
+        Particle.Color.B = CurrentColorVec.Z;
+        Particle.Color.A = CurrentAlpha;
     END_UPDATE_LOOP
 }
 
 void UParticleModuleColorOverLife::SetToSensibleDefaults(UParticleEmitter* Owner)
 {
-    if (UDistributionVector* DistVec = Cast<UDistributionVector>(ColorOverLife.Distribution))
+    /*if (UDistributionVector* DistVec = Cast<UDistributionVector>(ColorOverLife.Distribution))
     {
         DistVec->Constant = FVector(1.0f, 1.0f, 1.0f);
     }
@@ -64,7 +54,7 @@ void UParticleModuleColorOverLife::SetToSensibleDefaults(UParticleEmitter* Owner
     if (UDistributionFloat* DistFloat = Cast<UDistributionFloat>(AlphaOverLife.Distribution))
     {
         DistFloat->Constant = 1.0f;
-    }
+    }*/
 
 }
 
@@ -72,10 +62,10 @@ void UParticleModuleColorOverLife::CompileModule(FParticleEmitterBuildInfo& Emit
 {
     FRandomStream RandomStream(GetName().ToAnsiString().c_str());
 
-    FVector SampleColor = ColorOverLife.GetValue(0.0f, 0, &RandomStream);
-    float SampleAlpha = AlphaOverLife.GetValue(0.0f, &RandomStream);
+    //FVector SampleColor = ColorOverLife.GetValue(0.0f, 0, &RandomStream);
+    //float SampleAlpha = AlphaOverLife.GetValue(0.0f, &RandomStream);
 
-    EmitterInfo.ColorScale = SampleColor;
-    EmitterInfo.AlphaScale = SampleAlpha;
+    //EmitterInfo.ColorScale = SampleColor;
+    //EmitterInfo.AlphaScale = SampleAlpha;
 }
 
