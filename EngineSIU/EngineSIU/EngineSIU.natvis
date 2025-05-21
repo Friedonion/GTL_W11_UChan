@@ -15,11 +15,15 @@
 
     <!-- FName Visualizer -->
     <Type Name="FName">
-        <Intrinsic Name="GetDisplayName" Expression="GDebugNamePool.DisplayPool.ContainerPrivate">
-            <Parameter Name="Hash" Type="int" />
-        </Intrinsic>
         <DisplayString Condition="DisplayIndex == 0">"None"</DisplayString>
-        <DisplayString Condition="DisplayIndex != 0">{*ToString()}</DisplayString>
+        <DisplayString
+            Condition="DebugEntryPtr != nullptr &amp;&amp; ((FNameEntry*)DebugEntryPtr)->Header.Len > 0 &amp;&amp; ((FNameEntry*)DebugEntryPtr)->Header.IsWide == 0">
+            {(char*)((FNameEntry*)DebugEntryPtr)->AnsiName, [((FNameEntry*)DebugEntryPtr)->Header.Len]na}
+        </DisplayString>
+        <DisplayString
+            Condition="DebugEntryPtr != nullptr &amp;&amp; ((FNameEntry*)DebugEntryPtr)->Header.Len > 0 &amp;&amp; ((FNameEntry*)DebugEntryPtr)->Header.IsWide != 0">
+            {(wchar_t*)((FNameEntry*)DebugEntryPtr)->WideName, [((FNameEntry*)DebugEntryPtr)->Header.Len]na}
+        </DisplayString>
         <Expand>
             <Item Name="DisplayIndex">DisplayIndex</Item>
             <Item Name="ComparisonIndex">ComparisonIndex</Item>
