@@ -1,9 +1,10 @@
 #include "ParticleSystemEmittersPanel.h"
 
-#include "Particles/ParticleEmitter.h"
-#include "Particles/ParticleModule.h"
-#include "Particles/ParticleLODLevel.h"
 #include "Particles/ParticleSystem.h"
+#include "Particles/ParticleEmitter.h"
+#include "Particles/ParticleLODLevel.h"
+#include "Particles/ParticleModule.h"
+#include "Particles/ParticleModuleRequired.h"
 
 // 선택 상태 변경 처리 함수
 bool ParticleSystemEmittersPanel::HandleEmitterSelection(UParticleEmitter* Emitter, int32 EmitterIndex)
@@ -807,7 +808,6 @@ void ParticleSystemEmittersPanel::OnRenameEmitter(UParticleEmitter* Emitter, int
     
     // 현재 에미터 이름으로 버퍼 초기화
     strcpy_s(EmitterNameBuffer, sizeof(EmitterNameBuffer), GetData(Emitter->EmitterName.ToString()));
-    
 }
 
 void ParticleSystemEmittersPanel::OnDuplicateEmitter(UParticleEmitter* Emitter, int32 EmitterIndex)
@@ -825,13 +825,49 @@ void ParticleSystemEmittersPanel::OnDuplicateEmitter(UParticleEmitter* Emitter, 
 void ParticleSystemEmittersPanel::OnRemoveEmitter(UParticleEmitter* Emitter, int32 EmitterIndex)
 {
     UParticleSystem* ParticleSystem = ParticleSystemComponent ? ParticleSystemComponent->Template : nullptr;
-    if (!ParticleSystem || !Emitter)
+    if (!ParticleSystem || !Emitter || EmitterIndex < 0 || EmitterIndex >= ParticleSystem->Emitters.Num())
     {
         return;
     }
+
+    // 1. 선택 상태 확인 및 업데이트
+    bool bWasSelected = (Selection.SelectedEmitter == Emitter && Selection.EmitterIndex == EmitterIndex);
+    bool bUpdateSelectionIndices = (Selection.EmitterIndex > EmitterIndex);
+
+    // 2. 에미터 인스턴스 제거
+    // ParticleSystemComponent에서 에미터 인스턴스 제거
+    if (ParticleSystemComponent && EmitterIndex < ParticleSystemComponent->EmitterInstances.Num())
+    {
+        // 인스턴스 메모리 해제
+        FParticleEmitterInstance* Instance = ParticleSystemComponent->EmitterInstances[EmitterIndex];
+        if (Instance)
+        {
+            // 메모리 해제
+            delete Instance;
+        }
+
+        // 배열에서 인스턴스 제거
+        ParticleSystemComponent->EmitterInstances.RemoveAt(EmitterIndex);
+    }
+
+    // 3. 파티클 시스템에서 에미터 제거
+    ParticleSystem->Emitters.RemoveAt(EmitterIndex);
     
-    // 에미터 제거 로직
-    // TODO: 실제 제거 구현
+    // 4. 변경사항 반영을 위해 모듈 리스트 업데이트
+    ParticleSystem->UpdateAllModuleLists();
+
+    // 5. 선택 상태 업데이트
+    if (bWasSelected)
+    {
+        // 삭제된 에미터가 선택되어 있었으면 선택 해제
+        Selection.Reset();
+        OnSelectionChanged();
+    }
+    else if (bUpdateSelectionIndices && Selection.EmitterIndex != INDEX_NONE)
+    {
+        // 삭제된 에미터 이후의 인덱스를 가진 에미터가 선택되어 있었으면 인덱스 업데이트
+        Selection.EmitterIndex--;
+    }
 }
 
 // 파티클 시스템 이벤트 핸들러
