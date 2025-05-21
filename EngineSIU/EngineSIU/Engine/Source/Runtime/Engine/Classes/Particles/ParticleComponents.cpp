@@ -436,7 +436,7 @@ int32 UParticleEmitter::CreateLODLevel(int32 LODLevel, bool bGenerateModuleData)
 		//LODLevels.InsertZeroed(LODLevel, 1);
         if (LODLevels.Num() < LODLevel) 
         {
-            LODLevels.Reserve(LODLevel + 1);
+            LODLevels.SetNum(LODLevel + 1);
         }
 		LODLevels[LODLevel] = CreatedLODLevel;
 		CreatedLODLevel->Level = LODLevel;
@@ -459,7 +459,7 @@ int32 UParticleEmitter::CreateLODLevel(int32 LODLevel, bool bGenerateModuleData)
 		//check(RequiredModule);
 		RequiredModule->SetToSensibleDefaults(this);
 		CreatedLODLevel->RequiredModule	= RequiredModule;
-
+	    CreatedLODLevel->Modules.Add(RequiredModule);
 		// The SpawnRate for the required module
 		RequiredModule->bUseLocalSpace			= false;
 		RequiredModule->bKillOnDeactivate		= false;
@@ -484,9 +484,9 @@ int32 UParticleEmitter::CreateLODLevel(int32 LODLevel, bool bGenerateModuleData)
 		UParticleModuleSpawn* SpawnModule = FObjectFactory::ConstructObject<UParticleModuleSpawn>(GetOuter());
 		//check(SpawnModule);
 		CreatedLODLevel->SpawnModule = SpawnModule;
+	    CreatedLODLevel->Modules.Add(SpawnModule);
 		SpawnModule->LODValidity = (1 << LODLevel);
-		float ConstantSpawn	= (SpawnModule->Rate);
-		ConstantSpawn				= 10;
+	    SpawnModule->Rate = 10;
 		//ConstantSpawn->bIsDirty					= true;
 		SpawnModule->BurstList.Empty();
 

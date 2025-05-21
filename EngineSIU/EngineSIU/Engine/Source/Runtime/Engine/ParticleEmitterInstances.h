@@ -6,8 +6,6 @@
 #include "Math/Matrix.h"
 #include "Math/Transform.h"
 
-struct FDynamicEmitterDataBase;
-struct FDynamicEmitterReplayDataBase;
 struct FBaseParticle;
 struct FParticleRandomSeedInstancePayload;
 class UParticleModule;
@@ -392,31 +390,6 @@ public:
     }
 
     /**
-     *	Checks some common values for GetDynamicData validity
-     *
-     *	@return	bool		true if GetDynamicData should continue, false if it should return NULL
-     */
-    virtual bool IsDynamicDataRequired(UParticleLODLevel* InCurrentLODLevel);
-
-    /**
-     *	Retrieves the dynamic data for the emitter
-     */
-    virtual FDynamicEmitterDataBase* GetDynamicData(bool bSelected)
-    {
-        return NULL;
-    }
-
-    /**
-     *	Retrieves replay data for the emitter
-     *
-     *	@return	The replay data, or NULL on failure
-     */
-    virtual FDynamicEmitterReplayDataBase* GetReplayData()
-    {
-        return NULL;
-    }
-
-    /**
      *	Retrieve the allocated size of this instance.
      *
      *	@param	OutNum			The size of this instance
@@ -522,16 +495,6 @@ public:
     void GetScreenAlignmentAndScale(int32& OutScreenAlign, FVector& OutScale);
 
 protected:
-
-    /**
-     * Captures dynamic replay data for this particle system.
-     *
-     * @param	OutData		[Out] Data will be copied here
-     *
-     * @return Returns true if successful
-     */
-    virtual bool FillReplayData(FDynamicEmitterReplayDataBase& OutData);
-
     /**
      * Updates all internal transforms.
      */
@@ -707,18 +670,6 @@ struct FParticleSpriteEmitterInstance : public FParticleEmitterInstance
     virtual ~FParticleSpriteEmitterInstance();
 
     /**
-     *	Retrieves the dynamic data for the emitter
-     */
-    virtual FDynamicEmitterDataBase* GetDynamicData(bool bSelected) override;
-
-    /**
-     *	Retrieves replay data for the emitter
-     *
-     *	@return	The replay data, or NULL on failure
-     */
-    virtual FDynamicEmitterReplayDataBase* GetReplayData() override;
-
-    /**
      *	Retrieve the allocated size of this instance.
      *
      *	@param	OutNum			The size of this instance
@@ -733,16 +684,4 @@ struct FParticleSpriteEmitterInstance : public FParticleEmitterInstance
      * @return  Size of resource as to be displayed to artists/ LDs in the Editor.
      */
     //virtual void GetResourceSizeEx(FResourceSizeEx& CumulativeResourceSize) override;
-
-protected:
-
-    /**
-     * Captures dynamic replay data for this particle system.
-     *
-     * @param	OutData		[Out] Data will be copied here
-     *
-     * @return Returns true if successful
-     */
-    virtual bool FillReplayData( FDynamicEmitterReplayDataBase& OutData ) override;
-
 };

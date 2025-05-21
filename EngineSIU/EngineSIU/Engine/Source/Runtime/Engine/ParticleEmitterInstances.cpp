@@ -934,11 +934,8 @@ float FParticleEmitterInstance::Spawn(float DeltaTime)
                     EventPayload = NULL;
                 }
             }*/
-
-            //const FVector InitialLocation = EmitterToSimulation.GetOrigin();
-            // // [TEMP] SUPER HARD CODED WHERE IS THE COUNT OUT SETTING
-            // Number = 5;
-            FVector InitialLocation(0, 0, 0);
+            
+            const FVector InitialLocation = EmitterToSimulation.GetOrigin();
             // Spawn particles.
             SpawnParticles(Number, StartTime, Increment, InitialLocation, FVector::ZeroVector, EventPayload);
 
@@ -1437,32 +1434,6 @@ void FParticleEmitterInstance::SetupEmitterDuration()
 }
 
 /**
- *	Checks some common values for GetDynamicData validity
- *
- *	@return	bool		true if GetDynamicData should continue, false if it should return NULL
- */
-bool FParticleEmitterInstance::IsDynamicDataRequired(UParticleLODLevel* InCurrentLODLevel)
-{
-    if ((ActiveParticles <= 0) || 
-        (SpriteTemplate && (SpriteTemplate->EmitterRenderMode == EEmitterRenderMode::ERM_None)))
-    {
-        return false;
-    }
-
-    if ((InCurrentLODLevel == NULL) || (InCurrentLODLevel->bEnabled == false) ||
-        ((InCurrentLODLevel->RequiredModule->bUseMaxDrawCount == true) && (InCurrentLODLevel->RequiredModule->MaxDrawCount == 0)))
-    {
-        return false;
-    }
-
-    if (Component == NULL)
-    {
-        return false;
-    }
-    return true;
-}
-
-/**
  *	Process received events.
  */
 void FParticleEmitterInstance::ProcessParticleEvents(float DeltaTime, bool bSuppressSpawning)
@@ -1517,130 +1488,6 @@ void FParticleEmitterInstance::ProcessParticleEvents(float DeltaTime, bool bSupp
     //         }
     //     }
     // }
-}
-
-/**
- * Captures dynamic replay data for this particle system.
- *
- * @param	OutData		[Out] Data will be copied here
- *
- * @return Returns true if successful
- */
-bool FParticleEmitterInstance::FillReplayData( FDynamicEmitterReplayDataBase& OutData )
-{
-	//QUICK_SCOPE_CYCLE_COUNTER(STAT_ParticleEmitterInstance_FillReplayData)
-
-	// NOTE: This the base class implementation that should ONLY be called by derived classes' FillReplayData()!
-
-	// Make sure there is a template present
-	if (!SpriteTemplate)
-	{
-		return false;
-	}
-
-	// Allocate it for now, but we will want to change this to do some form
-	// of caching
-	if (ActiveParticles <= 0 || !bEnabled)
-	{
-		return false;
-	}
-	// If the template is disabled, don't return data.
-	UParticleLODLevel* LODLevel = SpriteTemplate->GetCurrentLODLevel(this);
-	if ((LODLevel == NULL) || (LODLevel->bEnabled == false))
-	{
-		return false;
-	}
-
-	// Make sure we will not be allocating enough memory
-	//check(MaxActiveParticles >= ActiveParticles);
-
-	// Must be filled in by implementation in derived class
-	OutData.eEmitterType = DET_Unknown;
-
-	OutData.ActiveParticleCount = ActiveParticles;
-	OutData.ParticleStride = ParticleStride;
-	OutData.SortMode = SortMode;
-
-	// Take scale into account
-	OutData.Scale = FVector::OneVector;
-	if (Component)
-	{
-		OutData.Scale = FVector(Component->GetComponentTransform().GetScale3D());
-	}
-
-	int32 ParticleMemSize = MaxActiveParticles * ParticleStride;
-
-	// Allocate particle memory
-
-	OutData.DataContainer.Alloc(ParticleMemSize, MaxActiveParticles);
-	//INC_DWORD_STAT_BY(STAT_RTParticleData, OutData.DataContainer.MemBlockSize);
-
-	memcpy(OutData.DataContainer.ParticleData, ParticleData, ParticleMemSize);
-	memcpy(OutData.DataContainer.ParticleIndices, ParticleIndices, OutData.DataContainer.ParticleIndicesNumShorts * sizeof(uint16));
-
-	// All particle emitter types derived from sprite emitters, so we can fill that data in here too!
-	{
-		FDynamicSpriteEmitterReplayDataBase* NewReplayData =
-			static_cast< FDynamicSpriteEmitterReplayDataBase* >( &OutData );
-
-		NewReplayData->RequiredModule = LODLevel->RequiredModule->CreateRendererResource();
-		NewReplayData->Material = NULL;	// Must be set by derived implementation
-		NewReplayData->InvDeltaSeconds = (LastDeltaTime > DBL_EPSILON) ? (1.0f / LastDeltaTime) : 0.0f;
-		// NewReplayData->LWCTile = ((Component == nullptr) || LODLevel->RequiredModule->bUseLocalSpace) ? FVector::Zero() : Component->GetLWCTile();
-
-		NewReplayData->MaxDrawCount =
-			(LODLevel->RequiredModule->bUseMaxDrawCount == true) ? LODLevel->RequiredModule->MaxDrawCount : -1;
-		//NewReplayData->ScreenAlignment	= LODLevel->RequiredModule->ScreenAlignment;
-		NewReplayData->bUseLocalSpace = LODLevel->RequiredModule->bUseLocalSpace;
-		NewReplayData->EmitterRenderMode = (uint8)SpriteTemplate->EmitterRenderMode;
-		NewReplayData->DynamicParameterDataOffset = DynamicParameterDataOffset;
-		NewReplayData->LightDataOffset = LightDataOffset;
-		NewReplayData->LightVolumetricScatteringIntensity = LightVolumetricScatteringIntensity;
-		NewReplayData->CameraPayloadOffset = CameraPayloadOffset;
-
-		NewReplayData->SubUVDataOffset = SubUVDataOffset;
-		NewReplayData->SubImages_Horizontal = LODLevel->RequiredModule->SubImages_Horizontal;
-		NewReplayData->SubImages_Vertical = LODLevel->RequiredModule->SubImages_Vertical;
-
-		// NewReplayData->MacroUVOverride.bOverride = LODLevel->RequiredModule->bOverrideSystemMacroUV;
-		// NewReplayData->MacroUVOverride.Radius = LODLevel->RequiredModule->MacroUVRadius;
-		// NewReplayData->MacroUVOverride.Position = FVector3f(LODLevel->RequiredModule->MacroUVPosition);
-        
-		NewReplayData->bLockAxis = false;
-		if (bAxisLockEnabled == true)
-		{
-			NewReplayData->LockAxisFlag = LockAxisFlags;
-			if (LockAxisFlags != EPAL_NONE)
-			{
-				NewReplayData->bLockAxis = true;
-			}
-		}
-
-		// If there are orbit modules, add the orbit module data
-		// if (LODLevel->OrbitModules.Num() > 0)
-		// {
-		// 	UParticleLODLevel* HighestLODLevel = SpriteTemplate->LODLevels[0];
-		// 	UParticleModuleOrbit* LastOrbit = HighestLODLevel->OrbitModules[LODLevel->OrbitModules.Num() - 1];
-		// 	check(LastOrbit);
-		//
-		// 	uint32* LastOrbitOffset = SpriteTemplate->ModuleOffsetMap.Find(LastOrbit);
-		// 	NewReplayData->OrbitModuleOffset = *LastOrbitOffset;
-		// }
-
-		NewReplayData->EmitterNormalsMode = static_cast<uint8>(LODLevel->RequiredModule->EmitterNormalsMode);
-		NewReplayData->NormalsSphereCenter = (FVector)LODLevel->RequiredModule->NormalsSphereCenter;
-		NewReplayData->NormalsCylinderDirection = (FVector)LODLevel->RequiredModule->NormalsCylinderDirection;
-
-		NewReplayData->PivotOffset = FVector2D(PivotOffset);
-
-		//NewReplayData->bUseVelocityForMotionBlur = LODLevel->RequiredModule->ShouldUseVelocityForMotionBlur();
-		NewReplayData->bRemoveHMDRoll = LODLevel->RequiredModule->bRemoveHMDRoll;
-		NewReplayData->MinFacingCameraBlendDistance = LODLevel->RequiredModule->MinFacingCameraBlendDistance;
-		NewReplayData->MaxFacingCameraBlendDistance = LODLevel->RequiredModule->MaxFacingCameraBlendDistance;
-	}
-
-
-	return true;
 }
 
 void FParticleEmitterInstance::ApplyWorldOffset(FVector InOffset, bool bWorldShift)
@@ -1727,103 +1574,6 @@ FParticleSpriteEmitterInstance::~FParticleSpriteEmitterInstance()
 {
 }
 
-/**
- *	Retrieves the dynamic data for the emitter
- *	
- *	@param	bSelected					Whether the emitter is selected in the editor
- *  @param InFeatureLevel				The relevant shader feature level.
- *
- *	@return	FDynamicEmitterDataBase*	The dynamic data, or NULL if it shouldn't be rendered
- */
-FDynamicEmitterDataBase* FParticleSpriteEmitterInstance::GetDynamicData(bool bSelected)
-{
-    QUICK_SCOPE_CYCLE_COUNTER(STAT_ParticleSpriteEmitterInstance_GetDynamicData);
-
-    // It is valid for the LOD level to be NULL here!
-    UParticleLODLevel* LODLevel = SpriteTemplate->GetCurrentLODLevel(this);
-    if (IsDynamicDataRequired(LODLevel) == false || !bEnabled)
-    {
-        return NULL;
-    }
-
-    // Allocate the dynamic data
-    FDynamicSpriteEmitterData* NewEmitterData = new FDynamicSpriteEmitterData(LODLevel->RequiredModule);
-    {
-        // INC_DWORD_STAT(STAT_DynamicEmitterCount);
-        // INC_DWORD_STAT(STAT_DynamicSpriteCount);
-        // INC_DWORD_STAT_BY(STAT_DynamicEmitterMem, sizeof(FDynamicSpriteEmitterData));
-    }
-
-    // Now fill in the source data
-    if( !FillReplayData( NewEmitterData->Source ) )
-    {
-        delete NewEmitterData;
-        return NULL;
-    }
-
-    // Setup dynamic render data.  Only call this AFTER filling in source data for the emitter.
-    NewEmitterData->Init( bSelected );
-
-    return NewEmitterData;
-}
-
-/**
- *	Retrieves replay data for the emitter
- *
- *	@return	The replay data, or NULL on failure
- */
-FDynamicEmitterReplayDataBase* FParticleSpriteEmitterInstance::GetReplayData()
-{
-    if (ActiveParticles <= 0 || !bEnabled)
-    {
-        return NULL;
-    }
-
-    FDynamicEmitterReplayDataBase* NewEmitterReplayData = new FDynamicSpriteEmitterReplayData();
-    //check( NewEmitterReplayData != NULL );
-
-    if( !FillReplayData( *NewEmitterReplayData ) )
-    {
-        delete NewEmitterReplayData;
-        return NULL;
-    }
-
-    return NewEmitterReplayData;
-}
-
-/**
- * Captures dynamic replay data for this particle system.
- *
- * @param	OutData		[Out] Data will be copied here
- *
- * @return Returns true if successful
- */
-bool FParticleSpriteEmitterInstance::FillReplayData( FDynamicEmitterReplayDataBase& OutData )
-{
-    QUICK_SCOPE_CYCLE_COUNTER(STAT_ParticleSpriteEmitterInstance_FillReplayData);
-
-    if (ActiveParticles <= 0)
-    {
-        return false;
-    }
-
-    // Call parent implementation first to fill in common particle source data
-    if( !FParticleEmitterInstance::FillReplayData( OutData ) )
-    {
-        return false;
-    }
-
-    OutData.eEmitterType = DET_Sprite;
-
-    FDynamicSpriteEmitterReplayData* NewReplayData =
-        static_cast< FDynamicSpriteEmitterReplayData* >( &OutData );
-
-    // Get the material instance. If there is none, or the material isn't flagged for use with particle systems, use the DefaultMaterial.
-    NewReplayData->Material = GetCurrentMaterial();
-
-    return true;
-}
-
 UMaterial* FParticleEmitterInstance::GetCurrentMaterial()
 {
     UMaterial* RenderMaterial = CurrentMaterial;
@@ -1844,52 +1594,3 @@ UMaterial* FParticleEmitterInstance::GetCurrentMaterial()
 
 /** Constructor	*/
 
-
-
-
-
-
-FDynamicEmitterDataBase::FDynamicEmitterDataBase(const UParticleModuleRequired* RequiredModule)
-    : bSelected(false)
-    , EmitterIndex(INDEX_NONE)
-{
-}
-
-FDynamicSpriteEmitterReplayDataBase::FDynamicSpriteEmitterReplayDataBase()
-    : //Material(nullptr)
-     RequiredModule(nullptr)
-    , NormalsSphereCenter(FVector::ZeroVector)
-    , NormalsCylinderDirection(FVector::ZeroVector)
-    , InvDeltaSeconds(0.0f)
-    , MaxDrawCount(0)
-    , OrbitModuleOffset(0)
-    , DynamicParameterDataOffset(0)
-    , LightDataOffset(0)
-    , LightVolumetricScatteringIntensity(0)
-    , CameraPayloadOffset(0)
-    , SubUVDataOffset(0)
-    , SubImages_Horizontal(1)
-    , SubImages_Vertical(1)
-    , bUseLocalSpace(false)
-    , bLockAxis(false)
-    //, ScreenAlignment(0)
-    , LockAxisFlag(0)
-    , EmitterRenderMode(0)
-    , EmitterNormalsMode(0)
-    , PivotOffset(-0.5f, -0.5f)
-    , bUseVelocityForMotionBlur(false)
-    , bRemoveHMDRoll(false)
-    , MinFacingCameraBlendDistance(0.f)
-    , MaxFacingCameraBlendDistance(0.f)
-{
-}
-
-FDynamicSpriteEmitterReplayDataBase::~FDynamicSpriteEmitterReplayDataBase()
-{
-    delete RequiredModule;
-}
-
-void FDynamicSpriteEmitterReplayDataBase::Serialize(FArchive& Ar)
-{
-    FDynamicEmitterReplayDataBase::Serialize(Ar);
-}
