@@ -97,9 +97,6 @@ void UAssetManager::InitDefaultParticleTemplate()
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleColorOverLifeModule);
     
     UParticleModuleSubUV* SampleSubUVModule = FObjectFactory::ConstructObject<UParticleModuleSubUV>(nullptr);
-    SampleEmitter->SubUVAnimation = FObjectFactory::ConstructObject<USubUVAnimation>(nullptr);
-    SampleEmitter->SubUVAnimation->SubImages_Horizontal = 6;
-    SampleEmitter->SubUVAnimation->SubImages_Vertical = 6;
     SampleEmitter->GetLODLevel(0)->Modules.Add(SampleSubUVModule);
     
     Template->Emitters.Add(SampleEmitter);

@@ -1685,7 +1685,6 @@
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Spawn\ParticleModules_Spawn.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\ParticleModules.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Renderer\ParticleRenderPass.cpp" />
-    <ClCompile Include="Shaders\ParticleVertexShader.hlsl" />
     <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\ScriptStruct.cpp" />
     <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\Struct.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Particles\Color\ParticleModules_Color.cpp" />
@@ -1700,18 +1699,6 @@
   <ItemGroup>
     <Natvis Include="EngineSIU.natvis" />
     <Natvis Include="Engine\Source\ThirdParty\sol2\sol2.natvis" />
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Shaders\CascadedShadowMap.hlsl" />
-    <FxCompile Include="Shaders\DepthCubeMapVS.hlsl" />
-    <FxCompile Include="Shaders\DepthOnlyVS.hlsl" />
-    <FxCompile Include="Shaders\LightPBR.hlsl" />
-    <FxCompile Include="Shaders\PointLightCubemapGS.hlsl" />
-    <FxCompile Include="Shaders\MeshParticlePixelShader.hlsl" />
-    <FxCompile Include="Shaders\MeshParticleVertexShader.hlsl" />
-    <FxCompile Include="Shaders\SpriteParticlePixelShader.hlsl" />
-    <FxCompile Include="Shaders\StaticMeshPixelShaderWorldTangent.hlsl" />
-    <FxCompile Include="Shaders\SpriteParticleVertexShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\SkeletalMeshComponent.h" />
@@ -1816,33 +1803,6 @@
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Particles\SubUV\ParticleModuleSubUVBase.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\CompositingShader.hlsl" />
-    <None Include="Shaders\ComputeDefine.hlsl" />
-    <None Include="Shaders\DepthBufferPixelShader.hlsl" />
-    <None Include="Shaders\DepthBufferVertexShader.hlsl" />
-    <None Include="Shaders\EditorShader.hlsl" />
-    <None Include="Shaders\FogQuadPixelShader.hlsl" />
-    <None Include="Shaders\FogShader.hlsl" />
-    <None Include="Shaders\GizmoPixelShader.hlsl" />
-    <None Include="Shaders\GizmoVertexShader.hlsl" />
-    <None Include="Shaders\Light.hlsl" />
-    <None Include="Shaders\PixelBillBoardShader.hlsl" />
-    <None Include="Shaders\PostProcessCompositingShader.hlsl" />
-    <None Include="Shaders\ShaderLine.hlsl" />
-    <None Include="Shaders\ShaderRegisters.hlsl" />
-    <None Include="Shaders\ShaderW0.hlsl" />
-    <None Include="Shaders\SlateShader.hlsl" />
-    <None Include="Shaders\StaticMeshPixelShader.hlsl" />
-    <None Include="Shaders\StaticMeshPixelShaderDepth.hlsl" />
-    <None Include="Shaders\StaticMeshPixelShaderWorldNormal.hlsl" />
-    <None Include="Shaders\StaticMeshVertexShader.hlsl" />
-    <None Include="Shaders\TileLightCullingComputeShader.hlsl" />
-    <None Include="Shaders\VertexBillBoardShader.hlsl" />
-    <None Include="Shaders\EditorShaderConstants.hlsli" />
-    <None Include="Shaders\ShaderConstants.hlsli" />
     <None Include="cpp.hint" />
-    <None Include="Shaders\CameraEffectShader.hlsl" />
-    <None Include="Shaders\SkeletalMeshPixelShader.hlsl" />
-    <None Include="Shaders\SkeletalMeshVertexShader.hlsl" />
   </ItemGroup>
 </Project>

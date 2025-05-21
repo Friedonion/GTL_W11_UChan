@@ -28,9 +28,10 @@ class UParticleModuleSubUV : public UParticleModuleSubUVBase
 	 *	The value is retrieved using the RelativeTime of the particles.
 	 */
 	//UPROPERTY(EditAnywhere, Category=SubUV)
-    UPROPERTY_WITH_FLAGS
-	(EditAnywhere, FRawDistributionFloat, SubImageIndex)
+    FRawDistributionFloat SubImageIndex;
 
+    UPROPERTY
+    (EditAnywhere, float, SubUVSpeed, = 1.f)
 	/** 
 	 *	If true, use *real* time when updating the image index.
 	 *	The movie will update regardless of the slomo settings of the game.

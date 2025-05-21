@@ -371,9 +371,7 @@ float UParticleModuleSubUV::DetermineImageIndex(FParticleEmitterInstance* Owner,
 
 	USubUVAnimation* __restrict SubUVAnimation = Owner->SpriteTemplate->SubUVAnimation;
 
-	const int32 TotalSubImages = SubUVAnimation 
-		? SubUVAnimation->SubImages_Horizontal * SubUVAnimation->SubImages_Vertical
-		: LODLevel->RequiredModule->SubImages_Horizontal * LODLevel->RequiredModule->SubImages_Vertical;
+	const int32 TotalSubImages = LODLevel->RequiredModule->SubImages_Horizontal * LODLevel->RequiredModule->SubImages_Vertical;
 
 	float ImageIndex = SubUVPayload.ImageIndex;
 
@@ -394,12 +392,13 @@ float UParticleModuleSubUV::DetermineImageIndex(FParticleEmitterInstance* Owner,
 			// {
 			// ImageIndex = SubImageIndex.GetValue(Particle->RelativeTime);
 			// }
-		    ImageIndex = (SubUVAnimation->SubImages_Horizontal) * (SubUVAnimation->SubImages_Vertical) * (Particle->RelativeTime);
+		    ImageIndex = TotalSubImages * Particle->RelativeTime;
 		}
 
 		if (InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Linear)
 		{
-			ImageIndex = FMath::TruncToFloat(ImageIndex);
+			ImageIndex = FMath::TruncToFloat(ImageIndex) * SubUVSpeed;
+		    ImageIndex = (int32)ImageIndex % TotalSubImages;
 		}
 	}
 	else if ((InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Random) || (InterpMethod == EParticleSubUVInterpMethod::PSUVIM_Random_Blend))
