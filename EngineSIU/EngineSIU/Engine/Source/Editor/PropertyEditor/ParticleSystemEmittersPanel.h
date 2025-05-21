@@ -144,4 +144,5 @@ private:
 
 private:
     float Width = 0, Height = 0;
+    const float ContentWidth = 300.0f;
 };
