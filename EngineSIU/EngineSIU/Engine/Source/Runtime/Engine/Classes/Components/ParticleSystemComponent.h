@@ -6,7 +6,6 @@
 #include "Math/RandomStream.h"
 
 class UParticleSystem;
-class FDynamicEmitterDataBase;
 
 class UParticleSystemComponent : public UPrimitiveComponent
 {
@@ -19,9 +18,6 @@ public:
     // UMaterialInterface 미구현 - UMaterial로 대체?
     TArray<UMaterial*> EmitterMaterials;
     UParticleSystem* Template;
-
-
-    TArray<FDynamicEmitterDataBase*> EmitterRenderData;
 
     virtual int32 GetLODLevel();
 
