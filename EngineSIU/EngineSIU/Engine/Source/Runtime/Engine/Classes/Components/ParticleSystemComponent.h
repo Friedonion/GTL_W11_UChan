@@ -16,6 +16,8 @@ public:
     
     void UpdateComponent();
 
+    virtual UObject* Duplicate(UObject* InOuter) override;
+    
     TArray<struct FParticleEmitterInstance*> EmitterInstances;
     // UMaterialInterface 미구현 - UMaterial로 대체?
     TArray<UMaterial*> EmitterMaterials;
