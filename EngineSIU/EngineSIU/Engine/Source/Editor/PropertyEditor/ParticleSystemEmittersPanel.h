@@ -111,7 +111,8 @@ private:
 
 public:
     void SetParticleSystemComponent(UParticleSystemComponent* InParticleSystemComponent);
-    
+
+    UParticleSystemComponent* GetParticleSystemComponent() const { return ParticleSystemComponent; }
     /**
      * 선택된 객체 정보 반환
      */

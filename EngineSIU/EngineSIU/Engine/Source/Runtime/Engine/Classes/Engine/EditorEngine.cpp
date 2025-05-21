@@ -336,7 +336,6 @@ void UEditorEngine::StartParticleSystemViewer(FName InParticleTemplateName)
     this->ClearActorSelection();
     // ParticleSystem 액터 스폰
     AParticleSystemActor* ParticleActor = ParticleSystemViewerWorld->SpawnActor<AParticleSystemActor>();
-    HoverActor(ParticleActor);
     // @note ParticleActor의 생성자에서 기본적으로 설정해주고 있음, 추후 확인 필요
     //ParticleActor->SetActorTickInEditor(true);
 
@@ -346,6 +345,7 @@ void UEditorEngine::StartParticleSystemViewer(FName InParticleTemplateName)
     ParticleActor->SetActorLabel(TEXT("OBJ_PARTICLESYSTEM"));
     UParticleSystemComponent* ParticleSystemComponent = ParticleActor->ParticleSystemComponent;
     ParticleSystemComponent->Template = UAssetManager::Get().GetParticleTemplate(InParticleTemplateName);
+    ParticleSystemComponent->TemplateName = InParticleTemplateName;
     ParticleSystemComponent->UpdateComponent();
 
     auto EditorEngine = Cast<UEditorEngine>(GEngine);
@@ -402,8 +402,14 @@ void UEditorEngine::EndParticleSystemViewer()
 {
     if (ParticleSystemViewerWorld)
     {
-        UParticleSystemComponent* ParticleSystemComponent = Cast<AParticleSystemActor>(this->GetHoveredActor())->ParticleSystemComponent;
-        UAssetManager::Get().AddParticleTemplate(ParticleSystemComponent->TemplateName,ParticleSystemComponent->Template);
+        auto EditorEngine = Cast<UEditorEngine>(GEngine);
+        auto UnrealEd = EditorEngine->GetUnrealEditor();
+        auto Panel = reinterpret_cast<ParticleSystemEmittersPanel*>(UnrealEd->GetEditorPanel("ParticleSystemEmittersPanel").get());
+        if (Panel)
+        {
+            UParticleSystemComponent* ParticleSystemComponent = Panel->GetParticleSystemComponent();
+            UAssetManager::Get().AddParticleTemplate(ParticleSystemComponent->TemplateName, ParticleSystemComponent->Template);
+        }
         this->ClearActorSelection();
         WorldList.Remove(GetWorldContextFromWorld(ParticleSystemViewerWorld));
         ParticleSystemViewerWorld->Release();
@@ -420,6 +426,18 @@ void UEditorEngine::EndParticleSystemViewer()
 
     ActiveWorld = EditorWorld;
 
+    for (const auto Iter : TObjectRange<UParticleSystemComponent>())
+    {
+        // 현재 활성 월드에 있는 컴포넌트만 추가
+        if (Iter->GetWorld() == GEngine->ActiveWorld)
+        {
+            if (Iter->GetOwner() && !Iter->GetOwner()->IsHidden())
+            {
+                Iter->UpdateComponent();
+            }
+        }
+    }
+    
     uint32 width;
     uint32 height;
     GEngineLoop.GetClientSize(width, height);

@@ -307,9 +307,9 @@ void ParticleSystemEmittersPanel::RenderEmitters(UParticleSystem* ParticleSystem
                 ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 130);
                 if (ImGui::Button("Exit Viewer", ImVec2(120, ButtonHeight)))
                 {
-                    ParticleSystemComponent = nullptr;
                     UEditorEngine* EdEngine = Cast<UEditorEngine>(GEngine);
                     EdEngine->EndParticleSystemViewer();
+                    ParticleSystemComponent = nullptr;
                 }
             }
         }

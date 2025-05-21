@@ -1,5 +1,6 @@
 #include "ParticleSystemComponent.h"
 
+#include "Engine/AssetManager.h"
 #include "UObject/ObjectFactory.h"
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleEmitter.h"
@@ -70,7 +71,7 @@ void UParticleSystemComponent::UpdateComponent()
 {
     if (Template == nullptr)
         return;
-    
+    Template = UAssetManager::Get().GetParticleTemplate(TemplateName);
     EmitterInstances.Empty();
     for (UParticleEmitter* Emitter : Template->Emitters)
     {
