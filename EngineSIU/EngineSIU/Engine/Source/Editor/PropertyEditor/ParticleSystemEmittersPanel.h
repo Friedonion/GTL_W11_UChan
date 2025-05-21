@@ -77,6 +77,7 @@ private:
     void OnAddSpawnPerUnit(UParticleEmitter* Emitter);
     void OnAddInitialVelocity(UParticleEmitter* Emitter);
     void OnAddVelocityOverLife(UParticleEmitter* Emitter);
+    void OnAddSubUV(UParticleEmitter* Emitter);
     
     // 모듈 이벤트 핸들러
     void OnDuplicateModule(UParticleModule* Module, int32 EmitterIndex, int32 ModuleIndex);
