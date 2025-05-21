@@ -112,6 +112,8 @@ private:
     int CurMaterialIndex = -1;
     UStaticMeshComponent* SelectedStaticMeshComp = nullptr;
 
+    bool bShowMaterialView = false;
+
     FMaterialInfo tempMaterialInfo;
     bool IsCreateMaterial;
 

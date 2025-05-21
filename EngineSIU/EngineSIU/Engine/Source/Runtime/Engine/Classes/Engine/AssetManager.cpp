@@ -56,6 +56,8 @@ void UAssetManager::InitAssetManager()
 
     LoadContentFiles();
 
+    LoadOBJMaterials();
+
     InitDefaultParticleTemplate();
 }
 
@@ -264,7 +266,7 @@ void UAssetManager::HandleFBX(const FAssetInfo& AssetInfo)
             bIsBinaryValid = true;
         }
     }
-    
+
     FAssetLoadResult Result;
     if (bIsBinaryValid)
     {
@@ -789,4 +791,13 @@ bool UAssetManager::SerializeAssetLoadResult(FArchive& Ar, FAssetLoadResult& Res
     }
 
     return true;
+}
+
+void UAssetManager::LoadOBJMaterials()
+{
+    auto OBJMaterialMap = FObjManager::GetMaterials();
+    for (auto Mat : OBJMaterialMap)
+    {
+        MaterialMap.Add(Mat.Key, Mat.Value);
+    }
 }
