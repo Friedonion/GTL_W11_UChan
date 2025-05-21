@@ -11,6 +11,7 @@
 #include "Particles/Size/ParticleModuleSize.h"
 #include "Particles/Velocity/ParticleModuleVelocity.h"
 #include "Particles/Color/ParticleModuleColor.h"
+#include "Particles/SubUV/ParticleModuleSubUV.h"
 
 // 선택 상태 변경 처리 함수
 bool ParticleSystemEmittersPanel::HandleEmitterSelection(UParticleEmitter* Emitter, int32 EmitterIndex)
@@ -815,6 +816,17 @@ void ParticleSystemEmittersPanel::ShowEmitterContextMenu(UParticleEmitter* Emitt
                 
                 ImGui::EndMenu();
             }
+
+            // SubUV 카테고리
+            if (ImGui::BeginMenu("SubUV"))
+            {
+                if (ImGui::MenuItem("Sub Image Index"))
+                {
+                    OnAddSubUV(Emitter);
+                }
+
+                ImGui::EndMenu();
+            }
         }
         
         ImGui::EndPopup();
@@ -1426,6 +1438,42 @@ void ParticleSystemEmittersPanel::OnAddVelocityOverLife(UParticleEmitter* Emitte
     }
 
     // TODO: 속도/수명 모듈 추가
+}
+
+void ParticleSystemEmittersPanel::OnAddSubUV(UParticleEmitter* Emitter)
+{
+    if (!Emitter || Emitter->LODLevels.Num() == 0)
+    {
+        UE_LOG(ELogLevel::Warning, "[PSV] Cannot add SubUV module: Invalid Emitter or no LOD levels");
+        return;
+    }
+
+    // 현재 LOD 레벨 (단순화를 위해 LOD 0만 처리)
+    UParticleLODLevel* LODLevel = Emitter->LODLevels[0];
+    if (!LODLevel)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Cannot add SubUV module: Invalid LOD level");
+        return;
+    }
+
+    // 초기 속도 모듈 생성
+    UParticleModuleSubUV* SubUVModule = FObjectFactory::ConstructObject<UParticleModuleSubUV>(nullptr);
+    if (!SubUVModule)
+    {
+        UE_LOG(ELogLevel::Error, "[PSV] Failed to create SubUV module");
+        return;
+    }
+
+    // 기본 속성 설정
+    SubUVModule->SubImageIndex.Distribution->Constant = 63.f;
+
+    // 모듈 활성화
+    SubUVModule->bEnabled = true;
+
+    // LOD 레벨에 모듈 추가
+    LODLevel->Modules.Add(SubUVModule);
+
+    UE_LOG(ELogLevel::Display, "[PSV] Added SubUV module to emitter: %s", GetData(Emitter->EmitterName.ToString()));
 }
 
 // 모듈 이벤트 핸들러
