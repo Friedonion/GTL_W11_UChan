@@ -105,7 +105,7 @@ private:
     
     void PrepareMeshParticles(FParticleEmitterInstance* Emitter);
     void PrepareSpriteParticles(FParticleEmitterInstance* Emitter);
-    void RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent);
+    void RenderMeshParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent, UStaticMesh* Mesh);
     void RenderSpriteParticles(const std::shared_ptr<FEditorViewportClient>& Viewport, bool bIsTransparent);
     
     // 리소스 관리
